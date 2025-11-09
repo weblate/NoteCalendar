@@ -9,7 +9,15 @@ import androidx.annotation.StringRes
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.res.stringResource
+import androidx.core.graphics.ColorUtils
+import com.sztorm.mathkit.ColorRGBA32
+import com.sztorm.mathkit.Vector2F
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.Month
@@ -297,3 +305,39 @@ fun AlarmManager.setExactAndAllowWhileIdleCompat(
         else -> setExact(type, triggerAtMillis, operation)
     }
 }
+
+fun ColorRGBA32.toColor() =
+    Color(r.toInt(), g.toInt(), b.toInt(), a.toInt())
+
+fun Color.toColorRGBA32(): ColorRGBA32 {
+    val argb = toArgb()
+    val a = (argb shr 24).toUByte()
+    val r = (argb shr 16).toUByte()
+    val g = (argb shr 8).toUByte()
+    val b = argb.toUByte()
+
+    return ColorRGBA32(r, g, b, a)
+}
+
+fun Color.toHsv() = FloatArray(3).apply {
+    android.graphics.Color.colorToHSV(toArgb(), this)
+}
+
+fun Color.toHsl() = FloatArray(3).apply {
+    val argb = toArgb()
+    val r = (argb shr 16) and 255
+    val g = (argb shr 8) and 255
+    val b = argb and 255
+
+    ColorUtils.RGBToHSL(r, g, b, this)
+}
+
+fun Offset.toVector2F() = Vector2F(x, y)
+
+fun Vector2F.toOffset() = Offset(x, y)
+
+fun Vector2F.toCanvasSpace(canvasSize: Size) = Vector2F(x, canvasSize.height - y)
+
+fun Path.moveTo(position: Vector2F) = moveTo(position.x, position.y)
+
+fun Path.lineTo(position: Vector2F) = lineTo(position.x, position.y)
