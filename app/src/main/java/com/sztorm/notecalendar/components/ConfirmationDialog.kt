@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -29,6 +30,22 @@ fun ConfirmationDialog(
     properties: DialogProperties = DialogProperties(),
     dialogColors: CardColors = CardDefaults.cardColors(),
     textButtonColor: Color = Color.Unspecified,
+    buttonsContent: @Composable RowScope.() -> Unit = {
+        Text(
+            text = stringResource(android.R.string.cancel),
+            color = textButtonColor,
+            modifier = Modifier
+                .clickable(onClick = onDismiss)
+                .padding(vertical = 8.dp, horizontal = 16.dp)
+        )
+        Text(
+            text = stringResource(android.R.string.ok),
+            color = textButtonColor,
+            modifier = Modifier
+                .clickable(onClick = onConfirm)
+                .padding(vertical = 8.dp, horizontal = 16.dp)
+        )
+    },
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Dialog(
@@ -51,20 +68,7 @@ fun ConfirmationDialog(
                         .fillMaxWidth()
                         .padding(vertical = 8.dp, horizontal = 16.dp)
                 ) {
-                    Text(
-                        text = stringResource(android.R.string.cancel),
-                        color = textButtonColor,
-                        modifier = Modifier
-                            .clickable(onClick = onDismiss)
-                            .padding(vertical = 8.dp, horizontal = 16.dp)
-                    )
-                    Text(
-                        text = stringResource(android.R.string.ok),
-                        color = textButtonColor,
-                        modifier = Modifier
-                            .clickable(onClick = onConfirm)
-                            .padding(vertical = 8.dp, horizontal = 16.dp)
-                    )
+                    this.buttonsContent()
                 }
             }
         }
