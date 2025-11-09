@@ -1,9 +1,11 @@
 package com.sztorm.notecalendar.components.preferences
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -24,11 +26,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogProperties
+import com.sztorm.notecalendar.R
+import com.sztorm.notecalendar.components.ColorPicker
 import com.sztorm.notecalendar.components.ConfirmationDialog
+import com.sztorm.notecalendar.components.rememberColorPickerState
+import com.sztorm.notecalendar.toHsv
 
 @Composable
 fun ColorPickerPreference(
@@ -38,6 +45,7 @@ fun ColorPickerPreference(
     onConfirm: (Color) -> Unit,
     modifier: Modifier = Modifier,
     onDismiss: ((Color) -> Unit)? = null,
+    defaultColor: Color = Color.Unspecified,
     titleColor: Color = Color.Unspecified,
     summary: String? = null,
     summaryColor: Color = Color.Unspecified,
@@ -52,7 +60,29 @@ fun ColorPickerPreference(
     val summaryColor = summaryColor.copy(alpha = if (enabled) 0.8f else 0.4f)
     var openDialog by remember { mutableStateOf(false) }
     var selectedColor by remember { mutableStateOf(initialColor) }
-
+    val colorPickerState = selectedColor.let {
+        val (h, s, v) = it.toHsv()
+        rememberColorPickerState(initialHue = h, initialSaturation = s, initialValue = v)
+    }
+    val onDialogConfirm = {
+        openDialog = false
+        selectedColor = Color.hsv(
+            colorPickerState.hue,
+            colorPickerState.saturation,
+            colorPickerState.value
+        )
+        onConfirm(selectedColor)
+    }
+    val onDialogDismiss: () -> Unit = {
+        openDialog = false
+        selectedColor = initialColor
+        onDismiss?.invoke(selectedColor)
+    }
+    val onSetDefault = {
+        openDialog = false
+        selectedColor = defaultColor
+        onConfirm(selectedColor)
+    }
     Preference(
         title = title,
         onClick = {
@@ -103,22 +133,41 @@ fun ColorPickerPreference(
     }
     if (openDialog) {
         ConfirmationDialog(
-            onConfirm = {
-                openDialog = false
-                onConfirm(selectedColor)
-            },
-            onDismiss = {
-                openDialog = false
-                selectedColor = initialColor
-                onDismiss?.invoke(selectedColor)
-            },
+            onConfirm = onDialogConfirm,
+            onDismiss = onDialogDismiss,
             properties = DialogProperties(
                 dismissOnBackPress = true,
                 dismissOnClickOutside = true,
                 usePlatformDefaultWidth = false
             ),
             dialogColors = dialogColors,
-            textButtonColor = buttonColor
+            textButtonColor = buttonColor,
+            buttonsContent = {
+                if (defaultColor != Color.Unspecified) {
+                    Text(
+                        text = stringResource(R.string.SetDefault),
+                        color = buttonColor,
+                        modifier = Modifier
+                            .clickable(onClick = onSetDefault)
+                            .padding(vertical = 8.dp, horizontal = 16.dp)
+                    )
+                    Spacer(modifier = Modifier.weight(1f))
+                }
+                Text(
+                    text = stringResource(android.R.string.cancel),
+                    color = buttonColor,
+                    modifier = Modifier
+                        .clickable(onClick = onDialogDismiss)
+                        .padding(vertical = 8.dp, horizontal = 16.dp)
+                )
+                Text(
+                    text = stringResource(android.R.string.ok),
+                    color = buttonColor,
+                    modifier = Modifier
+                        .clickable(onClick = onDialogConfirm)
+                        .padding(vertical = 8.dp, horizontal = 16.dp)
+                )
+            }
         ) {
             Row(modifier = Modifier.padding(16.dp)) {
                 Text(
@@ -127,6 +176,9 @@ fun ColorPickerPreference(
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Medium
                 )
+            }
+            Row(modifier = Modifier.fillMaxWidth()) {
+                ColorPicker(state = colorPickerState)
             }
         }
     }
