@@ -34,8 +34,8 @@ import androidx.compose.ui.window.DialogProperties
 import com.sztorm.notecalendar.R
 import com.sztorm.notecalendar.components.ColorPicker
 import com.sztorm.notecalendar.components.ConfirmationDialog
+import com.sztorm.notecalendar.components.RgbColor
 import com.sztorm.notecalendar.components.rememberColorPickerState
-import com.sztorm.notecalendar.toHsv
 
 @Composable
 fun ColorPickerPreference(
@@ -59,34 +59,28 @@ fun ColorPickerPreference(
     val titleColor = titleColor.copy(alpha = if (enabled) 1f else 0.4f)
     val summaryColor = summaryColor.copy(alpha = if (enabled) 0.8f else 0.4f)
     var openDialog by remember { mutableStateOf(false) }
-    var selectedColor by remember { mutableStateOf(initialColor) }
-    val colorPickerState = selectedColor.let {
-        val (h, s, v) = it.toHsv()
-        rememberColorPickerState(initialHue = h, initialSaturation = s, initialValue = v)
-    }
+    val colorPickerState = rememberColorPickerState(initialColor)
     val onDialogConfirm = {
         openDialog = false
-        selectedColor = Color.hsv(
-            colorPickerState.hue,
-            colorPickerState.saturation,
-            colorPickerState.value
-        )
-        onConfirm(selectedColor)
+        onConfirm(colorPickerState.rgb.toColor())
     }
     val onDialogDismiss: () -> Unit = {
         openDialog = false
-        selectedColor = initialColor
+        val selectedColor = colorPickerState.rgb.toColor()
+        colorPickerState.rgb = RgbColor(initialColor.red, initialColor.green, initialColor.blue)
         onDismiss?.invoke(selectedColor)
     }
     val onSetDefault = {
         openDialog = false
-        selectedColor = defaultColor
-        onConfirm(selectedColor)
+        colorPickerState.rgb = RgbColor(defaultColor.red, defaultColor.green, defaultColor.blue)
+        onConfirm(defaultColor)
     }
     Preference(
         title = title,
         onClick = {
-            selectedColor = initialColor
+            colorPickerState.rgb = RgbColor(
+                initialColor.red, initialColor.green, initialColor.blue
+            )
             openDialog = true
         },
         modifier = modifier,

@@ -1,6 +1,5 @@
 package com.sztorm.notecalendar.components
 
-import androidx.annotation.FloatRange
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -21,6 +20,8 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableFloatState
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
@@ -74,62 +75,193 @@ import kotlin.math.abs
 import kotlin.math.min
 import kotlin.math.sqrt
 
-interface ColorPickerState {
-    @get:FloatRange(from = 0.0, to = 360.0)
-    @setparam:FloatRange(from = 0.0, to = 360.0)
-    var hue: Float
-
-    @get:FloatRange(from = 0.0, to = 1.0)
-    @setparam:FloatRange(from = 0.0, to = 1.0)
-    var saturation: Float
-
-    @get:FloatRange(from = 0.0, to = 1.0)
-    @setparam:FloatRange(from = 0.0, to = 1.0)
-    var value: Float
-}
-
-private class ColorPickerStateImpl(
-    initialHue: Float, initialSaturation: Float, initialValue: Float
-) : ColorPickerState {
+data class HslColor(val hue: Float, val saturation: Float, val lightness: Float) {
     init {
-        require(initialHue in 0f..360f) { "initialHue should be in [0, 360] range." }
-        require(initialSaturation in 0f..1f) {
-            "initialSaturation should be in [0, 1] range."
-        }
-        require(initialValue in 0f..1f) { "initialValue should be in [0, 1] range." }
+        require(hue in 0f..360f) { "hue should be in [0, 360] range." }
+        require(saturation in 0f..1f) { "saturation should be in [0, 1] range." }
+        require(lightness in 0f..1f) { "lightness should be in [0, 1] range." }
     }
 
-    val hueState = mutableFloatStateOf(initialHue)
-    val saturationState = mutableFloatStateOf(initialSaturation)
-    val valueState = mutableFloatStateOf(initialValue)
+    @Suppress("unused")
+    fun toColor() = Color.hsl(hue, saturation, lightness)
 
-    override var hue: Float
-        get() = hueState.floatValue
+    fun toHsv(): HsvColor {
+        val value = (lightness + saturation * min(lightness, 1f - lightness))
+            .coerceIn(0f, 1f)
+        val saturation = when (value) {
+            0f -> 0f
+            else -> 2f * (1f - lightness / value)
+        }.coerceIn(0f, 1f)
+
+        return HsvColor(hue, saturation, value)
+    }
+
+    fun toRgb(): RgbColor {
+        val (r, g, b) = Color.hsl(hue, saturation, lightness)
+
+        return RgbColor(r, g, b)
+    }
+}
+
+data class HsvColor(val hue: Float, val saturation: Float, val value: Float) {
+    init {
+        require(hue in 0f..360f) { "hue should be in [0, 360] range." }
+        require(saturation in 0f..1f) { "saturation should be in [0, 1] range." }
+        require(value in 0f..1f) { "value should be in [0, 1] range." }
+    }
+
+    @Suppress("unused")
+    fun toColor() = Color.hsv(hue, saturation, value)
+
+    fun toHsl(): HslColor {
+        val lightness = (value * (1f - saturation * 0.5f)).coerceIn(0f, 1f)
+        val saturation = when (value) {
+            0f, 1f -> 0f
+            else -> (value - lightness) / min(lightness, 1f - lightness)
+        }.coerceIn(0f, 1f)
+
+        return HslColor(hue, saturation, lightness)
+    }
+
+    fun toRgb(): RgbColor {
+        val (r, g, b) = Color.hsv(hue, saturation, value)
+
+        return RgbColor(r, g, b)
+    }
+}
+
+data class RgbColor(val red: Float, val green: Float, val blue: Float) {
+    init {
+        require(red in 0f..360f) { "red should be in [0, 360] range." }
+        require(green in 0f..1f) { "green should be in [0, 1] range." }
+        require(blue in 0f..1f) { "blue should be in [0, 1] range." }
+    }
+
+    fun toColor() = Color(red, green, blue)
+
+    fun toHsl(): HslColor = toColor().toHslColor()
+
+    fun toHsv(): HsvColor = toColor().toHsvColor()
+}
+
+private fun Color.toHslColor(): HslColor {
+    val (h, s, l) = toHsl()
+
+    return HslColor(h, s, l)
+}
+
+private fun Color.toHsvColor(): HsvColor {
+    val (h, s, v) = toHsv()
+
+    return HsvColor(h, s, v)
+}
+
+private fun Color.toRgbColor() = RgbColor(red, green, blue)
+
+interface ColorPickerState {
+    var alpha: Float
+    var hsl: HslColor
+    var hsv: HsvColor
+    var rgb: RgbColor
+}
+
+private class ColorPickerStateImpl : ColorPickerState {
+    val alphaState: MutableFloatState
+    val hslState: MutableState<HslColor>
+    val hsvState: MutableState<HsvColor>
+    val rgbState: MutableState<RgbColor>
+
+    constructor(color: Color) {
+        alphaState = mutableFloatStateOf(color.alpha)
+        hslState = mutableStateOf(color.toHslColor())
+        hsvState = mutableStateOf(color.toHsvColor())
+        rgbState = mutableStateOf(color.toRgbColor())
+    }
+
+    @Suppress("unused")
+    constructor(hsl: HslColor, alpha: Float = 1f) {
+        require(alpha in 0f..1f) { "alpha should be in [0, 1] range." }
+
+        alphaState = mutableFloatStateOf(alpha)
+        hslState = mutableStateOf(hsl)
+        hsvState = mutableStateOf(hsl.toHsv())
+        rgbState = mutableStateOf(hsl.toRgb())
+    }
+
+    @Suppress("unused")
+    constructor(hsv: HsvColor, alpha: Float = 1f) {
+        require(alpha in 0f..1f) { "alpha should be in [0, 1] range." }
+
+        alphaState = mutableFloatStateOf(alpha)
+        hslState = mutableStateOf(hsv.toHsl())
+        hsvState = mutableStateOf(hsv)
+        rgbState = mutableStateOf(hsv.toRgb())
+    }
+
+    @Suppress("unused")
+    constructor(rgb: RgbColor, alpha: Float = 1f) {
+        require(alpha in 0f..1f) { "alpha should be in [0, 1] range." }
+
+        alphaState = mutableFloatStateOf(alpha)
+        hslState = mutableStateOf(rgb.toHsl())
+        hsvState = mutableStateOf(rgb.toHsv())
+        rgbState = mutableStateOf(rgb)
+    }
+
+    private constructor(alpha: Float, hsl: HslColor, hsv: HsvColor, rgb: RgbColor) {
+        alphaState = mutableFloatStateOf(alpha)
+        hslState = mutableStateOf(hsl)
+        hsvState = mutableStateOf(hsv)
+        rgbState = mutableStateOf(rgb)
+    }
+
+    override var alpha: Float
+        get() = alphaState.floatValue
         set(value) {
-            hueState.floatValue = value
+            alphaState.floatValue = value
         }
 
-    override var saturation: Float
-        get() = saturationState.floatValue
+    override var hsl: HslColor
+        get() = hslState.value
         set(value) {
-            saturationState.floatValue = value
+            hslState.value = value
+            hsvState.value = value.toHsv()
+            rgbState.value = value.toRgb()
         }
 
-    override var value: Float
-        get() = valueState.floatValue
+    override var hsv: HsvColor
+        get() = hsvState.value
         set(value) {
-            valueState.floatValue = value
+            hslState.value = value.toHsl()
+            hsvState.value = value
+            rgbState.value = value.toRgb()
+        }
+
+    override var rgb: RgbColor
+        get() = rgbState.value
+        set(value) {
+            hslState.value = value.toHsl()
+            hsvState.value = value.toHsv()
+            rgbState.value = value
         }
 
     companion object {
         fun Saver(): Saver<ColorPickerStateImpl, out Any> =
             Saver(
-                save = { listOf(it.hue, it.saturation, it.value) }, // TODO floatListOf?
+                save = {
+                    listOf(
+                        it.alpha,
+                        it.hsl.hue, it.hsl.saturation, it.hsl.lightness,
+                        it.hsv.hue, it.hsv.saturation, it.hsv.value,
+                        it.rgb.red, it.rgb.green, it.rgb.blue,
+                    )
+                },
                 restore = {
                     ColorPickerStateImpl(
-                        initialHue = it[0],
-                        initialSaturation = it[1],
-                        initialValue = it[2],
+                        alpha = it[0],
+                        hsl = HslColor(it[1], it[2], it[3]),
+                        hsv = HsvColor(it[4], it[5], it[6]),
+                        rgb = RgbColor(it[7], it[8], it[9]),
                     )
                 }
             )
@@ -145,18 +277,13 @@ private enum class CurrentAction {
 }
 
 @Suppress("unused")
-fun ColorPickerState(
-    initialHue: Float, initialSaturation: Float, initialValue: Float
-): ColorPickerState = ColorPickerStateImpl(initialHue, initialSaturation, initialValue)
+fun ColorPickerState(color: Color): ColorPickerState = ColorPickerStateImpl(color)
 
 @Composable
-fun rememberColorPickerState(
-    initialHue: Float = 0f,
-    initialSaturation: Float = 1f,
-    initialValue: Float = 1f
-): ColorPickerState = rememberSaveable(saver = ColorPickerStateImpl.Saver()) {
-    ColorPickerStateImpl(initialHue, initialSaturation, initialValue)
-}
+fun rememberColorPickerState(color: Color): ColorPickerState =
+    rememberSaveable(saver = ColorPickerStateImpl.Saver()) {
+        ColorPickerStateImpl(color)
+    }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -172,10 +299,10 @@ fun ColorPicker(
 
     Column(modifier = modifier.fillMaxWidth()) {
         when (TabType.entries[selectedTabIndex]) {
-            TabType.COLOR_CODES -> HSVColorPicker(state)
-            TabType.RGB -> HSVColorPicker(state)
-            TabType.HSV -> HSVColorPicker(state)
-            TabType.HSL -> HSLColorPicker(state)
+            TabType.COLOR_CODES -> HsvColorPicker(state)
+            TabType.RGB -> HsvColorPicker(state)
+            TabType.HSV -> HsvColorPicker(state)
+            TabType.HSL -> HslColorPicker(state)
         }
         PrimaryTabRow(selectedTabIndex = selectedTabIndex) {
             TabType.entries.forEachIndexed { index, tab ->
@@ -308,7 +435,7 @@ private fun DrawScope.drawHSVTriangle(triangle: RegularTriangle, canvasSize: Siz
 }
 
 private fun DrawScope.drawColorSelector(
-    position: Vector2F, canvasSize: Size, selectedColor: Color, state: ColorPickerState
+    position: Vector2F, canvasSize: Size, state: ColorPickerState
 ) {
     val radius = size.width * 0.04f
     val path = Path().apply {
@@ -325,12 +452,13 @@ private fun DrawScope.drawColorSelector(
         )
         close()
     }
-    val t = (lerp(1f, 0f, state.value) + lerp(0f, 1f, state.saturation))
+    val t = (lerp(1f, 0f, state.hsv.value) +
+        lerp(0f, 1f, state.hsv.saturation))
         .coerceIn(0f, 1f)
 
     drawPath(
         path = path,
-        color = selectedColor
+        color = state.rgb.toColor()
     )
     drawPath(
         path = path,
@@ -340,7 +468,7 @@ private fun DrawScope.drawColorSelector(
 }
 
 @Composable
-private fun HSVColorPicker(state: ColorPickerState) {
+private fun HsvColorPicker(state: ColorPickerState) {
     var currentAction by remember { mutableStateOf(CurrentAction.None) }
     val hueRing = remember {
         MutableAnnulus(
@@ -369,13 +497,16 @@ private fun HSVColorPicker(state: ColorPickerState) {
                 val orientation = (position - hueRing.center.toCanvasSpace(canvasSize))
                     .toComplexF()
                     .normalizedOrElse { ComplexF.ONE }
-                state.hue = orientation.phaseAngle.getMinimalPositiveCoterminal().degrees
+                state.hsv = state.hsv
+                    .copy(hue = orientation.phaseAngle.getMinimalPositiveCoterminal().degrees)
             }
 
             in hsvTriangle -> {
                 currentAction = CurrentAction.ChangingSV
-                state.saturation = hsvTriangle.colorSaturationFrom(position)
-                state.value = hsvTriangle.colorValueFrom(position)
+                state.hsv = state.hsv.copy(
+                    saturation = hsvTriangle.colorSaturationFrom(position),
+                    value = hsvTriangle.colorValueFrom(position)
+                )
             }
         }
     }
@@ -389,13 +520,16 @@ private fun HSVColorPicker(state: ColorPickerState) {
                 val orientation = (position - hueRing.center.toCanvasSpace(canvasSize))
                     .toComplexF()
                     .normalizedOrElse { ComplexF.ONE }
-                state.hue = orientation.phaseAngle.getMinimalPositiveCoterminal().degrees
+                state.hsv = state.hsv
+                    .copy(hue = orientation.phaseAngle.getMinimalPositiveCoterminal().degrees)
             }
 
             CurrentAction.ChangingSV -> {
                 val selectorPosition = hsvTriangle.closestPointTo(position)
-                state.saturation = hsvTriangle.colorSaturationFrom(selectorPosition)
-                state.value = hsvTriangle.colorValueFrom(selectorPosition)
+                state.hsv = state.hsv.copy(
+                    saturation = hsvTriangle.colorSaturationFrom(selectorPosition),
+                    value = hsvTriangle.colorValueFrom(selectorPosition)
+                )
             }
 
             else -> {}
@@ -434,24 +568,21 @@ private fun HSVColorPicker(state: ColorPickerState) {
             )
             hsvTriangle.set(
                 center = center.toVector2F(),
-                orientation = AngleF.fromDegrees(state.hue - 90f).toComplexF(),
+                orientation = AngleF.fromDegrees(state.hsv.hue - 90f).toComplexF(),
                 sideLength = hueRing.innerRadius * sqrt(3f)
             )
-            val selectedColor = Color.hsv(state.hue, state.saturation, state.value)
-
             drawHSVTriangle(
                 triangle = hsvTriangle,
                 canvasSize = size,
-                hue = state.hue
+                hue = state.hsv.hue
             )
             drawHueRing(
                 ring = hueRing,
                 canvasSize = canvasSize
             )
             drawColorSelector(
-                position = hsvTriangle.colorPosition(state.saturation, state.value),
+                position = hsvTriangle.colorPosition(state.hsv.saturation, state.hsv.value),
                 canvasSize = size,
-                selectedColor = selectedColor,
                 state = state
             )
         }
@@ -459,7 +590,7 @@ private fun HSVColorPicker(state: ColorPickerState) {
 }
 
 @Composable
-private fun HSLColorPicker(state: ColorPickerState) {
+private fun HslColorPicker(state: ColorPickerState) {
     var currentAction by remember { mutableStateOf(CurrentAction.None) }
     val hueRing = remember {
         MutableAnnulus(
@@ -488,13 +619,16 @@ private fun HSLColorPicker(state: ColorPickerState) {
                 val orientation = (position - hueRing.center.toCanvasSpace(canvasSize))
                     .toComplexF()
                     .normalizedOrElse { ComplexF.ONE }
-                state.hue = orientation.phaseAngle.getMinimalPositiveCoterminal().degrees
+                state.hsv = state.hsv
+                    .copy(hue = orientation.phaseAngle.getMinimalPositiveCoterminal().degrees)
             }
 
             in hsvTriangle -> {
                 currentAction = CurrentAction.ChangingSV
-                state.saturation = hsvTriangle.colorSaturationFrom(position)
-                state.value = hsvTriangle.colorValueFrom(position)
+                state.hsv = state.hsv.copy(
+                    saturation = hsvTriangle.colorSaturationFrom(position),
+                    value = hsvTriangle.colorValueFrom(position)
+                )
             }
         }
     }
@@ -508,13 +642,16 @@ private fun HSLColorPicker(state: ColorPickerState) {
                 val orientation = (position - hueRing.center.toCanvasSpace(canvasSize))
                     .toComplexF()
                     .normalizedOrElse { ComplexF.ONE }
-                state.hue = orientation.phaseAngle.getMinimalPositiveCoterminal().degrees
+                state.hsv = state.hsv
+                    .copy(hue = orientation.phaseAngle.getMinimalPositiveCoterminal().degrees)
             }
 
             CurrentAction.ChangingSV -> {
                 val selectorPosition = hsvTriangle.closestPointTo(position)
-                state.saturation = hsvTriangle.colorSaturationFrom(selectorPosition)
-                state.value = hsvTriangle.colorValueFrom(selectorPosition)
+                state.hsv = state.hsv.copy(
+                    saturation = hsvTriangle.colorSaturationFrom(selectorPosition),
+                    value = hsvTriangle.colorValueFrom(selectorPosition)
+                )
             }
 
             else -> {}
@@ -553,24 +690,21 @@ private fun HSLColorPicker(state: ColorPickerState) {
             )
             hsvTriangle.set(
                 center = center.toVector2F(),
-                orientation = AngleF.fromDegrees(state.hue - 90f).toComplexF(),
+                orientation = AngleF.fromDegrees(state.hsv.hue - 90f).toComplexF(),
                 sideLength = hueRing.innerRadius * sqrt(3f)
             )
-            val selectedColor = Color.hsv(state.hue, state.saturation, state.value)
-
             drawHSVTriangle(
                 triangle = hsvTriangle,
                 canvasSize = size,
-                hue = state.hue
+                hue = state.hsv.hue
             )
             drawHueRing(
                 ring = hueRing,
                 canvasSize = canvasSize
             )
             drawColorSelector(
-                position = hsvTriangle.colorPosition(state.saturation, state.value),
+                position = hsvTriangle.colorPosition(state.hsv.saturation, state.hsv.value),
                 canvasSize = size,
-                selectedColor = selectedColor,
                 state = state
             )
         }
@@ -673,8 +807,6 @@ private fun ColorComponentSlider(
 @Composable
 private fun RgbTab(state: ColorPickerState) {
     // TODO: Switch for 0..255 and 0..1
-    val color = Color.hsv(state.hue, state.saturation, state.value)
-
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -683,42 +815,27 @@ private fun RgbTab(state: ColorPickerState) {
         Row {
             ColorComponentSlider(
                 text = "Red", // TODO move to strings.xml
-                value = color.red,
+                value = state.rgb.red,
                 valueRange = 0f..1f,
-                onValueChange = {
-                    val (h, s, v) = Color(it, color.green, color.blue).toHsv()
-                    state.hue = h
-                    state.saturation = s
-                    state.value = v
-                },
+                onValueChange = { state.rgb = state.rgb.copy(red = it) },
                 textColor = Color.Black
             )
         }
         Row {
             ColorComponentSlider(
                 text = "Green", // TODO move to strings.xml
-                value = color.green,
+                value = state.rgb.green,
                 valueRange = 0f..1f,
-                onValueChange = {
-                    val (h, s, v) = Color(color.red, it, color.blue).toHsv()
-                    state.hue = h
-                    state.saturation = s
-                    state.value = v
-                },
+                onValueChange = { state.rgb = state.rgb.copy(green = it) },
                 textColor = Color.Black
             )
         }
         Row {
             ColorComponentSlider(
                 text = "Blue", // TODO move to strings.xml
-                value = color.blue,
+                value = state.rgb.blue,
                 valueRange = 0f..1f,
-                onValueChange = {
-                    val (h, s, v) = Color(color.red, color.green, it).toHsv()
-                    state.hue = h
-                    state.saturation = s
-                    state.value = v
-                },
+                onValueChange = { state.rgb = state.rgb.copy(blue = it) },
                 textColor = Color.Black
             )
         }
@@ -735,27 +852,27 @@ private fun HsvTab(state: ColorPickerState) {
         Row {
             ColorComponentSlider(
                 text = "Hue", // TODO move to strings.xml
-                value = state.hue,
+                value = state.hsv.hue,
                 valueRange = 0f..360f,
-                onValueChange = { state.hue = it },
+                onValueChange = { state.hsv = state.hsv.copy(hue = it) },
                 textColor = Color.Black
             )
         }
         Row {
             ColorComponentSlider(
                 text = "Saturation", // TODO move to strings.xml
-                value = state.saturation,
+                value = state.hsv.saturation,
                 valueRange = 0f..1f,
-                onValueChange = { state.saturation = it },
+                onValueChange = { state.hsv = state.hsv.copy(saturation = it) },
                 textColor = Color.Black
             )
         }
         Row {
             ColorComponentSlider(
                 text = "Value", // TODO move to strings.xml
-                value = state.value,
+                value = state.hsv.value,
                 valueRange = 0f..1f,
-                onValueChange = { state.value = it },
+                onValueChange = { state.hsv = state.hsv.copy(value = it) },
                 textColor = Color.Black
             )
         }
@@ -764,8 +881,6 @@ private fun HsvTab(state: ColorPickerState) {
 
 @Composable
 private fun HslTab(state: ColorPickerState) {
-    val (_, saturation, lightness) = Color.hsv(state.hue, state.saturation, state.value).toHsl()
-
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -774,37 +889,27 @@ private fun HslTab(state: ColorPickerState) {
         Row {
             ColorComponentSlider(
                 text = "Hue", // TODO move to strings.xml
-                value = state.hue,
+                value = state.hsl.hue,
                 valueRange = 0f..360f,
-                onValueChange = { state.hue = it },
+                onValueChange = { state.hsl = state.hsl.copy(hue = it) },
                 textColor = Color.Black
             )
         }
         Row {
             ColorComponentSlider(
                 text = "Saturation", // TODO move to strings.xml
-                value = saturation,
+                value = state.hsl.saturation,
                 valueRange = 0f..1f,
-                onValueChange = {
-                    val (h, s, v) = Color.hsl(state.hue, it, lightness).toHsv()
-                    state.hue = h
-                    state.saturation = s
-                    state.value = v
-                },
+                onValueChange = { state.hsl = state.hsl.copy(saturation = it) },
                 textColor = Color.Black
             )
         }
         Row {
             ColorComponentSlider(
                 text = "Lightness", // TODO move to strings.xml
-                value = lightness,
+                value = state.hsl.lightness,
                 valueRange = 0f..1f,
-                onValueChange = {
-                    val (h, s, v) = Color.hsl(state.hue, saturation, it).toHsv()
-                    state.hue = h
-                    state.saturation = s
-                    state.value = v
-                },
+                onValueChange = { state.hsl = state.hsl.copy(lightness = it) },
                 textColor = Color.Black
             )
         }
