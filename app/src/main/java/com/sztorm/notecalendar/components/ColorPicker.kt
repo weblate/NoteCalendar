@@ -36,9 +36,11 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.PointerInputChange
@@ -61,7 +63,9 @@ import com.sztorm.mathkit.Vector2F
 import com.sztorm.mathkit.euclidean2d.Annulus
 import com.sztorm.mathkit.euclidean2d.MutableAnnulus
 import com.sztorm.mathkit.euclidean2d.MutableRegularTriangle
+import com.sztorm.mathkit.euclidean2d.MutableSquare
 import com.sztorm.mathkit.euclidean2d.RegularTriangle
+import com.sztorm.mathkit.euclidean2d.Square
 import com.sztorm.mathkit.lerp
 import com.sztorm.notecalendar.lineTo
 import com.sztorm.notecalendar.moveTo
@@ -115,7 +119,7 @@ data class HsvColor(val hue: Float, val saturation: Float, val value: Float) {
 
     fun toHsl(): HslColor {
         val lightness = (value * (1f - saturation * 0.5f)).coerceIn(0f, 1f)
-        val saturation = when (value) {
+        val saturation = when (lightness) {
             0f, 1f -> 0f
             else -> (value - lightness) / min(lightness, 1f - lightness)
         }.coerceIn(0f, 1f)
@@ -274,6 +278,7 @@ private enum class CurrentAction {
     None,
     ChangingHue,
     ChangingSV,
+    ChangingSL,
 }
 
 @Suppress("unused")
@@ -294,15 +299,15 @@ fun ColorPicker(
     // TODO: colorPickerValues or smth like that for labels like Red, Blue, Green, Hue, ..
 ) {
     val navController = rememberNavController()
-    val initialTab = TabType.COLOR_CODES
+    val initialTab = TabType.ColorCodes
     var selectedTabIndex by rememberSaveable { mutableIntStateOf(initialTab.ordinal) }
 
     Column(modifier = modifier.fillMaxWidth()) {
         when (TabType.entries[selectedTabIndex]) {
-            TabType.COLOR_CODES -> HsvColorPicker(state)
-            TabType.RGB -> HsvColorPicker(state)
-            TabType.HSV -> HsvColorPicker(state)
-            TabType.HSL -> HslColorPicker(state)
+            TabType.ColorCodes -> HsvColorPicker(state)
+            TabType.Rgb -> HsvColorPicker(state)
+            TabType.Hsv -> HsvColorPicker(state)
+            TabType.Hsl -> HslColorPicker(state)
         }
         PrimaryTabRow(selectedTabIndex = selectedTabIndex) {
             TabType.entries.forEachIndexed { index, tab ->
@@ -325,16 +330,10 @@ fun ColorPicker(
             navController = navController,
             startDestination = initialTab.route
         ) {
-            TabType.entries.forEach { destination ->
-                composable(destination.route) {
-                    when (destination) {
-                        TabType.COLOR_CODES -> ColorCodesTab(state)
-                        TabType.RGB -> RgbTab(state)
-                        TabType.HSV -> HsvTab(state)
-                        TabType.HSL -> HslTab(state)
-                    }
-                }
-            }
+            composable(TabType.ColorCodes.route) { ColorCodesTab(state) }
+            composable(TabType.Rgb.route) { RgbTab(state) }
+            composable(TabType.Hsv.route) { HsvTab(state) }
+            composable(TabType.Hsl.route) { HslTab(state) }
         }
     }
 }
@@ -342,15 +341,22 @@ fun ColorPicker(
 private fun triangleAreaDoubled(a: Vector2F, b: Vector2F, c: Vector2F) =
     abs(a.x * b.y - b.x * a.y + b.x * c.y - c.x * b.y + c.x * a.y - a.x * c.y)
 
+private fun triagleHeightOfBaseAB(a: Vector2F, b: Vector2F, c: Vector2F): Float {
+    val areaDoubled = triangleAreaDoubled(a, b, c)
+    val baseLength = a.distanceTo(b)
+
+    return areaDoubled / baseLength
+}
+
 private fun RegularTriangle.colorSaturationFrom(position: Vector2F): Float {
-    val abpArea = triangleAreaDoubled(pointA, pointB, position)
-    val cbpArea = triangleAreaDoubled(pointC, pointB, position)
-    val abcpArea = abpArea + cbpArea
+    val abpAreaDoubled = triangleAreaDoubled(pointA, pointB, position)
+    val cbpAreaDoubled = triangleAreaDoubled(pointC, pointB, position)
+    val abcpAreaDoubled = abpAreaDoubled + cbpAreaDoubled
 
     return when {
-        abcpArea < 0.1f -> 0.5f
+        abcpAreaDoubled < 0.1f -> 0.5f
         else -> {
-            val result = (cbpArea / abcpArea).coerceIn(0f, 1f)
+            val result = (cbpAreaDoubled / abcpAreaDoubled).coerceIn(0f, 1f)
 
             when {
                 result < 0.01f -> 0f
@@ -362,15 +368,8 @@ private fun RegularTriangle.colorSaturationFrom(position: Vector2F): Float {
 }
 
 private fun RegularTriangle.colorValueFrom(position: Vector2F): Float {
-    fun heightFromTriangle(a: Vector2F, b: Vector2F, c: Vector2F): Float {
-        val areaDoubled = triangleAreaDoubled(a, b, c)
-        val baseLength = a.distanceTo(b)
-
-        return areaDoubled / baseLength
-    }
-
     val triangleHeight = circumradius + inradius
-    val height = heightFromTriangle(pointA, pointC, position)
+    val height = triagleHeightOfBaseAB(pointA, pointC, position)
     val result = (1f - height / triangleHeight).coerceIn(0f, 1f)
 
     return when {
@@ -382,6 +381,24 @@ private fun RegularTriangle.colorValueFrom(position: Vector2F): Float {
 
 private fun RegularTriangle.colorPosition(saturation: Float, value: Float): Vector2F =
     lerp(pointB, lerp(pointC, pointA, saturation), value)
+
+private fun Square.colorSaturationFrom(position: Vector2F): Float {
+    val abpHeight = triagleHeightOfBaseAB(pointA, pointB, position)
+
+    return (1f - abpHeight / sideLength).coerceIn(0f, 1f)
+}
+
+private fun Square.colorLightnessFrom(position: Vector2F): Float {
+    val apdHeight = triagleHeightOfBaseAB(pointA, pointD, position)
+
+    return (apdHeight / sideLength).coerceIn(0f, 1f)
+}
+
+private fun Square.colorPosition(saturation: Float, lightness: Float) = lerp(
+    lerp(pointD, pointC, lightness),
+    lerp(pointA, pointB, lightness),
+    saturation
+)
 
 private fun DrawScope.drawHueRing(ring: Annulus, canvasSize: Size) {
     val radius = (ring.innerRadius + ring.outerRadius) * 0.5f
@@ -406,19 +423,19 @@ private fun DrawScope.drawHueRing(ring: Annulus, canvasSize: Size) {
     )
 }
 
-private fun DrawScope.drawHSVTriangle(triangle: RegularTriangle, canvasSize: Size, hue: Float) {
+private fun DrawScope.drawHsvTriangle(triangle: RegularTriangle, canvasSize: Size, hue: Float) {
     val pointA = triangle.pointA.toCanvasSpace(canvasSize)
     val pointB = triangle.pointB.toCanvasSpace(canvasSize)
     val pointC = triangle.pointC.toCanvasSpace(canvasSize)
     val pointAOpposite = (pointB + pointC) * 0.5f
     val pointBOpposite = (pointA + pointC) * 0.5f
-    val valueColor = Color.hsv(hue, saturation = 1f, value = 1f)
-    val valueBrush = Brush.linearGradient(
-        listOf(valueColor, valueColor.copy(alpha = 0f)),
+    val hueColor = Color.hsv(hue, saturation = 1f, value = 1f)
+    val hueToTransparentGradient = Brush.linearGradient(
+        listOf(hueColor, hueColor.copy(alpha = 0f)),
         start = pointA.toOffset(),
         end = pointAOpposite.toOffset()
     )
-    val blackBrush = Brush.linearGradient(
+    val blackToTransparentGradient = Brush.linearGradient(
         listOf(Color.Black, Color.Transparent),
         start = pointB.toOffset(),
         end = pointBOpposite.toOffset()
@@ -429,9 +446,40 @@ private fun DrawScope.drawHSVTriangle(triangle: RegularTriangle, canvasSize: Siz
         lineTo(pointC)
         close()
     }
-    drawPath(trianglePath, Color.White)
-    drawPath(trianglePath, blackBrush)
-    drawPath(trianglePath, valueBrush)
+    val brush = SolidColor(Color.White)
+        .let { Brush.composite(it, hueToTransparentGradient, BlendMode.SrcOver) }
+        .let { Brush.composite(it, blackToTransparentGradient, BlendMode.SrcOver) }
+
+    drawPath(trianglePath, brush)
+}
+
+private fun DrawScope.drawHslSquare(square: Square, canvasSize: Size, hue: Float) {
+    val pointA = square.pointA.toCanvasSpace(canvasSize)
+    val pointB = square.pointB.toCanvasSpace(canvasSize)
+    val pointC = square.pointC.toCanvasSpace(canvasSize)
+    val pointD = square.pointD.toCanvasSpace(canvasSize)
+    val hueColor = Color.hsv(hue, saturation = 1f, value = 1f)
+    val hueToGrayGradient = Brush.linearGradient(
+        listOf(hueColor, Color.Gray),
+        start = ((pointA + pointB) * 0.5f).toOffset(),
+        end = ((pointC + pointD) * 0.5f).toOffset()
+    )
+    val whiteToBlackGradient = Brush.linearGradient(
+        listOf(Color.White, Color.Transparent, Color.Black),
+        start = ((pointB + pointC) * 0.5f).toOffset(),
+        end = ((pointD + pointA) * 0.5f).toOffset(),
+    )
+    val squarePath = Path().apply {
+        moveTo(pointD)
+        lineTo(pointA)
+        lineTo(pointB)
+        lineTo(pointC)
+        close()
+    }
+    val brush = hueToGrayGradient
+        .let { Brush.composite(it, whiteToBlackGradient, BlendMode.SrcOver) }
+
+    drawPath(squarePath, brush)
 }
 
 private fun DrawScope.drawColorSelector(
@@ -538,7 +586,6 @@ private fun HsvColorPicker(state: ColorPickerState) {
     val onInputEnd = {
         currentAction = CurrentAction.None
     }
-
     Row(modifier = Modifier.fillMaxWidth())
     {
         Canvas(
@@ -571,7 +618,7 @@ private fun HsvColorPicker(state: ColorPickerState) {
                 orientation = AngleF.fromDegrees(state.hsv.hue - 90f).toComplexF(),
                 sideLength = hueRing.innerRadius * sqrt(3f)
             )
-            drawHSVTriangle(
+            drawHsvTriangle(
                 triangle = hsvTriangle,
                 canvasSize = size,
                 hue = state.hsv.hue
@@ -600,8 +647,8 @@ private fun HslColorPicker(state: ColorPickerState) {
             outerRadius = 2f,
         )
     }
-    val hsvTriangle = remember {
-        MutableRegularTriangle(
+    val hslSquare = remember {
+        MutableSquare(
             center = Vector2F.ZERO,
             orientation = AngleF.fromDegrees(-90f).toComplexF(),
             sideLength = 100f
@@ -619,15 +666,15 @@ private fun HslColorPicker(state: ColorPickerState) {
                 val orientation = (position - hueRing.center.toCanvasSpace(canvasSize))
                     .toComplexF()
                     .normalizedOrElse { ComplexF.ONE }
-                state.hsv = state.hsv
+                state.hsl = state.hsl
                     .copy(hue = orientation.phaseAngle.getMinimalPositiveCoterminal().degrees)
             }
 
-            in hsvTriangle -> {
-                currentAction = CurrentAction.ChangingSV
-                state.hsv = state.hsv.copy(
-                    saturation = hsvTriangle.colorSaturationFrom(position),
-                    value = hsvTriangle.colorValueFrom(position)
+            in hslSquare -> {
+                currentAction = CurrentAction.ChangingSL
+                state.hsl = state.hsl.copy(
+                    saturation = hslSquare.colorSaturationFrom(position),
+                    lightness = hslSquare.colorLightnessFrom(position)
                 )
             }
         }
@@ -642,15 +689,15 @@ private fun HslColorPicker(state: ColorPickerState) {
                 val orientation = (position - hueRing.center.toCanvasSpace(canvasSize))
                     .toComplexF()
                     .normalizedOrElse { ComplexF.ONE }
-                state.hsv = state.hsv
+                state.hsl = state.hsl
                     .copy(hue = orientation.phaseAngle.getMinimalPositiveCoterminal().degrees)
             }
 
-            CurrentAction.ChangingSV -> {
-                val selectorPosition = hsvTriangle.closestPointTo(position)
-                state.hsv = state.hsv.copy(
-                    saturation = hsvTriangle.colorSaturationFrom(selectorPosition),
-                    value = hsvTriangle.colorValueFrom(selectorPosition)
+            CurrentAction.ChangingSL -> {
+                val selectorPosition = hslSquare.closestPointTo(position)
+                state.hsl = state.hsl.copy(
+                    saturation = hslSquare.colorSaturationFrom(selectorPosition),
+                    lightness = hslSquare.colorLightnessFrom(selectorPosition)
                 )
             }
 
@@ -660,7 +707,6 @@ private fun HslColorPicker(state: ColorPickerState) {
     val onInputEnd = {
         currentAction = CurrentAction.None
     }
-
     Row(modifier = Modifier.fillMaxWidth())
     {
         Canvas(
@@ -688,13 +734,13 @@ private fun HslColorPicker(state: ColorPickerState) {
                 innerRadius = size.width * 0.38f,
                 outerRadius = size.width * 0.48f,
             )
-            hsvTriangle.set(
+            hslSquare.set(
                 center = center.toVector2F(),
                 orientation = AngleF.fromDegrees(state.hsv.hue - 90f).toComplexF(),
-                sideLength = hueRing.innerRadius * sqrt(3f)
+                sideLength = hueRing.innerRadius * sqrt(2f)
             )
-            drawHSVTriangle(
-                triangle = hsvTriangle,
+            drawHslSquare(
+                square = hslSquare,
                 canvasSize = size,
                 hue = state.hsv.hue
             )
@@ -703,7 +749,7 @@ private fun HslColorPicker(state: ColorPickerState) {
                 canvasSize = canvasSize
             )
             drawColorSelector(
-                position = hsvTriangle.colorPosition(state.hsv.saturation, state.hsv.value),
+                position = hslSquare.colorPosition(state.hsl.saturation, state.hsl.lightness),
                 canvasSize = size,
                 state = state
             )
@@ -712,10 +758,10 @@ private fun HslColorPicker(state: ColorPickerState) {
 }
 
 private enum class TabType(val route: String, val label: String) {
-    COLOR_CODES(route = "colorcodes", label = "#"),
-    RGB(route = "rgb", label = "RGB"),
-    HSV(route = "hsv", label = "HSV"),
-    HSL(route = "hsl", label = "HSL"),
+    ColorCodes(route = "colorcodes", label = "#"),
+    Rgb(route = "rgb", label = "RGB"),
+    Hsv(route = "hsv", label = "HSV"),
+    Hsl(route = "hsl", label = "HSL"),
 }
 
 @Composable
@@ -725,8 +771,9 @@ private fun ColorCodesTab(state: ColorPickerState) {
 }
 
 private fun Float.formatUpToTwoDecimalPlaces(): String {
-    val result = "%.2f".format(locale = Locale.current.platformLocale, this)
-    val separator = DecimalFormatSymbols(Locale.current.platformLocale).decimalSeparator
+    val locale = Locale.current.platformLocale
+    val result = "%.2f".format(locale, this)
+    val separator = DecimalFormatSymbols(locale).decimalSeparator
 
     return when {
         result.endsWith(separator + "00") -> result.dropLast(3)
