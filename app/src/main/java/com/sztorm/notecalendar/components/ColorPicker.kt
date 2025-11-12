@@ -440,10 +440,10 @@ private fun RoundedRectangle.colorValueFrom(position: Vector2F) =
 private fun RoundedRectangle.valuePosition(value: Float) =
     lerp(cornerCenterB, cornerCenterA, value)
 
-private fun DrawScope.drawHueRing(ring: Annulus, canvasSize: Size) {
+private fun DrawScope.drawHueRing(ring: Annulus) {
     val radius = (ring.innerRadius + ring.outerRadius) * 0.5f
     val stroke = Stroke(width = ring.width)
-    val brush = Brush.sweepGradient(
+    val hueGradient = Brush.sweepGradient(
         listOf(
             Color.Red,
             Color.Magenta,
@@ -453,17 +453,48 @@ private fun DrawScope.drawHueRing(ring: Annulus, canvasSize: Size) {
             Color.Yellow,
             Color.Red,
         ),
-        ring.center.toCanvasSpace(canvasSize).toOffset()
+        ring.center.toOffset()
     )
     drawCircle(
-        brush = brush,
+        brush = hueGradient,
         radius = radius,
         style = stroke,
-        center = ring.center.toCanvasSpace(canvasSize).toOffset()
+        center = ring.center.toOffset(),
     )
 }
 
-private fun DrawScope.drawHsvTriangle(triangle: RegularTriangle, canvasSize: Size, hue: Float) {
+private fun DrawScope.drawHueSelector(
+    selectorTriangle: RegularTriangle, hueRing: Annulus, hue: Float
+) {
+    val canvasSize = size
+    val pointA = selectorTriangle.pointA.toCanvasSpace(canvasSize)
+    val pointB = selectorTriangle.pointB.toCanvasSpace(canvasSize)
+    val pointC = selectorTriangle.pointC.toCanvasSpace(canvasSize)
+    val heightRatio = ((hueRing.outerRadius - hueRing.innerRadius) / hueRing.outerRadius) * 1.01f
+    val path = Path().apply {
+        moveTo(hueRing.center)
+        arcTo(
+            rect = Rect(
+                center = hueRing.center.toOffset(),
+                radius = hueRing.outerRadius * 0.995f
+            ),
+            startAngleDegrees = -hue - 30f * heightRatio,
+            sweepAngleDegrees = 60f * heightRatio,
+            forceMoveTo = true
+        )
+        moveTo(pointB)
+        lineTo(pointA)
+        lineTo(pointC)
+    }
+    drawPath(
+        path = path,
+        color = Color.White,
+        style = Stroke(width = 2.dp.toPx())
+    )
+}
+
+private fun DrawScope.drawHsvTriangle(triangle: RegularTriangle, hue: Float) {
+    val canvasSize = size
     val pointA = triangle.pointA.toCanvasSpace(canvasSize)
     val pointB = triangle.pointB.toCanvasSpace(canvasSize)
     val pointC = triangle.pointC.toCanvasSpace(canvasSize)
@@ -493,7 +524,8 @@ private fun DrawScope.drawHsvTriangle(triangle: RegularTriangle, canvasSize: Siz
     drawPath(trianglePath, brush)
 }
 
-private fun DrawScope.drawHslSquare(square: Square, canvasSize: Size, hue: Float) {
+private fun DrawScope.drawHslSquare(square: Square, hue: Float) {
+    val canvasSize = size
     val pointA = square.pointA.toCanvasSpace(canvasSize)
     val pointB = square.pointB.toCanvasSpace(canvasSize)
     val pointC = square.pointC.toCanvasSpace(canvasSize)
@@ -522,7 +554,8 @@ private fun DrawScope.drawHslSquare(square: Square, canvasSize: Size, hue: Float
     drawPath(squarePath, brush)
 }
 
-private fun DrawScope.drawRgbCircle(circle: Circle, canvasSize: Size) {
+private fun DrawScope.drawRgbCircle(circle: Circle) {
+    val canvasSize = size
     val hueGradient = Brush.sweepGradient(
         colors = listOf(
             Color.Red,
@@ -549,8 +582,9 @@ private fun DrawScope.drawRgbCircle(circle: Circle, canvasSize: Size) {
 }
 
 private fun DrawScope.drawColorValueRectangle(
-    rectangle: RoundedRectangle, canvasSize: Size, state: ColorPickerState
+    rectangle: RoundedRectangle, state: ColorPickerState
 ) {
+    val canvasSize = size
     val sameColorFraction = rectangle.cornerRadius / rectangle.width
     val valueColor = state.hsv.copy(value = 1f).toColor()
     val valueGradient = Brush.horizontalGradient(
@@ -569,8 +603,9 @@ private fun DrawScope.drawColorValueRectangle(
 }
 
 private fun DrawScope.drawCircleSelector(
-    position: Vector2F, radius: Float, canvasSize: Size, state: ColorPickerState
+    position: Vector2F, radius: Float, state: ColorPickerState
 ) {
+    val canvasSize = size
     val t = (lerp(1f, 0f, state.hsv.value) +
         lerp(0f, 1f, state.hsv.saturation))
         .coerceIn(0f, 1f)
@@ -583,9 +618,8 @@ private fun DrawScope.drawCircleSelector(
     )
 }
 
-private fun DrawScope.drawColorSelector(
-    position: Vector2F, canvasSize: Size, state: ColorPickerState
-) {
+private fun DrawScope.drawColorSelector(position: Vector2F, state: ColorPickerState) {
+    val canvasSize = size
     val radius = size.width * 0.04f
     val path = Path().apply {
         moveTo(position.toCanvasSpace(canvasSize))
@@ -625,6 +659,13 @@ private fun HsvColorPicker(state: ColorPickerState) {
             orientation = ComplexF.ONE,
             innerRadius = 1f,
             outerRadius = 2f,
+        )
+    }
+    val hueSelectorTriangle = remember {
+        MutableRegularTriangle(
+            center = Vector2F.ZERO,
+            orientation = AngleF.fromDegrees(-90f).toComplexF(),
+            sideLength = 100f
         )
     }
     val hsvTriangle = remember {
@@ -706,6 +747,16 @@ private fun HsvColorPicker(state: ColorPickerState) {
                 innerRadius = size.width * 0.38f,
                 outerRadius = size.width * 0.48f,
             )
+            hueSelectorTriangle.set(
+                center = (ComplexF.fromPolar(
+                    magnitude = lerp(
+                        hueRing.innerRadius, hueRing.outerRadius, 0.6666667f
+                    ),
+                    phase = AngleF.fromDegrees(state.hsv.hue).radians
+                ).toVector2F() + hueRing.center),
+                orientation = AngleF.fromDegrees(state.hsv.hue + 90f).toComplexF(),
+                sideLength = hueRing.width
+            )
             hsvTriangle.set(
                 center = center.toVector2F().toCanvasSpace(canvasSize),
                 orientation = AngleF.fromDegrees(state.hsv.hue - 90f).toComplexF(),
@@ -713,16 +764,16 @@ private fun HsvColorPicker(state: ColorPickerState) {
             )
             drawHsvTriangle(
                 triangle = hsvTriangle,
-                canvasSize = size,
                 hue = state.hsv.hue
             )
-            drawHueRing(
-                ring = hueRing,
-                canvasSize = canvasSize
+            drawHueRing(ring = hueRing)
+            drawHueSelector(
+                selectorTriangle = hueSelectorTriangle,
+                hueRing = hueRing,
+                hue = state.hsv.hue
             )
             drawColorSelector(
                 position = hsvTriangle.colorPosition(state.hsv.saturation, state.hsv.value),
-                canvasSize = size,
                 state = state
             )
         }
@@ -738,6 +789,13 @@ private fun HslColorPicker(state: ColorPickerState) {
             orientation = ComplexF.ONE,
             innerRadius = 1f,
             outerRadius = 2f,
+        )
+    }
+    val hueSelectorTriangle = remember {
+        MutableRegularTriangle(
+            center = Vector2F.ZERO,
+            orientation = AngleF.fromDegrees(-90f).toComplexF(),
+            sideLength = 100f
         )
     }
     val hslSquare = remember {
@@ -819,23 +877,33 @@ private fun HslColorPicker(state: ColorPickerState) {
                 innerRadius = size.width * 0.38f,
                 outerRadius = size.width * 0.48f,
             )
+            hueSelectorTriangle.set(
+                center = (ComplexF.fromPolar(
+                    magnitude = lerp(
+                        hueRing.innerRadius, hueRing.outerRadius, 0.6666667f
+                    ),
+                    phase = AngleF.fromDegrees(state.hsv.hue).radians
+                ).toVector2F() + hueRing.center),
+                orientation = AngleF.fromDegrees(state.hsv.hue + 90f).toComplexF(),
+                sideLength = hueRing.width
+            )
             hslSquare.set(
                 center = center.toVector2F().toCanvasSpace(canvasSize),
-                orientation = AngleF.fromDegrees(state.hsv.hue - 90f).toComplexF(),
+                orientation = AngleF.fromDegrees(state.hsl.hue - 90f).toComplexF(),
                 sideLength = hueRing.innerRadius * sqrt(2f)
             )
             drawHslSquare(
                 square = hslSquare,
-                canvasSize = size,
-                hue = state.hsv.hue
+                hue = state.hsl.hue
             )
-            drawHueRing(
-                ring = hueRing,
-                canvasSize = canvasSize
+            drawHueRing(ring = hueRing)
+            drawHueSelector(
+                selectorTriangle = hueSelectorTriangle,
+                hueRing = hueRing,
+                hue = state.hsl.hue
             )
             drawColorSelector(
                 position = hslSquare.colorPosition(state.hsl.saturation, state.hsl.lightness),
-                canvasSize = size,
                 state = state
             )
         }
@@ -941,24 +1009,18 @@ private fun RgbColorPicker(state: ColorPickerState) {
                 height = size.height * 0.075f,
                 cornerRadius = size.height * 0.075f * 0.499f
             )
-            drawRgbCircle(
-                circle = rgbCircle,
-                canvasSize = canvasSize
-            )
+            drawRgbCircle(circle = rgbCircle)
             drawColorValueRectangle(
                 rectangle = valueRectangle,
-                canvasSize = canvasSize,
                 state = state
             )
             drawCircleSelector(
                 position = valueRectangle.valuePosition(state.hsv.value),
                 radius = valueRectangle.cornerRadius,
-                canvasSize = canvasSize,
                 state = state
             )
             drawColorSelector(
                 position = rgbCircle.colorPosition(state.hsv.hue, state.hsv.saturation),
-                canvasSize = canvasSize,
                 state = state
             )
         }
