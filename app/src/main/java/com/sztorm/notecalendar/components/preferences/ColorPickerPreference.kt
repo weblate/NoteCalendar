@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CardColors
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DividerDefaults
@@ -161,7 +163,8 @@ fun ColorPickerPreference(
                         .clickable(onClick = onDialogConfirm)
                         .padding(vertical = 8.dp, horizontal = 16.dp)
                 )
-            }
+            },
+            modifier = Modifier.verticalScroll(rememberScrollState())
         ) {
             Row(modifier = Modifier.padding(16.dp)) {
                 Text(

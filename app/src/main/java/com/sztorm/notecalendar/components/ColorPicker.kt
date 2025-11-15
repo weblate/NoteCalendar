@@ -17,6 +17,9 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.PrimaryTabRow
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
@@ -77,6 +80,7 @@ import com.sztorm.mathkit.lerp
 import com.sztorm.notecalendar.lineTo
 import com.sztorm.notecalendar.moveTo
 import com.sztorm.notecalendar.toCanvasSpace
+import com.sztorm.notecalendar.toColorRGBA32
 import com.sztorm.notecalendar.toHsl
 import com.sztorm.notecalendar.toHsv
 import com.sztorm.notecalendar.toOffset
@@ -84,6 +88,7 @@ import com.sztorm.notecalendar.toVector2F
 import java.text.DecimalFormatSymbols
 import kotlin.math.abs
 import kotlin.math.min
+import kotlin.math.roundToInt
 import kotlin.math.sqrt
 
 data class HslColor(val hue: Float, val saturation: Float, val lightness: Float) {
@@ -1053,16 +1058,73 @@ private fun Float.formatUpToTwoDecimalPlaces(): String {
     }
 }
 
+private fun Float.formatToInteger(): String = "%.0f".format(this)
+
 @Composable
 private fun ColorComponentSlider(
     text: String,
     value: Float,
     valueRange: ClosedFloatingPointRange<Float>,
     onValueChange: (Float) -> Unit,
+    format: (Float) -> String = { it.toString() },
+    prefix: @Composable (() -> Unit)? = null,
+    suffix: @Composable (() -> Unit)? = null,
+    textColor: Color = Color.Unspecified,
+) = ColorComponentSlider(
+    text = text,
+    value = value,
+    toString = format,
+    stringToT = { it.toFloatOrNull() },
+    toFloat = { it },
+    floatToT = { it },
+    valueRange = valueRange,
+    onValueChange = onValueChange,
+    prefix = prefix,
+    suffix = suffix,
+    textColor = textColor
+)
+
+@Composable
+private fun ColorComponentSlider(
+    text: String,
+    value: Int,
+    valueRange: IntRange,
+    onValueChange: (Int) -> Unit,
+    prefix: @Composable (() -> Unit)? = null,
+    suffix: @Composable (() -> Unit)? = null,
+    textColor: Color = Color.Unspecified,
+) = ColorComponentSlider(
+    text = text,
+    value = value,
+    toString = { it.toString() },
+    stringToT = { it.toIntOrNull() },
+    toFloat = { it.toFloat() },
+    floatToT = { it.roundToInt() },
+    valueRange = valueRange,
+    onValueChange = onValueChange,
+    steps = valueRange.last + 1 - valueRange.first,
+    prefix = prefix,
+    suffix = suffix,
+    textColor = textColor
+)
+
+@Composable
+private inline fun <reified T : Comparable<T>> ColorComponentSlider(
+    text: String,
+    value: T,
+    crossinline toString: (T) -> String,
+    crossinline stringToT: (String) -> T?,
+    crossinline toFloat: (T) -> Float,
+    crossinline floatToT: (Float) -> T,
+    valueRange: ClosedRange<T>,
+    noinline onValueChange: (T) -> Unit,
+    steps: Int = 0,
+    noinline prefix: @Composable (() -> Unit)? = null,
+    noinline suffix: @Composable (() -> Unit)? = null,
     textColor: Color = Color.Unspecified,
 ) {
     var textState by remember(value) {
-        mutableStateOf(value.formatUpToTwoDecimalPlaces())
+        mutableStateOf(toString(value))
     }
     Column(
         modifier = Modifier.fillMaxWidth()
@@ -1071,6 +1133,7 @@ private fun ColorComponentSlider(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth()
         ) {
+            Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = text,
                 color = textColor
@@ -1082,15 +1145,14 @@ private fun ColorComponentSlider(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Slider(
-                    value = value,
-                    onValueChange = onValueChange,
-                    valueRange = valueRange
+                    value = toFloat(value),
+                    onValueChange = { onValueChange(floatToT(it)) },
+                    valueRange = toFloat(valueRange.start)..toFloat(valueRange.endInclusive),
+                    steps = steps
                 )
             }
             Spacer(modifier = Modifier.width(16.dp))
-            Column(modifier = Modifier.width(with(LocalDensity.current) {
-                85.sp.toDp()
-            })) {
+            Column(modifier = Modifier.width(85.dp * LocalDensity.current.fontScale)) {
                 val focusManager = LocalFocusManager.current
 
                 OutlinedTextField(
@@ -1098,9 +1160,9 @@ private fun ColorComponentSlider(
                     onValueChange = { textState = it.substring(0, min(6, it.length)) },
                     keyboardActions = KeyboardActions(
                         onDone = {
-                            textState.toFloatOrNull().let {
+                            stringToT(textState).let {
                                 when (it) {
-                                    null -> textState = value.formatUpToTwoDecimalPlaces()
+                                    null -> textState = toString(value)
                                     else -> onValueChange(it.coerceIn(valueRange))
                                 }
                             }
@@ -1112,8 +1174,10 @@ private fun ColorComponentSlider(
                         keyboardType = KeyboardType.Decimal,
                     ),
                     textStyle = LocalTextStyle.current.copy(textAlign = TextAlign.Center),
+                    prefix = prefix,
+                    suffix = suffix,
                     modifier = Modifier.onFocusChanged {
-                        textState = value.formatUpToTwoDecimalPlaces()
+                        textState = toString(value)
                     }
                 )
             }
@@ -1123,112 +1187,259 @@ private fun ColorComponentSlider(
 
 @Composable
 private fun RgbTab(state: ColorPickerState) {
-    // TODO: Switch for 0..255 and 0..1
+    var selectedValueFormatIndex by remember { mutableIntStateOf(0) }
+    fun is0To1Format() = selectedValueFormatIndex == 0
+    val valueFormats = listOf("0..1", "0..255")
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp)
     ) {
-        Row {
-            ColorComponentSlider(
-                text = "Red", // TODO move to strings.xml
-                value = state.rgb.red,
-                valueRange = 0f..1f,
-                onValueChange = { state.rgb = state.rgb.copy(red = it) },
-                textColor = Color.Black
-            )
+        SingleChoiceSegmentedButtonRow(modifier = Modifier.align(Alignment.CenterHorizontally)) {
+            valueFormats.forEachIndexed { index, label ->
+                SegmentedButton(
+                    shape = SegmentedButtonDefaults.itemShape(
+                        index = index,
+                        count = valueFormats.size
+                    ),
+                    onClick = { selectedValueFormatIndex = index },
+                    selected = index == selectedValueFormatIndex,
+                    label = { Text(label) }
+                )
+            }
         }
         Row {
-            ColorComponentSlider(
-                text = "Green", // TODO move to strings.xml
-                value = state.rgb.green,
-                valueRange = 0f..1f,
-                onValueChange = { state.rgb = state.rgb.copy(green = it) },
-                textColor = Color.Black
-            )
+            if (is0To1Format()) {
+                ColorComponentSlider(
+                    text = "Red", // TODO move to strings.xml
+                    value = state.rgb.red,
+                    valueRange = 0f..1f,
+                    onValueChange = { state.rgb = state.rgb.copy(red = it) },
+                    format = { it.formatUpToTwoDecimalPlaces() },
+                    textColor = Color.Black
+                )
+            } else {
+                ColorComponentSlider(
+                    text = "Red", // TODO move to strings.xml
+                    value = (state.rgb.red * 255f).roundToInt(),
+                    valueRange = 0..255,
+                    onValueChange = { state.rgb = state.rgb.copy(red = it.toFloat() / 255f) },
+                    textColor = Color.Black
+                )
+            }
         }
         Row {
-            ColorComponentSlider(
-                text = "Blue", // TODO move to strings.xml
-                value = state.rgb.blue,
-                valueRange = 0f..1f,
-                onValueChange = { state.rgb = state.rgb.copy(blue = it) },
-                textColor = Color.Black
-            )
+            if (is0To1Format()) {
+                ColorComponentSlider(
+                    text = "Green", // TODO move to strings.xml
+                    value = state.rgb.green,
+                    valueRange = 0f..1f,
+                    onValueChange = { state.rgb = state.rgb.copy(green = it) },
+                    format = { it.formatUpToTwoDecimalPlaces() },
+                    textColor = Color.Black
+                )
+            } else {
+                ColorComponentSlider(
+                    text = "Green", // TODO move to strings.xml
+                    value = (state.rgb.green * 255f).roundToInt(),
+                    valueRange = 0..255,
+                    onValueChange = { state.rgb = state.rgb.copy(green = it.toFloat() / 255f) },
+                    textColor = Color.Black
+                )
+            }
+        }
+        Row {
+            if (is0To1Format()) {
+                ColorComponentSlider(
+                    text = "Blue", // TODO move to strings.xml
+                    value = state.rgb.blue,
+                    valueRange = 0f..1f,
+                    onValueChange = { state.rgb = state.rgb.copy(blue = it) },
+                    format = { it.formatUpToTwoDecimalPlaces() },
+                    textColor = Color.Black
+                )
+            } else {
+                ColorComponentSlider(
+                    text = "Blue", // TODO move to strings.xml
+                    value = (state.rgb.blue * 255).roundToInt(),
+                    valueRange = 0..255,
+                    onValueChange = { state.rgb = state.rgb.copy(blue = it.toFloat() / 255f) },
+                    textColor = Color.Black
+                )
+            }
         }
     }
 }
 
 @Composable
 private fun HsvTab(state: ColorPickerState) {
+    var selectedValueFormatIndex by remember { mutableIntStateOf(0) }
+    fun is0To1Format() = selectedValueFormatIndex == 0
+    val valueFormats = listOf("0..1", "0%..100%")
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp)
     ) {
+        SingleChoiceSegmentedButtonRow(modifier = Modifier.align(Alignment.CenterHorizontally)) {
+            valueFormats.forEachIndexed { index, label ->
+                SegmentedButton(
+                    shape = SegmentedButtonDefaults.itemShape(
+                        index = index,
+                        count = valueFormats.size
+                    ),
+                    onClick = { selectedValueFormatIndex = index },
+                    selected = index == selectedValueFormatIndex,
+                    label = { Text(label) }
+                )
+            }
+        }
         Row {
             ColorComponentSlider(
                 text = "Hue", // TODO move to strings.xml
                 value = state.hsv.hue,
                 valueRange = 0f..360f,
                 onValueChange = { state.hsv = state.hsv.copy(hue = it) },
+                format = { it.formatToInteger() },
+                suffix = { Text("°") },
                 textColor = Color.Black
             )
         }
-        Row {
-            ColorComponentSlider(
-                text = "Saturation", // TODO move to strings.xml
-                value = state.hsv.saturation,
-                valueRange = 0f..1f,
-                onValueChange = { state.hsv = state.hsv.copy(saturation = it) },
-                textColor = Color.Black
-            )
+        if (is0To1Format()) {
+            Row {
+                ColorComponentSlider(
+                    text = "Saturation", // TODO move to strings.xml
+                    value = state.hsv.saturation,
+                    valueRange = 0f..1f,
+                    onValueChange = { state.hsv = state.hsv.copy(saturation = it) },
+                    format = { it.formatUpToTwoDecimalPlaces() },
+                    textColor = Color.Black
+                )
+            }
+        } else {
+            Row {
+                ColorComponentSlider(
+                    text = "Saturation", // TODO move to strings.xml
+                    value = state.hsv.saturation * 100f,
+                    valueRange = 0f..100f,
+                    onValueChange = { state.hsv = state.hsv.copy(saturation = it * 0.01f) },
+                    format = { it.formatToInteger() },
+                    suffix = { Text("%") },
+                    textColor = Color.Black
+                )
+            }
         }
-        Row {
-            ColorComponentSlider(
-                text = "Value", // TODO move to strings.xml
-                value = state.hsv.value,
-                valueRange = 0f..1f,
-                onValueChange = { state.hsv = state.hsv.copy(value = it) },
-                textColor = Color.Black
-            )
+        if (is0To1Format()) {
+            Row {
+                ColorComponentSlider(
+                    text = "Value", // TODO move to strings.xml
+                    value = state.hsv.value,
+                    valueRange = 0f..1f,
+                    onValueChange = { state.hsv = state.hsv.copy(value = it) },
+                    format = { it.formatUpToTwoDecimalPlaces() },
+                    textColor = Color.Black
+                )
+            }
+        } else {
+            Row {
+                ColorComponentSlider(
+                    text = "Value", // TODO move to strings.xml
+                    value = state.hsv.value * 100f,
+                    valueRange = 0f..100f,
+                    onValueChange = { state.hsv = state.hsv.copy(value = it * 0.01f) },
+                    format = { it.formatToInteger() },
+                    suffix = { Text("%") },
+                    textColor = Color.Black
+                )
+            }
         }
     }
 }
 
 @Composable
 private fun HslTab(state: ColorPickerState) {
+    var selectedValueFormatIndex by remember { mutableIntStateOf(0) }
+    fun is0To1Format() = selectedValueFormatIndex == 0
+    val valueFormats = listOf("0..1", "0%..100%")
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp)
     ) {
+        SingleChoiceSegmentedButtonRow(modifier = Modifier.align(Alignment.CenterHorizontally)) {
+            valueFormats.forEachIndexed { index, label ->
+                SegmentedButton(
+                    shape = SegmentedButtonDefaults.itemShape(
+                        index = index,
+                        count = valueFormats.size
+                    ),
+                    onClick = { selectedValueFormatIndex = index },
+                    selected = index == selectedValueFormatIndex,
+                    label = { Text(label) }
+                )
+            }
+        }
         Row {
             ColorComponentSlider(
                 text = "Hue", // TODO move to strings.xml
                 value = state.hsl.hue,
                 valueRange = 0f..360f,
                 onValueChange = { state.hsl = state.hsl.copy(hue = it) },
+                format = { it.formatToInteger() },
+                suffix = { Text("°") },
                 textColor = Color.Black
             )
         }
-        Row {
-            ColorComponentSlider(
-                text = "Saturation", // TODO move to strings.xml
-                value = state.hsl.saturation,
-                valueRange = 0f..1f,
-                onValueChange = { state.hsl = state.hsl.copy(saturation = it) },
-                textColor = Color.Black
-            )
+        if (is0To1Format()) {
+            Row {
+                ColorComponentSlider(
+                    text = "Saturation", // TODO move to strings.xml
+                    value = state.hsl.saturation,
+                    valueRange = 0f..1f,
+                    onValueChange = { state.hsl = state.hsl.copy(saturation = it) },
+                    format = { it.formatUpToTwoDecimalPlaces() },
+                    textColor = Color.Black
+                )
+            }
+        } else {
+            Row {
+                ColorComponentSlider(
+                    text = "Saturation", // TODO move to strings.xml
+                    value = state.hsl.saturation * 100f,
+                    valueRange = 0f..100f,
+                    onValueChange = { state.hsl = state.hsl.copy(saturation = it * 0.01f) },
+                    format = { it.formatToInteger() },
+                    suffix = { Text("%") },
+                    textColor = Color.Black
+                )
+            }
         }
-        Row {
-            ColorComponentSlider(
-                text = "Lightness", // TODO move to strings.xml
-                value = state.hsl.lightness,
-                valueRange = 0f..1f,
-                onValueChange = { state.hsl = state.hsl.copy(lightness = it) },
-                textColor = Color.Black
-            )
+        if (is0To1Format()) {
+            Row {
+                ColorComponentSlider(
+                    text = "Lightness", // TODO move to strings.xml
+                    value = state.hsl.lightness,
+                    valueRange = 0f..1f,
+                    onValueChange = { state.hsl = state.hsl.copy(lightness = it) },
+                    format = { it.formatUpToTwoDecimalPlaces() },
+                    textColor = Color.Black
+                )
+            }
+        } else {
+            Row {
+                ColorComponentSlider(
+                    text = "Lightness", // TODO move to strings.xml
+                    value = state.hsl.lightness * 100f,
+                    valueRange = 0f..100f,
+                    onValueChange = { state.hsl = state.hsl.copy(lightness = it * 0.01f) },
+                    format = { it.formatToInteger() },
+                    suffix = { Text("%") },
+                    textColor = Color.Black
+                )
+            }
         }
     }
 }
