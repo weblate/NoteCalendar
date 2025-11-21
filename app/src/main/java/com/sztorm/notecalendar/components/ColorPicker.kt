@@ -63,6 +63,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.sztorm.mathkit.AngleF
+import com.sztorm.mathkit.ColorRGBA32
 import com.sztorm.mathkit.ComplexF
 import com.sztorm.mathkit.Vector2F
 import com.sztorm.mathkit.euclidean2d.Annulus
@@ -80,6 +81,7 @@ import com.sztorm.mathkit.lerp
 import com.sztorm.notecalendar.lineTo
 import com.sztorm.notecalendar.moveTo
 import com.sztorm.notecalendar.toCanvasSpace
+import com.sztorm.notecalendar.toColor
 import com.sztorm.notecalendar.toColorRGBA32
 import com.sztorm.notecalendar.toHsl
 import com.sztorm.notecalendar.toHsv
@@ -117,6 +119,32 @@ data class HslColor(val hue: Float, val saturation: Float, val lightness: Float)
 
         return RgbColor(r, g, b)
     }
+
+    companion object {
+        private val hslCodeRegex = Regex(
+            """[hH][sS][lL]\(\s*([+-]?[0-9]*\.*[0-9]+)\s*,\s*([+-]?[0-9]*\.*[0-9]+)%?\s*,\s*([+-]?[0-9]*\.*[0-9]+)%?\s*\)"""
+        )
+
+        fun parseHslCodeOrNull(hslCode: CharSequence): HslColor? {
+            hslCodeRegex
+                .matchEntire(hslCode.trim())
+                ?.let { matchResult ->
+                    val groupValues = matchResult.groupValues
+                    val h = groupValues.getOrNull(1)?.toFloatOrNull()
+                    val s = groupValues.getOrNull(2)?.toFloatOrNull()
+                    val l = groupValues.getOrNull(3)?.toFloatOrNull()
+
+                    if (h != null && s != null && l != null) {
+                        return HslColor(
+                            hue = AngleF.fromDegrees(h).getMinimalPositiveCoterminal().degrees,
+                            saturation = (s * 0.01f).coerceIn(0f, 1f),
+                            lightness = (l * 0.01f).coerceIn(0f, 1f),
+                        )
+                    }
+                }
+            return null
+        }
+    }
 }
 
 data class HsvColor(val hue: Float, val saturation: Float, val value: Float) {
@@ -126,7 +154,6 @@ data class HsvColor(val hue: Float, val saturation: Float, val value: Float) {
         require(value in 0f..1f) { "value should be in [0, 1] range." }
     }
 
-    @Suppress("unused")
     fun toColor() = Color.hsv(hue, saturation, value)
 
     fun toHsl(): HslColor {
@@ -144,6 +171,32 @@ data class HsvColor(val hue: Float, val saturation: Float, val value: Float) {
 
         return RgbColor(r, g, b)
     }
+
+    companion object {
+        private val hsvCodeRegex = Regex(
+            """[hH][sS][vV]\(\s*([+-]?[0-9]*\.*[0-9]+)\s*,\s*([+-]?[0-9]*\.*[0-9]+)%?\s*,\s*([+-]?[0-9]*\.*[0-9]+)%?\s*\)"""
+        )
+
+        fun parseHsvCodeOrNull(hsvCode: CharSequence): HsvColor? {
+            hsvCodeRegex
+                .matchEntire(hsvCode.trim())
+                ?.let { matchResult ->
+                    val groupValues = matchResult.groupValues
+                    val h = groupValues.getOrNull(1)?.toFloatOrNull()
+                    val s = groupValues.getOrNull(2)?.toFloatOrNull()
+                    val v = groupValues.getOrNull(3)?.toFloatOrNull()
+
+                    if (h != null && s != null && v != null) {
+                        return HsvColor(
+                            hue = AngleF.fromDegrees(h).getMinimalPositiveCoterminal().degrees,
+                            saturation = (s * 0.01f).coerceIn(0f, 1f),
+                            value = (v * 0.01f).coerceIn(0f, 1f),
+                        )
+                    }
+                }
+            return null
+        }
+    }
 }
 
 data class RgbColor(val red: Float, val green: Float, val blue: Float) {
@@ -155,9 +208,77 @@ data class RgbColor(val red: Float, val green: Float, val blue: Float) {
 
     fun toColor() = Color(red, green, blue)
 
-    fun toHsl(): HslColor = toColor().toHslColor()
+    fun toHsl() = toColor().toHslColor()
 
-    fun toHsv(): HsvColor = toColor().toHsvColor()
+    fun toHsv() = toColor().toHsvColor()
+
+    companion object {
+        private val rgbCodeRegexInt =
+            Regex("""[rR][gG][bB]\(\s*([+-]?[0-9]+)\s*,\s*([+-]?[0-9]+)\s*,\s*([+-]?[0-9]+)\s*\)""")
+        private val rgbCodeRegexFloat = Regex(
+            """[rR][gG][bB]\(\s*([+-]?[0-9]*\.[0-9]+)\s*,\s*([+-]?[0-9]*\.[0-9]+)\s*,\s*([+-]?[0-9]*\.[0-9]+)\s*\)"""
+        )
+
+        fun parseRgbCodeOrNull(rgbCode: CharSequence): RgbColor? {
+            val trimmed = rgbCode.trim()
+
+            rgbCodeRegexInt
+                .matchEntire(trimmed)
+                ?.let { matchResult ->
+                    val groupValues = matchResult.groupValues
+                    val r = groupValues.getOrNull(1)?.toIntOrNull()
+                    val g = groupValues.getOrNull(2)?.toIntOrNull()
+                    val b = groupValues.getOrNull(3)?.toIntOrNull()
+
+                    if (r != null && g != null && b != null) {
+                        return ColorRGBA32(
+                            r = r.coerceIn(0, 255).toUByte(),
+                            g = g.coerceIn(0, 255).toUByte(),
+                            b = b.coerceIn(0, 255).toUByte(),
+                            a = 255u
+                        ).toColor()
+                            .toRgbColor()
+                    }
+                }
+            rgbCodeRegexFloat
+                .matchEntire(trimmed)
+                ?.let { matchResult ->
+                    val groupValues = matchResult.groupValues
+                    val red = groupValues.getOrNull(1)?.toFloatOrNull()
+                    val green = groupValues.getOrNull(2)?.toFloatOrNull()
+                    val blue = groupValues.getOrNull(3)?.toFloatOrNull()
+
+                    if (red != null && green != null && blue != null) {
+                        return RgbColor(
+                            red.coerceIn(0f, 1f),
+                            green.coerceIn(0f, 1f),
+                            blue.coerceIn(0f, 1f),
+                        )
+                    }
+                }
+            return null
+        }
+    }
+}
+
+fun ColorRGBA32.Companion.parseHexCodeOrNull(hexCode: CharSequence): ColorRGBA32? {
+    if (hexCode.length != 7 ||
+        hexCode[0] != '#' ||
+        hexCode
+            .drop(1)
+            .all { it in '0'..'9' || it in 'a'..'f' || it in 'A'..'F' }
+            .not()
+    ) {
+        return null
+    }
+    val r = ((hexCode[1].digitToInt(16) shl 4) + hexCode[2].digitToInt(16))
+        .toUByte()
+    val g = ((hexCode[3].digitToInt(16) shl 4) + hexCode[4].digitToInt(16))
+        .toUByte()
+    val b = ((hexCode[5].digitToInt(16) shl 4) + hexCode[6].digitToInt(16))
+        .toUByte()
+
+    return ColorRGBA32(r, g, b, 0xffu)
 }
 
 private fun Color.toHslColor(): HslColor {
