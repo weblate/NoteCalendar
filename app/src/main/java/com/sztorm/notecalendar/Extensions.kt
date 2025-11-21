@@ -4,6 +4,7 @@ package com.sztorm.notecalendar
 
 import android.app.AlarmManager
 import android.app.PendingIntent
+import android.content.ClipData
 import android.os.Build
 import androidx.annotation.StringRes
 import androidx.compose.foundation.lazy.LazyListState
@@ -337,6 +338,12 @@ fun Offset.toVector2F() = Vector2F(x, y)
 fun Vector2F.toOffset() = Offset(x, y)
 
 fun Vector2F.toCanvasSpace(canvasSize: Size) = Vector2F(x, canvasSize.height - y)
+
+fun ClipData.itemsSequence() = sequence {
+    for (i in 0..<itemCount) {
+        yield(getItemAt(i))
+    }
+}
 
 fun Path.moveTo(position: Vector2F) = moveTo(position.x, position.y)
 

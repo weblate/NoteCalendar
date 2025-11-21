@@ -1,8 +1,10 @@
 package com.sztorm.notecalendar.components
 
+import android.content.ClipData
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -14,7 +16,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButtonDefaults.outlinedIconButtonColors
 import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.OutlinedIconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.SegmentedButton
@@ -31,6 +36,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -48,17 +54,20 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.ClipEntry
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -78,6 +87,8 @@ import com.sztorm.mathkit.euclidean2d.RoundedRectangle
 import com.sztorm.mathkit.euclidean2d.Square
 import com.sztorm.mathkit.inverseLerp
 import com.sztorm.mathkit.lerp
+import com.sztorm.notecalendar.R
+import com.sztorm.notecalendar.itemsSequence
 import com.sztorm.notecalendar.lineTo
 import com.sztorm.notecalendar.moveTo
 import com.sztorm.notecalendar.toCanvasSpace
@@ -87,6 +98,7 @@ import com.sztorm.notecalendar.toHsl
 import com.sztorm.notecalendar.toHsv
 import com.sztorm.notecalendar.toOffset
 import com.sztorm.notecalendar.toVector2F
+import kotlinx.coroutines.launch
 import java.text.DecimalFormatSymbols
 import kotlin.math.abs
 import kotlin.math.min
@@ -1161,9 +1173,139 @@ private enum class TabType(val route: String, val label: String) {
 }
 
 @Composable
+private fun ColorCodeRow(
+    value: String,
+    onValueChange: (String) -> Unit,
+    onPaste: (ClipData) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val clipboardManager = LocalClipboard.current
+    val scope = rememberCoroutineScope()
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center,
+        modifier = modifier.fillMaxWidth()
+    ) {
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            readOnly = true,
+            singleLine = true,
+            textStyle = LocalTextStyle.current.copy(textAlign = TextAlign.Center),
+            modifier = Modifier.width(205.dp * LocalDensity.current.fontScale)
+        )
+        OutlinedIconButton(
+            onClick = {
+                scope.launch {
+                    clipboardManager.setClipEntry(
+                        ClipEntry(ClipData.newPlainText("color hex code", value))
+                    )
+                }
+            },
+            colors = outlinedIconButtonColors(
+                contentColor = Color.Black,
+            ),
+        ) {
+            Icon(
+                imageVector = ImageVector
+                    .vectorResource(R.drawable.icon_outline_content_copy_24),
+                contentDescription = "copy",
+                tint = Color.Black
+            )
+        }
+        OutlinedIconButton(
+            onClick = {
+                scope.launch {
+                    clipboardManager.getClipEntry()?.let {
+                        onPaste(it.clipData)
+                    }
+                }
+            },
+            colors = outlinedIconButtonColors(
+                contentColor = Color.Black,
+            ),
+        ) {
+            Icon(
+                imageVector = ImageVector
+                    .vectorResource(R.drawable.icon_outline_content_paste_24),
+                contentDescription = "paste",
+                tint = Color.Black
+            )
+        }
+    }
+}
+
+@Composable
 private fun ColorCodesTab(state: ColorPickerState) {
-    // TODO: hexcode, RGB, HSV, HSL
-    // copy, paste on each
+    var hexCodeState by remember(state.rgb) {
+        val (r, g, b) = state.rgb.toColor().toColorRGBA32()
+        mutableStateOf("#%02x%02x%02x".format(r.toInt(), g.toInt(), b.toInt()))
+    }
+    var rgbCodeState by remember(state.rgb) {
+        val (r, g, b) = state.rgb.toColor().toColorRGBA32()
+        mutableStateOf("rgb(%d,%d,%d)".format(r.toInt(), g.toInt(), b.toInt()))
+    }
+    var hsvCodeState by remember(state.rgb) {
+        val (h, s, v) = state.hsv
+        mutableStateOf("hsv(%.0f,%.0f%%,%.0f%%)".format(h, s * 100f, v * 100f))
+    }
+    var hslCodeState by remember(state.rgb) {
+        val (h, s, l) = state.hsl
+        mutableStateOf("hsl(%.0f,%.0f%%,%.0f%%)".format(h, s * 100f, l * 100f))
+    }
+    Column(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        ColorCodeRow(
+            value = hexCodeState,
+            onValueChange = { hexCodeState = it },
+            onPaste = { clipData ->
+                clipData
+                    .itemsSequence()
+                    .map { ColorRGBA32.parseHexCodeOrNull(it.text) }
+                    .firstOrNull()
+                    ?.let { state.rgb = it.toColor().toRgbColor() }
+            },
+            modifier = Modifier.padding(top = 8.dp)
+        )
+        ColorCodeRow(
+            value = rgbCodeState,
+            onValueChange = { rgbCodeState = it },
+            onPaste = { clipData ->
+                clipData
+                    .itemsSequence()
+                    .map { RgbColor.parseRgbCodeOrNull(it.text) }
+                    .firstOrNull()
+                    ?.let { state.rgb = it }
+            },
+            modifier = Modifier.padding(top = 8.dp)
+        )
+        ColorCodeRow(
+            value = hsvCodeState,
+            onValueChange = { hsvCodeState = it },
+            onPaste = { clipData ->
+                clipData
+                    .itemsSequence()
+                    .map { HsvColor.parseHsvCodeOrNull(it.text) }
+                    .firstOrNull()
+                    ?.let { state.hsv = it }
+            },
+            modifier = Modifier.padding(top = 8.dp)
+        )
+        ColorCodeRow(
+            value = hslCodeState,
+            onValueChange = { hslCodeState = it },
+            onPaste = { clipData ->
+                clipData
+                    .itemsSequence()
+                    .map { HslColor.parseHslCodeOrNull(it.text) }
+                    .firstOrNull()
+                    ?.let { state.hsl = it }
+            },
+            modifier = Modifier.padding(top = 8.dp)
+        )
+    }
 }
 
 private fun Float.formatUpToTwoDecimalPlaces(): String {
@@ -1244,6 +1386,7 @@ private inline fun <reified T : Comparable<T>> ColorComponentSlider(
     noinline suffix: @Composable (() -> Unit)? = null,
     textColor: Color = Color.Unspecified,
 ) {
+    // TODO: allow to select text
     var textState by remember(value) {
         mutableStateOf(toString(value))
     }
