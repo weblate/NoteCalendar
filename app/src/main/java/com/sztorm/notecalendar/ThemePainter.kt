@@ -1,17 +1,14 @@
 package com.sztorm.notecalendar
 
-import android.graphics.drawable.*
 import android.view.View
 import android.view.ViewGroup
 import android.view.Window
-import android.widget.*
-import androidx.appcompat.widget.SwitchCompat
+import android.widget.LinearLayout
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updateLayoutParams
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.button.MaterialButtonToggleGroup
-import com.sztorm.timepicker.TwoStepTimePicker
 
 class ThemePainter(val values: ThemeColors) {
     fun paintStatusBarAndSetSystemInsets(
@@ -34,13 +31,6 @@ class ThemePainter(val values: ThemeColors) {
         }
     }
 
-    fun paintBackArrowIcon(iconView: ImageView) {
-        val icon: LayerDrawable = iconView.drawable as LayerDrawable
-
-        icon.getDrawable(0).setTintList(values.backArrowIconRippleColorStateList)
-        icon.getDrawable(1).setTint(values.textColor)
-    }
-
     fun paintNavigationButton(button: MaterialButton) {
         button.strokeColor = values.navigationButtonStrokeColorStateList
         button.iconTint = values.navigationButtonIconColorStateList
@@ -48,30 +38,7 @@ class ThemePainter(val values: ThemeColors) {
         button.rippleColor = values.buttonRippleColorStateList
     }
 
-    fun paintDialogButton(button: MaterialButton) {
-        button.setTextColor(values.primaryColor)
-        button.rippleColor = values.alertButtonRippleColorStateList
-    }
-
     fun paintBackground(view: View) {
         view.setBackgroundColor(values.backgroundColor)
-    }
-
-    fun paintSwitch(switch: SwitchCompat) {
-        switch.thumbTintList = values.switchThumbColorStateList
-        switch.trackTintList = values.switchTrackColorStateList
-    }
-
-    fun paintRadio(radio: RadioButton) {
-        radio.buttonTintList = values.radioButtonTintList
-    }
-
-    fun paintTimePicker(picker: TwoStepTimePicker) {
-        picker.canvasColor = values.backgroundColor
-        picker.clockFaceColor = values.backgroundColor
-        picker.trackColor = values.textColor
-        picker.pointerColor = values.secondaryColor
-        picker.textColor = values.textColor
-        picker.pickedTextColor = values.secondaryColor
     }
 }

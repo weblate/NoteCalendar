@@ -4,7 +4,6 @@ import android.app.ActivityOptions
 import android.content.Intent
 import android.os.Bundle
 import android.widget.Button
-import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.lifecycleScope
@@ -48,7 +47,6 @@ class MainActivity : AppCompatActivity() {
             paintNavigationButton(binding.btnViewWeek)
             paintNavigationButton(binding.btnViewDay)
             paintNavigationButton(binding.btnViewSettings2)
-            paintNavigationButton(binding.btnViewSettings)
             paintBackground(binding.root)
         }
     }
@@ -60,19 +58,6 @@ class MainActivity : AppCompatActivity() {
                 fragmentSetter.setFragment(fragmentType.createFragment())
             }
         }
-
-    private fun setBackButtonPressListener() {
-        val callback = object : OnBackPressedCallback(true) {
-            override fun handleOnBackPressed() {
-                if (currentFragmentType == MainFragmentType.CUSTOM_THEME_SETTINGS) {
-                    setMainFragment(MainFragmentType.ROOT_SETTINGS)
-                } else {
-                    finish()
-                }
-            }
-        }
-        onBackPressedDispatcher.addCallback(this, callback)
-    }
 
     private fun setMainFragmentOnCreate() {
         val bundle: Bundle? = intent.extras
@@ -117,8 +102,6 @@ class MainActivity : AppCompatActivity() {
         setNavigationButtonClickListener(binding.btnViewWeek, MainFragmentType.WEEK)
         setNavigationButtonClickListener(binding.btnViewMonth, MainFragmentType.MONTH)
         setNavigationButtonClickListener(binding.btnViewSettings2, MainFragmentType.ROOT_SETTINGS2)
-        setNavigationButtonClickListener(binding.btnViewSettings, MainFragmentType.ROOT_SETTINGS)
-        setBackButtonPressListener()
         setMainFragmentOnCreate()
 
         lifecycleScope.launch {
@@ -174,8 +157,6 @@ class MainActivity : AppCompatActivity() {
             R.id.btnViewWeek,
             R.id.btnViewMonth,
             R.id.btnViewSettings2,
-            R.id.btnViewSettings,
-            R.id.btnViewSettings
         )
     }
 }

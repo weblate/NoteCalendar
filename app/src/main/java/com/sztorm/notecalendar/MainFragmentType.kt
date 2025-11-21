@@ -6,9 +6,7 @@ enum class MainFragmentType {
     DAY,
     WEEK,
     MONTH,
-    ROOT_SETTINGS2,
-    ROOT_SETTINGS,
-    CUSTOM_THEME_SETTINGS;
+    ROOT_SETTINGS2;
 
     fun createFragment(args: Arguments? = null): Fragment = CREATORS[ordinal](args)
 
@@ -18,8 +16,6 @@ enum class MainFragmentType {
             { args -> WeekFragment() },
             { args -> MonthFragment() },
             { args -> RootSettingsFragment2() },
-            { args -> RootSettingsFragment() },
-            { args -> CustomThemeSettingsFragment() }
         )
     }
 }
