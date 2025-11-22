@@ -3,10 +3,10 @@ package com.sztorm.notecalendar
 import com.sztorm.notecalendar.fakes.FakeNoteRepository
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import java.time.LocalDate
 import java.time.YearMonth
-import org.junit.jupiter.params.provider.Arguments as Arguments
 
 class MonthNotesCacheTests {
     @ParameterizedTest

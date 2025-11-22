@@ -1,9 +1,5 @@
 package com.sztorm.notecalendar
 
-import android.os.Bundle
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Row
@@ -13,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -30,14 +25,11 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.fragment.app.Fragment
+import androidx.navigation.NavController
 import com.sztorm.notecalendar.WeekViewItem.WeekViewDay
 import com.sztorm.notecalendar.WeekViewItem.WeekViewMonth
 import com.sztorm.notecalendar.components.InfiniteColumn
-import com.sztorm.notecalendar.databinding.FragmentWeekBinding
 import com.sztorm.notecalendar.repositories.NoteRepository
-import com.sztorm.notecalendar.repositories.NoteRepositoryImpl
-import com.sztorm.notecalendar.ui.AppTheme
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.temporal.WeekFields
@@ -45,28 +37,6 @@ import java.util.Locale
 import kotlin.math.min
 import kotlin.collections.removeFirst as removeFirstKt
 import kotlin.collections.removeLast as removeLastKt
-
-class WeekFragment : Fragment() {
-    private lateinit var binding: FragmentWeekBinding
-
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
-    ): View {
-        val mainActivity = activity as MainActivity
-        binding = FragmentWeekBinding.inflate(inflater, container, false)
-        binding.composeView.setContent {
-            AppTheme(mainActivity.themePainter.values) {
-                Surface(modifier = Modifier.fillMaxSize()) {
-                    WeekLayout(
-                        mainActivity = mainActivity,
-                        noteRepository = NoteRepositoryImpl
-                    )
-                }
-            }
-        }
-        return binding.root
-    }
-}
 
 sealed class WeekViewItem {
     data class WeekViewDay(
@@ -189,6 +159,7 @@ tailrec fun MutableList<WeekViewItem>.loadPrevItems(
 
 @Composable
 fun WeekLayout(
+    navController: NavController,
     mainActivity: MainActivity,
     noteRepository: NoteRepository
 ) {
@@ -230,7 +201,7 @@ fun WeekLayout(
         modifier = Modifier.fillMaxSize(),
         items = days,
         state = dayListState,
-        key = { index, item -> item.key() },
+        key = { _, item -> item.key() },
         onReachTop = { days.loadPrevItems(isSelected, isToday, hasNote, bufferSize) },
         onReachBottom = { days.loadNextItems(isSelected, isToday, hasNote, bufferSize) }
     ) { index, item ->
@@ -264,12 +235,12 @@ fun WeekLayout(
                         .combinedClickable(
                             onClick = {
                                 mainActivity.sharedData.viewedDate = item.date
-                                mainActivity.setMainFragment(MainFragmentType.DAY)
+                                navController.navigate(Screen.Day())
                             },
                             onLongClick = {
                                 mainActivity.sharedData.viewedDate = item.date
-                                mainActivity.setMainFragment(
-                                    MainFragmentType.DAY, args = CreateOrEditNoteRequest
+                                navController.navigate(
+                                    Screen.Day(isCreateOrEditRequested = true)
                                 )
                             }
                         )

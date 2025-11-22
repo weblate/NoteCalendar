@@ -1,10 +1,5 @@
 package com.sztorm.notecalendar
 
-import android.os.Bundle
-import androidx.fragment.app.Fragment
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
 import androidx.compose.animation.AnimatedContentTransitionScope.SlideDirection
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Column
@@ -13,8 +8,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.TimePickerDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -42,39 +35,15 @@ import com.sztorm.notecalendar.components.preferences.Preference
 import com.sztorm.notecalendar.components.preferences.SubpreferenceScreen
 import com.sztorm.notecalendar.components.preferences.SwitchPreference
 import com.sztorm.notecalendar.components.preferences.TimePickerPreference
-import com.sztorm.notecalendar.databinding.FragmentRootSettings2Binding
 import com.sztorm.notecalendar.helpers.ContextHelper.Companion.getColorCompat
 import com.sztorm.notecalendar.helpers.ContextHelper.Companion.getColorFromAttr
 import com.sztorm.notecalendar.repositories.NoteRepository
-import com.sztorm.notecalendar.repositories.NoteRepositoryImpl
-import com.sztorm.notecalendar.ui.AppTheme
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import java.time.DayOfWeek
 import java.time.LocalTime
 import java.time.temporal.WeekFields
 import java.util.Locale
-
-class RootSettingsFragment2 : Fragment() {
-    private lateinit var binding: FragmentRootSettings2Binding
-
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
-    ): View {
-        val mainActivity = activity as MainActivity
-        binding = FragmentRootSettings2Binding.inflate(inflater, container, false)
-        binding.composeView.setContent {
-            MaterialTheme {
-                AppTheme(mainActivity.themePainter.values) {
-                    Surface(modifier = Modifier.fillMaxSize()) {
-                        SettingsLayout(mainActivity, NoteRepositoryImpl)
-                    }
-                }
-            }
-        }
-        return binding.root
-    }
-}
 
 @Composable
 fun SettingsLayout(mainActivity: MainActivity, noteRepository: NoteRepository) {

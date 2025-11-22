@@ -1,9 +1,5 @@
 package com.sztorm.notecalendar
 
-import android.os.Bundle
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
@@ -35,8 +31,6 @@ import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.material3.LocalTextStyle
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
@@ -58,15 +52,11 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.sztorm.notecalendar.components.ThemedButton
 import com.sztorm.notecalendar.components.ThemedIconButton
 import com.sztorm.notecalendar.components.ThemedNote
-import com.sztorm.notecalendar.databinding.FragmentDayBinding
 import com.sztorm.notecalendar.repositories.NoteRepository
-import com.sztorm.notecalendar.repositories.NoteRepositoryImpl
-import com.sztorm.notecalendar.ui.AppTheme
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import java.time.LocalDate
@@ -86,49 +76,15 @@ enum class DayNoteTransitionState {
     Adding
 }
 
-class DayFragment : Fragment {
-    private lateinit var binding: FragmentDayBinding
-    private val initArgs: Arguments?
-
-    constructor() : super() {
-        initArgs = null
-    }
-
-    constructor(args: Arguments?) : super() {
-        initArgs = args
-    }
-
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
-    ): View {
-        val mainActivity = activity as MainActivity
-        binding = FragmentDayBinding.inflate(inflater, container, false)
-        binding.composeView.setContent {
-            MaterialTheme {
-                AppTheme(mainActivity.themePainter.values) {
-                    Surface(modifier = Modifier.fillMaxSize()) {
-                        DayLayout(
-                            mainActivity = mainActivity,
-                            noteRepository = NoteRepositoryImpl,
-                            args = initArgs
-                        )
-                    }
-                }
-            }
-        }
-        return binding.root
-    }
-}
-
 @Composable
 fun DayLayout(
     mainActivity: MainActivity,
     noteRepository: NoteRepository,
-    args: Arguments? = null,
+    isCreateOrEditRequested: Boolean = false
 ) {
     var prevDate: LocalDate by remember { mutableStateOf(mainActivity.sharedData.viewedDate) }
     var startDate: LocalDate by remember { mutableStateOf(prevDate) }
-    var args by remember { mutableStateOf(args) }
+    var isCreateOrEditRequested by remember { mutableStateOf(isCreateOrEditRequested) }
 
     AnimatedContent(
         targetState = startDate,
@@ -158,7 +114,7 @@ fun DayLayout(
                 state = rememberDraggableState { },
                 onDragStopped = { velocity ->
                     if (velocity.absoluteValue > 0.5) {
-                        args = null
+                        isCreateOrEditRequested = false
                         prevDate = startDate
                         startDate = startDate.minusDays(velocity.sign.toLong())
                         mainActivity.sharedData.viewedDate = startDate
@@ -168,7 +124,7 @@ fun DayLayout(
             mainActivity = mainActivity,
             noteRepository = noteRepository,
             date = targetState,
-            args = args,
+            isCreateOrEditRequested = isCreateOrEditRequested,
         )
     }
 }
@@ -180,19 +136,19 @@ fun DayPageLayout(
     mainActivity: MainActivity,
     noteRepository: NoteRepository,
     date: LocalDate,
-    args: Arguments? = null
+    isCreateOrEditRequested: Boolean
 ) {
     LaunchedEffect(Unit) {
         mainActivity.sharedData.viewedDate = date
     }
-    var noteState = remember {
+    val noteState = remember {
         mutableStateOf(noteRepository.getBy(date))
     }
-    var undoNoteState: MutableState<NoteData?> = remember { mutableStateOf(null) }
+    val undoNoteState: MutableState<NoteData?> = remember { mutableStateOf(null) }
     val themeValues = mainActivity.themePainter.values
     val dayNoteState = remember {
         mutableStateOf(
-            when (Pair(noteState.value != null, args is CreateOrEditNoteRequest)) {
+            when (Pair(noteState.value != null, isCreateOrEditRequested)) {
                 Pair(true, true) -> DayNoteState.Editing
                 Pair(true, false) -> DayNoteState.Reading
                 Pair(false, true) -> DayNoteState.Adding
@@ -372,14 +328,13 @@ fun DayNoteEmptyLayout(
             if (undoNote != null) {
                 ThemedButton(
                     onClick = {
-                        val note = undoNote
                         undoNoteState.value = null
-                        noteState.value = note
-                        noteRepository.add(note)
+                        noteState.value = undoNote
+                        noteRepository.add(undoNote)
                         dayNoteState.value = DayNoteState.Reading
                         mainActivity.lifecycleScope.launch {
                             if (mainActivity.notificationManager.tryScheduleNotification(
-                                    ScheduleNoteNotificationArguments(note = note),
+                                    ScheduleNoteNotificationArguments(note = undoNote),
                                     noteRepository
                                 )
                             ) {

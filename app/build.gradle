@@ -4,6 +4,7 @@ plugins {
     id 'com.mikepenz.aboutlibraries.plugin' version '10.3.0'
     id 'org.jetbrains.kotlin.android'
     id 'org.jetbrains.kotlin.plugin.compose' version '2.1.20'
+    id 'org.jetbrains.kotlin.plugin.serialization' version '2.0.21'
     id 'de.mannodermaus.android-junit5' version '1.13.4.0'
 }
 

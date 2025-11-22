@@ -1,10 +1,5 @@
 package com.sztorm.notecalendar
 
-import android.os.Bundle
-import androidx.fragment.app.Fragment
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -30,38 +24,14 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 import com.sztorm.notecalendar.components.DayOfWeekBar
 import com.sztorm.notecalendar.components.InfiniteHorizontalPager
 import com.sztorm.notecalendar.components.MonthPage
-import com.sztorm.notecalendar.databinding.FragmentMonthBinding
 import com.sztorm.notecalendar.repositories.NoteRepository
-import com.sztorm.notecalendar.repositories.NoteRepositoryImpl
-import com.sztorm.notecalendar.ui.AppTheme
 import java.time.LocalDate
 import java.time.temporal.WeekFields
 import java.util.Locale
-
-class MonthFragment : Fragment() {
-    private lateinit var binding: FragmentMonthBinding
-
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
-    ): View {
-        val mainActivity = activity as MainActivity
-        binding = FragmentMonthBinding.inflate(inflater, container, false)
-        binding.composeView.setContent {
-            AppTheme(mainActivity.themePainter.values) {
-                Surface(modifier = Modifier.fillMaxSize()) {
-                    MonthLayout(
-                        mainActivity = mainActivity,
-                        noteRepository = NoteRepositoryImpl
-                    )
-                }
-            }
-        }
-        return binding.root
-    }
-}
 
 data class MonthViewDay(
     val date: LocalDate,
@@ -72,7 +42,11 @@ data class MonthViewDay(
 )
 
 @Composable
-fun MonthLayout(mainActivity: MainActivity, noteRepository: NoteRepository) {
+fun MonthLayout(
+    navController: NavController,
+    mainActivity: MainActivity,
+    noteRepository: NoteRepository
+) {
     val themeValues = mainActivity.themePainter.values
     val selectedDateYearMonth = mainActivity.sharedData.viewedDate.yearMonth
     val today = LocalDate.now()
@@ -133,6 +107,7 @@ fun MonthLayout(mainActivity: MainActivity, noteRepository: NoteRepository) {
             ) { date, modifier ->
                 DayLayout(
                     modifier,
+                    navController,
                     mainActivity,
                     dayData = MonthViewDay(
                         date = date,
@@ -148,10 +123,11 @@ fun MonthLayout(mainActivity: MainActivity, noteRepository: NoteRepository) {
 }
 
 @Composable
-fun DayLayout(
+private fun DayLayout(
     modifier: Modifier,
+    navController: NavController,
     mainActivity: MainActivity,
-    dayData: MonthViewDay,
+    dayData: MonthViewDay
 ) {
     val themeValues = mainActivity.themePainter.values
 
@@ -162,13 +138,11 @@ fun DayLayout(
             .combinedClickable(
                 onClick = {
                     mainActivity.sharedData.viewedDate = dayData.date
-                    mainActivity.setMainFragment(MainFragmentType.DAY)
+                    navController.navigate(Screen.Day())
                 },
                 onLongClick = {
                     mainActivity.sharedData.viewedDate = dayData.date
-                    mainActivity.setMainFragment(
-                        MainFragmentType.DAY, args = CreateOrEditNoteRequest
-                    )
+                    navController.navigate(Screen.Day(isCreateOrEditRequested = true))
                 }
             )
             .drawWithCache {

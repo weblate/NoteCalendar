@@ -8,8 +8,6 @@ enum class StartingViewType {
     DAY_VIEW,
     WEEK_VIEW,
     MONTH_VIEW;
-
-    fun toMainFragmentType() = MainFragmentType.entries[ordinal]
 }
 
 @Composable
