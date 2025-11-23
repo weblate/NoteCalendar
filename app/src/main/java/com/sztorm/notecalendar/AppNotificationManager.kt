@@ -7,7 +7,7 @@ import android.graphics.Color
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.lifecycle.lifecycleScope
-import com.sztorm.notecalendar.NoteCalendarApplication.Companion.BUNDLE_KEY_MAIN_FRAGMENT_TYPE
+import com.sztorm.notecalendar.NoteCalendarApplication.Companion.BUNDLE_KEY_NOTIFICATION_LAUNCH_DAY_SCREEN
 import com.sztorm.notecalendar.repositories.NoteRepository
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -38,7 +38,7 @@ class AppNotificationManager(val mainActivity: MainActivity) {
         )
         val intent = Intent(mainActivity, MainActivity::class.java)
             .addFlags(Intent.FLAG_RECEIVER_FOREGROUND)
-            .putExtra(BUNDLE_KEY_MAIN_FRAGMENT_TYPE, MainFragmentType.DAY.ordinal)
+            .putExtra(BUNDLE_KEY_NOTIFICATION_LAUNCH_DAY_SCREEN, true)
         val activity: PendingIntent = PendingIntent.getActivity(
             mainActivity, NOTIFICATION_ID, intent, getIntentCancelCurrentFlags()
         )

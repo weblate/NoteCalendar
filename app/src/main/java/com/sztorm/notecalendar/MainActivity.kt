@@ -25,8 +25,6 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -39,6 +37,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import com.sztorm.notecalendar.NoteCalendarApplication.Companion.BUNDLE_KEY_NOTIFICATION_LAUNCH_DAY_SCREEN
 import com.sztorm.notecalendar.repositories.NoteRepository
 import com.sztorm.notecalendar.repositories.NoteRepositoryImpl
 import com.sztorm.notecalendar.repositories.UserPreferencesRepository
@@ -46,6 +45,8 @@ import com.sztorm.notecalendar.ui.AppTheme
 import kotlinx.coroutines.runBlocking
 import timber.log.Timber
 import java.time.LocalDate
+
+data class BundleResult(val isLaunchedFromNotification: Boolean)
 
 class MainActivity : ComponentActivity() {
     private var _settings: UserPreferencesRepository? = null
@@ -65,39 +66,36 @@ class MainActivity : ComponentActivity() {
         _notificationManager = _notificationManager ?: AppNotificationManager(this)
     }
 
-    //private fun setMainFragmentOnCreate() {
-    //    val bundle: Bundle? = intent.extras
-    //
-    //    if (bundle === null) {
-    //        lifecycleScope.launch {
-    //            setMainFragment(
-    //                settings.getStartingView(StartingViewType.DAY_VIEW).toMainFragmentType()
-    //            )
-    //        }
-    //        return
-    //    }
-    //    val mainFragmentTypeOrdinal: Int = bundle.getInt(
-    //        BUNDLE_KEY_MAIN_FRAGMENT_TYPE, MainFragmentType.DAY.ordinal
-    //    )
-    //    setMainFragment(
-    //        MainFragmentType.entries[mainFragmentTypeOrdinal],
-    //        resAnimIn = R.anim.anim_immediate,
-    //        resAnimOut = R.anim.anim_immediate
-    //    )
-    //}
+    private fun readBundle(): BundleResult? {
+        val bundle: Bundle = intent.extras ?: return null
+
+        val isLaunchedFromNotification = bundle.getBoolean(
+            BUNDLE_KEY_NOTIFICATION_LAUNCH_DAY_SCREEN, false
+        )
+        return BundleResult(isLaunchedFromNotification = isLaunchedFromNotification)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         initManagers()
-        val viewModel: MainViewModel = runBlocking {
-            MainViewModel(MainState(settings.getThemeColors()))
+        val bundleResult = readBundle()
+        val viewModel: MainViewModel
+        val startingView: StartingViewType
+
+        runBlocking {
+            viewModel = MainViewModel(
+                MainState(settings.getThemeColors())
+            )
+            startingView = if (bundleResult != null && bundleResult.isLaunchedFromNotification) {
+                StartingViewType.DAY_VIEW
+            } else settings.getStartingView(StartingViewType.DAY_VIEW)
         }
         WindowCompat.setDecorFitsSystemWindows(window, false)
         enableEdgeToEdge()
         setContent {
             AppTheme(viewModel.state.themeColors) {
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    AppScreen(viewModel, this, NoteRepositoryImpl)
+                    AppScreen(viewModel, startingView, this, NoteRepositoryImpl)
                 }
             }
         }
@@ -122,32 +120,21 @@ data class MainTab(
 @Composable
 fun AppScreen(
     viewModel: MainViewModel,
+    startingView: StartingViewType,
     mainActivity: MainActivity,
     noteRepository: NoteRepository
 ) {
     val navController = rememberNavController()
-    var initialScreen by remember { mutableStateOf<Screen?>(null) }
-    var selectedTabIndex by rememberSaveable { mutableIntStateOf(0) }
-
+    var selectedTabIndex by rememberSaveable {
+        mutableIntStateOf(
+            when (startingView) {
+                StartingViewType.DAY_VIEW -> 2
+                StartingViewType.WEEK_VIEW -> 1
+                StartingViewType.MONTH_VIEW -> 0
+            }
+        )
+    }
     LaunchedEffect(Unit) {
-        val initialView = mainActivity.settings.getStartingView(StartingViewType.DAY_VIEW)
-
-        when (initialView) {
-            StartingViewType.DAY_VIEW -> {
-                initialScreen = Screen.Day()
-                selectedTabIndex = 2
-            }
-
-            StartingViewType.WEEK_VIEW -> {
-                initialScreen = Screen.Week
-                selectedTabIndex = 1
-            }
-
-            StartingViewType.MONTH_VIEW -> {
-                initialScreen = Screen.Month
-                selectedTabIndex = 0
-            }
-        }
         if (mainActivity.notificationManager.tryScheduleNotification(
                 args = ScheduleNoteNotificationArguments(),
                 noteRepository = noteRepository
@@ -178,77 +165,79 @@ fun AppScreen(
             .windowInsetsPadding(WindowInsets.safeDrawing)
             .fillMaxWidth()
     ) {
-        initialScreen?.let { screen ->
-            val tabs = listOf(
-                MainTab(
-                    screen = Screen.Month,
-                    icon = ImageVector.vectorResource(R.drawable.icon_calendar_month),
-                    description = "Month" // TODO: Add to strings.xml
-                ),
-                MainTab(
-                    screen = Screen.Week,
-                    icon = ImageVector.vectorResource(R.drawable.icon_calendar_week),
-                    description = "Week" // TODO: Add to strings.xml
-                ),
-                MainTab(
-                    screen = Screen.Day(),
-                    icon = ImageVector.vectorResource(R.drawable.icon_calendar_day),
-                    description = "Day" // TODO: Add to strings.xml
-                ),
-                MainTab(
-                    screen = Screen.Settings,
-                    icon = ImageVector.vectorResource(R.drawable.icon_settings),
-                    description = "Settings" // TODO: Add to strings.xml
-                )
+        val tabs = listOf(
+            MainTab(
+                screen = Screen.Month,
+                icon = ImageVector.vectorResource(R.drawable.icon_calendar_month),
+                description = "Month" // TODO: Add to strings.xml
+            ),
+            MainTab(
+                screen = Screen.Week,
+                icon = ImageVector.vectorResource(R.drawable.icon_calendar_week),
+                description = "Week" // TODO: Add to strings.xml
+            ),
+            MainTab(
+                screen = Screen.Day(),
+                icon = ImageVector.vectorResource(R.drawable.icon_calendar_day),
+                description = "Day" // TODO: Add to strings.xml
+            ),
+            MainTab(
+                screen = Screen.Settings,
+                icon = ImageVector.vectorResource(R.drawable.icon_settings),
+                description = "Settings" // TODO: Add to strings.xml
             )
-            PrimaryTabRow(selectedTabIndex = selectedTabIndex) {
-                tabs.forEachIndexed { i, tab ->
-                    Tab(
-                        selected = selectedTabIndex == i,
-                        onClick = {
-                            navController.navigate(tab.screen)
-                            selectedTabIndex = i
-                        },
-                        text = {
-                            Text(
-                                text = tab.description,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        },
-                        icon = {
-                            Icon(
-                                imageVector = tab.icon,
-                                contentDescription = tab.description,
-                            )
-                        }
-                    )
-                }
+        )
+        PrimaryTabRow(selectedTabIndex = selectedTabIndex) {
+            tabs.forEachIndexed { i, tab ->
+                Tab(
+                    selected = selectedTabIndex == i,
+                    onClick = {
+                        navController.navigate(tab.screen)
+                        selectedTabIndex = i
+                    },
+                    text = {
+                        Text(
+                            text = tab.description,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    },
+                    icon = {
+                        Icon(
+                            imageVector = tab.icon,
+                            contentDescription = tab.description,
+                        )
+                    }
+                )
             }
-            NavHost(
-                navController = navController,
-                startDestination = screen,
-                enterTransition = {
-                    slideInHorizontally(animationSpec = tween(durationMillis = 400)) { -it }
-                },
-                exitTransition = {
-                    fadeOut(animationSpec = tween(durationMillis = 400)) +
-                    slideOutVertically(animationSpec = tween(durationMillis = 400)) { it }
-                }
-            ) {
-                composable<Screen.Month> {
-                    MonthScreen(viewModel, navController, mainActivity, noteRepository)
-                }
-                composable<Screen.Week> {
-                    WeekScreen(viewModel, navController, mainActivity, noteRepository)
-                }
-                composable<Screen.Day> {
-                    val day = it.toRoute<Screen.Day>()
+        }
+        NavHost(
+            navController = navController,
+            startDestination = when (startingView) {
+                StartingViewType.DAY_VIEW -> Screen.Day()
+                StartingViewType.WEEK_VIEW -> Screen.Week
+                StartingViewType.MONTH_VIEW -> Screen.Month
+            },
+            enterTransition = {
+                slideInHorizontally(animationSpec = tween(durationMillis = 400)) { -it }
+            },
+            exitTransition = {
+                fadeOut(animationSpec = tween(durationMillis = 400)) +
+                slideOutVertically(animationSpec = tween(durationMillis = 400)) { it }
+            }
+        ) {
+            composable<Screen.Month> {
+                MonthScreen(viewModel, navController, mainActivity, noteRepository)
+            }
+            composable<Screen.Week> {
+                WeekScreen(viewModel, navController, mainActivity, noteRepository)
+            }
+            composable<Screen.Day> {
+                val day = it.toRoute<Screen.Day>()
 
-                    DayScreen(viewModel, mainActivity, noteRepository, day.isCreateOrEditRequested)
-                }
-                composable<Screen.Settings> {
-                    SettingsScreen(viewModel, mainActivity, noteRepository)
-                }
+                DayScreen(viewModel, mainActivity, noteRepository, day.isCreateOrEditRequested)
+            }
+            composable<Screen.Settings> {
+                SettingsScreen(viewModel, mainActivity, noteRepository)
             }
         }
     }

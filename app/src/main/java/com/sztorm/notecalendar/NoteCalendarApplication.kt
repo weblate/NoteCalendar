@@ -32,6 +32,6 @@ class NoteCalendarApplication : Application() {
     }
 
     companion object {
-        const val BUNDLE_KEY_MAIN_FRAGMENT_TYPE = "MainFragmentType"
+        const val BUNDLE_KEY_NOTIFICATION_LAUNCH_DAY_SCREEN = "LaunchDayScreen"
     }
 }
