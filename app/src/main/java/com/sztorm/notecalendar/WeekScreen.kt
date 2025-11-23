@@ -163,7 +163,7 @@ fun WeekLayout(
     mainActivity: MainActivity,
     noteRepository: NoteRepository
 ) {
-    val themeValues = mainActivity.themePainter.values
+    val themeColors = mainActivity.themeColors
     val viewedDate = mainActivity.sharedData.viewedDate
     val cachedItemsCount = 60
     val bufferSize = 30
@@ -207,24 +207,24 @@ fun WeekLayout(
     ) { index, item ->
         val backgroundColor = Color(
             when {
-                index.isEven -> themeValues.backgroundColor
-                else -> themeValues.backgroundColorVariant
+                index.isEven -> themeColors.backgroundColor
+                else -> themeColors.backgroundColorVariant
             }
         )
         when (item) {
             is WeekViewDay -> {
                 val dayOfMonthTextColor = Color(
                     when {
-                        item.isSelected -> themeValues.buttonTextColor
-                        else -> themeValues.getTextColorOf(
+                        item.isSelected -> themeColors.buttonTextColor
+                        else -> themeColors.getTextColorOf(
                             item.date.dayOfWeek, firstDayOfWeek
                         )
                     }
                 )
                 val dayOfWeekTextColor = Color(
                     when {
-                        item.isToday -> themeValues.secondaryColor
-                        else -> themeValues.textColor
+                        item.isToday -> themeColors.secondaryColor
+                        else -> themeColors.textColor
                     }
                 )
                 Row(
@@ -267,11 +267,11 @@ fun WeekLayout(
                                     when {
                                         item.isSelected && item.hasNote -> {
                                             drawCircle(
-                                                color = Color(themeValues.secondaryColor),
+                                                color = Color(themeColors.secondaryColor),
                                                 radius = secondRadius
                                             )
                                             drawCircle(
-                                                color = Color(themeValues.primaryColor),
+                                                color = Color(themeColors.primaryColor),
                                                 radius = radius,
                                                 style = stroke
                                             )
@@ -279,14 +279,14 @@ fun WeekLayout(
 
                                         item.isSelected -> {
                                             drawCircle(
-                                                color = Color(themeValues.secondaryColor),
+                                                color = Color(themeColors.secondaryColor),
                                                 radius = radiusWithStroke
                                             )
                                         }
 
                                         item.hasNote -> {
                                             drawCircle(
-                                                color = Color(themeValues.primaryColor),
+                                                color = Color(themeColors.primaryColor),
                                                 radius = radius,
                                                 style = stroke
                                             )
@@ -308,7 +308,7 @@ fun WeekLayout(
                     text = item.yearMonth.getLocalizedName(),
                     fontSize = 28.sp,
                     textAlign = TextAlign.Center,
-                    color = Color(themeValues.textColor),
+                    color = Color(themeColors.textColor),
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(color = backgroundColor)

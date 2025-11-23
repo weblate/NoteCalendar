@@ -145,7 +145,7 @@ fun DayPageLayout(
         mutableStateOf(noteRepository.getBy(date))
     }
     val undoNoteState: MutableState<NoteData?> = remember { mutableStateOf(null) }
-    val themeValues = mainActivity.themePainter.values
+    val themeColors = mainActivity.themeColors
     val dayNoteState = remember {
         mutableStateOf(
             when (Pair(noteState.value != null, isCreateOrEditRequested)) {
@@ -172,7 +172,7 @@ fun DayPageLayout(
             BasicText(
                 text = date.dayOfMonth.toString(),
                 style = LocalTextStyle.current.copy(
-                    color = Color(themeValues.textColor),
+                    color = Color(themeColors.textColor),
                     textAlign = TextAlign.Center,
                 ),
                 autoSize = TextAutoSize.StepBased(maxFontSize = 300.sp, stepSize = 0.1.sp),
@@ -185,7 +185,7 @@ fun DayPageLayout(
             BasicText(
                 text = date.month.getLocalizedGenitiveCaseName(),
                 style = LocalTextStyle.current.copy(
-                    color = Color(themeValues.textColor),
+                    color = Color(themeColors.textColor),
                     textAlign = TextAlign.Center,
                 ),
                 autoSize = TextAutoSize.StepBased(stepSize = 0.1.sp),
@@ -198,7 +198,7 @@ fun DayPageLayout(
             BasicText(
                 text = date.dayOfWeek.getLocalizedName(),
                 style = LocalTextStyle.current.copy(
-                    color = Color(themeValues.textColor),
+                    color = Color(themeColors.textColor),
                     textAlign = TextAlign.Center,
                 ),
                 autoSize = TextAutoSize.StepBased(stepSize = 0.1.sp),
@@ -308,7 +308,7 @@ fun DayNoteEmptyLayout(
     noteState: MutableState<NoteData?>,
     undoNoteState: MutableState<NoteData?>,
 ) {
-    val themeValues = mainActivity.themePainter.values
+    val themeColors = mainActivity.themeColors
 
     Column(modifier = modifier.fillMaxSize()) {
         Row(
@@ -316,7 +316,7 @@ fun DayNoteEmptyLayout(
         ) {
             ThemedButton(
                 onClick = { dayNoteState.value = DayNoteState.Adding },
-                themeValues = themeValues,
+                themeValues = themeColors,
                 modifier = Modifier
                     .weight(1f)
                     .padding(start = 10.dp, top = 5.dp, end = 10.dp, bottom = 0.dp),
@@ -342,7 +342,7 @@ fun DayNoteEmptyLayout(
                             }
                         }
                     },
-                    themeValues = themeValues,
+                    themeValues = themeColors,
                     modifier = Modifier
                         .weight(1f)
                         .padding(start = 10.dp, top = 5.dp, end = 10.dp, bottom = 0.dp),
@@ -365,12 +365,12 @@ fun DayNoteAddLayout(
     noteState: MutableState<NoteData?>,
     undoNoteState: MutableState<NoteData?>
 ) {
-    val themeValues = mainActivity.themePainter.values
+    val themeColors = mainActivity.themeColors
     val focusManager = LocalFocusManager.current
     var noteTextFieldState by remember { mutableStateOf(TextFieldState()) }
 
     ThemedNote(
-        themeValues = themeValues,
+        themeValues = themeColors,
         modifier = modifier
     ) {
         Row(
@@ -399,7 +399,7 @@ fun DayNoteAddLayout(
                         }
                     }
                 },
-                themeValues = themeValues,
+                themeValues = themeColors,
                 modifier = Modifier
                     .wrapContentSize()
                     .padding(start = 10.dp, top = 10.dp, end = 0.dp, bottom = 10.dp),
@@ -412,7 +412,7 @@ fun DayNoteAddLayout(
                     noteTextFieldState = TextFieldState()
                     dayNoteState.value = DayNoteState.Empty
                 },
-                themeValues = themeValues,
+                themeValues = themeColors,
                 modifier = Modifier
                     .wrapContentSize()
                     .padding(start = 5.dp, top = 10.dp, end = 0.dp, bottom = 10.dp),
@@ -429,11 +429,11 @@ fun DayNoteAddLayout(
                 state = noteTextFieldState,
                 lineLimits = TextFieldLineLimits.MultiLine(),
                 textStyle = TextStyle(
-                    color = Color(themeValues.noteTextColor),
+                    color = Color(themeColors.noteTextColor),
                     fontSize = 24.sp,
                     lineHeight = 26.sp,
                 ),
-                cursorBrush = SolidColor(Color(themeValues.secondaryColor)),
+                cursorBrush = SolidColor(Color(themeColors.secondaryColor)),
                 modifier = Modifier
                     .fillMaxWidth()
                     .wrapContentHeight()
@@ -459,13 +459,13 @@ fun DayNoteLayout(
     noteState: MutableState<NoteData?>,
     undoNoteState: MutableState<NoteData?>
 ) {
-    val themeValues = mainActivity.themePainter.values
+    val themeColors = mainActivity.themeColors
     val focusManager = LocalFocusManager.current
     var noteTextFieldState by remember {
         mutableStateOf(TextFieldState(noteState.value?.text ?: ""))
     }
     ThemedNote(
-        themeValues = themeValues,
+        themeValues = themeColors,
         modifier = modifier
     ) {
         Row(
@@ -494,7 +494,7 @@ fun DayNoteLayout(
                             }
                         }
                     },
-                    themeValues = themeValues,
+                    themeValues = themeColors,
                     modifier = Modifier
                         .wrapContentSize()
                         .padding(start = 10.dp, top = 10.dp, end = 0.dp, bottom = 10.dp),
@@ -507,7 +507,7 @@ fun DayNoteLayout(
                         noteTextFieldState = TextFieldState(noteState.value?.text ?: "")
                         focusManager.clearFocus()
                     },
-                    themeValues = themeValues,
+                    themeValues = themeColors,
                     modifier = Modifier
                         .wrapContentSize()
                         .padding(start = 5.dp, top = 10.dp, end = 0.dp, bottom = 10.dp),
@@ -520,7 +520,7 @@ fun DayNoteLayout(
                         dayNoteState.value = DayNoteState.Editing
                         focusRequester.requestFocus()
                     },
-                    themeValues = themeValues,
+                    themeValues = themeColors,
                     icon = painterResource(R.drawable.icon_edit),
                     contentDescription = stringResource(R.string.EditNote),
                     modifier = Modifier
@@ -545,7 +545,7 @@ fun DayNoteLayout(
                         dayNoteState.value = DayNoteState.Empty
                         focusManager.clearFocus()
                     },
-                    themeValues = themeValues,
+                    themeValues = themeColors,
                     icon = painterResource(R.drawable.icon_delete),
                     contentDescription = stringResource(R.string.DeleteNote),
                     modifier = Modifier
@@ -564,11 +564,11 @@ fun DayNoteLayout(
                 readOnly = dayNoteState.value == DayNoteState.Reading,
                 lineLimits = TextFieldLineLimits.MultiLine(),
                 textStyle = TextStyle(
-                    color = Color(themeValues.noteTextColor),
+                    color = Color(themeColors.noteTextColor),
                     fontSize = 24.sp,
                     lineHeight = 26.sp,
                 ),
-                cursorBrush = SolidColor(Color(themeValues.secondaryColor)),
+                cursorBrush = SolidColor(Color(themeColors.secondaryColor)),
                 modifier = Modifier
                     .fillMaxWidth()
                     .wrapContentHeight()

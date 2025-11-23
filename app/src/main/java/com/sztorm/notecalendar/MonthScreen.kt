@@ -47,7 +47,7 @@ fun MonthLayout(
     mainActivity: MainActivity,
     noteRepository: NoteRepository
 ) {
-    val themeValues = mainActivity.themePainter.values
+    val themeColors = mainActivity.themeColors
     val selectedDateYearMonth = mainActivity.sharedData.viewedDate.yearMonth
     val today = LocalDate.now()
     var firstDayOfWeek by remember {
@@ -71,7 +71,7 @@ fun MonthLayout(
             text = currentYearMonth.getLocalizedName(),
             fontSize = 38.sp,
             fontWeight = FontWeight.Light,
-            color = Color(themeValues.textColor),
+            color = Color(themeColors.textColor),
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(15.dp)
@@ -80,8 +80,8 @@ fun MonthLayout(
             modifier = Modifier.padding(vertical = 8.dp),
             firstDayOfWeek = firstDayOfWeek,
             dayOfWeekText = { it.getLocalizedShortName() },
-            backgroundColor = Color(themeValues.secondaryColor),
-            textColor = Color(themeValues.buttonTextColor),
+            backgroundColor = Color(themeColors.secondaryColor),
+            textColor = Color(themeColors.buttonTextColor),
             fontSize = 16.sp,
         )
         InfiniteHorizontalPager(
@@ -129,7 +129,7 @@ private fun DayLayout(
     mainActivity: MainActivity,
     dayData: MonthViewDay
 ) {
-    val themeValues = mainActivity.themePainter.values
+    val themeColors = mainActivity.themeColors
 
     Box(
         contentAlignment = Alignment.Center,
@@ -156,11 +156,11 @@ private fun DayLayout(
                     when {
                         dayData.isSelected && dayData.hasNote -> {
                             drawCircle(
-                                color = Color(themeValues.secondaryColor),
+                                color = Color(themeColors.secondaryColor),
                                 radius = secondRadius
                             )
                             drawCircle(
-                                color = Color(themeValues.primaryColor),
+                                color = Color(themeColors.primaryColor),
                                 radius = radius,
                                 style = stroke
                             )
@@ -168,14 +168,14 @@ private fun DayLayout(
 
                         dayData.isSelected -> {
                             drawCircle(
-                                color = Color(themeValues.secondaryColor),
+                                color = Color(themeColors.secondaryColor),
                                 radius = radiusWithStroke
                             )
                         }
 
                         dayData.hasNote && dayData.isInCurrentMonth -> {
                             drawCircle(
-                                color = Color(themeValues.primaryColor),
+                                color = Color(themeColors.primaryColor),
                                 radius = radius,
                                 style = stroke
                             )
@@ -183,7 +183,7 @@ private fun DayLayout(
 
                         dayData.hasNote -> {
                             drawCircle(
-                                color = Color(themeValues.primaryColor)
+                                color = Color(themeColors.primaryColor)
                                     .copy(alpha = 0.3333333f),
                                 radius = radius,
                                 style = stroke
@@ -196,10 +196,10 @@ private fun DayLayout(
         Text(
             text = dayData.date.dayOfMonth.toString(),
             color = when {
-                dayData.isSelected -> Color(themeValues.buttonTextColor)
-                dayData.isToday -> Color(themeValues.secondaryColor)
-                dayData.isInCurrentMonth -> Color(themeValues.textColor)
-                else -> Color(themeValues.inactiveTextColor)
+                dayData.isSelected -> Color(themeColors.buttonTextColor)
+                dayData.isToday -> Color(themeColors.secondaryColor)
+                dayData.isInCurrentMonth -> Color(themeColors.textColor)
+                else -> Color(themeColors.inactiveTextColor)
             }
         )
     }

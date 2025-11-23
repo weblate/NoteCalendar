@@ -38,12 +38,10 @@ import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.core.view.WindowCompat
 import androidx.navigation.NavController
-import androidx.navigation.NavDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
-import androidx.savedstate.SavedState
 import com.sztorm.notecalendar.NoteCalendarApplication.Companion.BUNDLE_KEY_MAIN_FRAGMENT_TYPE
 import com.sztorm.notecalendar.repositories.NoteRepository
 import com.sztorm.notecalendar.repositories.NoteRepositoryImpl
@@ -57,7 +55,7 @@ class MainActivity : ComponentActivity() {
     private var _settings: UserPreferencesRepository? = null
     private var _permissionManager: AppPermissionManager? = null
     private var _notificationManager: AppNotificationManager? = null
-    private var _themePainter: ThemePainter? = null
+    private var _themeColors: ThemeColors? = null
     val sharedData = AppSharedData(viewedDate = LocalDate.now())
     val settings: UserPreferencesRepository
         get() = _settings!!
@@ -65,8 +63,8 @@ class MainActivity : ComponentActivity() {
         get() = _permissionManager!!
     val notificationManager: AppNotificationManager
         get() = _notificationManager!!
-    val themePainter: ThemePainter
-        get() = _themePainter!!
+    val themeColors: ThemeColors
+        get() = _themeColors!!
 
     fun initManagers() {
         _settings = _settings ?: UserPreferencesRepository(this)
@@ -74,7 +72,7 @@ class MainActivity : ComponentActivity() {
         _notificationManager = _notificationManager ?: AppNotificationManager(this)
 
         runBlocking {
-            _themePainter = _themePainter ?: ThemePainter(settings.getThemeColors())
+            _themeColors = _themeColors ?: settings.getThemeColors()
         }
     }
 
@@ -106,7 +104,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             MaterialTheme {
-                AppTheme(themePainter.values) {
+                AppTheme(themeColors.colorScheme) {
                     Surface(modifier = Modifier.fillMaxSize()) {
                         AppLayout(this, NoteRepositoryImpl)
                     }
@@ -184,7 +182,7 @@ fun AppLayout(
         }
     }
     DisposableEffect(Unit) {
-        val listener = { _: NavController, destination: NavDestination, _: SavedState? ->
+        val listener = NavController.OnDestinationChangedListener { _, destination, _ ->
             selectedTabIndex = when (destination.route) {
                 Screen.Month.route -> 0
                 Screen.Week.route -> 1
