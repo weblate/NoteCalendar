@@ -42,12 +42,13 @@ data class MonthViewDay(
 )
 
 @Composable
-fun MonthLayout(
+fun MonthScreen(
+    viewModel: MainViewModel,
     navController: NavController,
     mainActivity: MainActivity,
     noteRepository: NoteRepository
 ) {
-    val themeColors = mainActivity.themeColors
+    val themeColors = viewModel.state.themeColors
     val selectedDateYearMonth = mainActivity.sharedData.viewedDate.yearMonth
     val today = LocalDate.now()
     var firstDayOfWeek by remember {
@@ -106,9 +107,10 @@ fun MonthLayout(
                 firstDayOfWeek = firstDayOfWeek
             ) { date, modifier ->
                 DayLayout(
-                    modifier,
-                    navController,
-                    mainActivity,
+                    modifier = modifier,
+                    viewModel = viewModel,
+                    navController = navController,
+                    mainActivity = mainActivity,
                     dayData = MonthViewDay(
                         date = date,
                         isSelected = mainActivity.sharedData.viewedDate == date,
@@ -125,11 +127,12 @@ fun MonthLayout(
 @Composable
 private fun DayLayout(
     modifier: Modifier,
+    viewModel: MainViewModel,
     navController: NavController,
     mainActivity: MainActivity,
     dayData: MonthViewDay
 ) {
-    val themeColors = mainActivity.themeColors
+    val themeColors = viewModel.state.themeColors
 
     Box(
         contentAlignment = Alignment.Center,

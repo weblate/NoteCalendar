@@ -77,7 +77,8 @@ enum class DayNoteTransitionState {
 }
 
 @Composable
-fun DayLayout(
+fun DayScreen(
+    viewModel: MainViewModel,
     mainActivity: MainActivity,
     noteRepository: NoteRepository,
     isCreateOrEditRequested: Boolean = false
@@ -121,6 +122,7 @@ fun DayLayout(
                     }
                 }
             ),
+            viewModel = viewModel,
             mainActivity = mainActivity,
             noteRepository = noteRepository,
             date = targetState,
@@ -133,6 +135,7 @@ fun DayLayout(
 fun DayPageLayout(
     modifier: Modifier = Modifier,
     draggableModifier: Modifier = Modifier,
+    viewModel: MainViewModel,
     mainActivity: MainActivity,
     noteRepository: NoteRepository,
     date: LocalDate,
@@ -145,7 +148,7 @@ fun DayPageLayout(
         mutableStateOf(noteRepository.getBy(date))
     }
     val undoNoteState: MutableState<NoteData?> = remember { mutableStateOf(null) }
-    val themeColors = mainActivity.themeColors
+    val themeColors = viewModel.state.themeColors
     val dayNoteState = remember {
         mutableStateOf(
             when (Pair(noteState.value != null, isCreateOrEditRequested)) {
@@ -261,6 +264,7 @@ fun DayPageLayout(
                     DayNoteTransitionState.Empty -> {
                         DayNoteEmptyLayout(
                             draggableModifier = draggableModifier,
+                            viewModel = viewModel,
                             mainActivity = mainActivity,
                             noteRepository = noteRepository,
                             dayNoteState = dayNoteState,
@@ -272,6 +276,7 @@ fun DayPageLayout(
                     DayNoteTransitionState.Reading -> {
                         DayNoteLayout(
                             modifier = Modifier.graphicsLayer(scaleY = inScaleY),
+                            viewModel = viewModel,
                             mainActivity = mainActivity,
                             noteRepository = noteRepository,
                             focusRequester = focusRequester,
@@ -284,6 +289,7 @@ fun DayPageLayout(
                     DayNoteTransitionState.Adding -> {
                         DayNoteAddLayout(
                             modifier = Modifier.graphicsLayer(scaleY = inScaleY),
+                            viewModel = viewModel,
                             mainActivity = mainActivity,
                             noteRepository = noteRepository,
                             focusRequester = focusRequester,
@@ -301,6 +307,7 @@ fun DayPageLayout(
 @Composable
 fun DayNoteEmptyLayout(
     modifier: Modifier = Modifier,
+    viewModel: MainViewModel,
     draggableModifier: Modifier,
     mainActivity: MainActivity,
     noteRepository: NoteRepository,
@@ -308,7 +315,7 @@ fun DayNoteEmptyLayout(
     noteState: MutableState<NoteData?>,
     undoNoteState: MutableState<NoteData?>,
 ) {
-    val themeColors = mainActivity.themeColors
+    val themeColors = viewModel.state.themeColors
 
     Column(modifier = modifier.fillMaxSize()) {
         Row(
@@ -358,6 +365,7 @@ fun DayNoteEmptyLayout(
 @Composable
 fun DayNoteAddLayout(
     modifier: Modifier = Modifier,
+    viewModel: MainViewModel,
     mainActivity: MainActivity,
     noteRepository: NoteRepository,
     focusRequester: FocusRequester,
@@ -365,7 +373,7 @@ fun DayNoteAddLayout(
     noteState: MutableState<NoteData?>,
     undoNoteState: MutableState<NoteData?>
 ) {
-    val themeColors = mainActivity.themeColors
+    val themeColors = viewModel.state.themeColors
     val focusManager = LocalFocusManager.current
     var noteTextFieldState by remember { mutableStateOf(TextFieldState()) }
 
@@ -452,6 +460,7 @@ fun DayNoteAddLayout(
 @Composable
 fun DayNoteLayout(
     modifier: Modifier = Modifier,
+    viewModel: MainViewModel,
     mainActivity: MainActivity,
     noteRepository: NoteRepository,
     focusRequester: FocusRequester,
@@ -459,7 +468,7 @@ fun DayNoteLayout(
     noteState: MutableState<NoteData?>,
     undoNoteState: MutableState<NoteData?>
 ) {
-    val themeColors = mainActivity.themeColors
+    val themeColors = viewModel.state.themeColors
     val focusManager = LocalFocusManager.current
     var noteTextFieldState by remember {
         mutableStateOf(TextFieldState(noteState.value?.text ?: ""))

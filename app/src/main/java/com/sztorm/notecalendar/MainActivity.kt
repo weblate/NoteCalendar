@@ -1,7 +1,5 @@
 package com.sztorm.notecalendar
 
-import android.app.ActivityOptions
-import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -18,7 +16,6 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
@@ -42,7 +39,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
-import com.sztorm.notecalendar.NoteCalendarApplication.Companion.BUNDLE_KEY_MAIN_FRAGMENT_TYPE
 import com.sztorm.notecalendar.repositories.NoteRepository
 import com.sztorm.notecalendar.repositories.NoteRepositoryImpl
 import com.sztorm.notecalendar.repositories.UserPreferencesRepository
@@ -55,7 +51,6 @@ class MainActivity : ComponentActivity() {
     private var _settings: UserPreferencesRepository? = null
     private var _permissionManager: AppPermissionManager? = null
     private var _notificationManager: AppNotificationManager? = null
-    private var _themeColors: ThemeColors? = null
     val sharedData = AppSharedData(viewedDate = LocalDate.now())
     val settings: UserPreferencesRepository
         get() = _settings!!
@@ -63,17 +58,11 @@ class MainActivity : ComponentActivity() {
         get() = _permissionManager!!
     val notificationManager: AppNotificationManager
         get() = _notificationManager!!
-    val themeColors: ThemeColors
-        get() = _themeColors!!
 
     fun initManagers() {
         _settings = _settings ?: UserPreferencesRepository(this)
         _permissionManager = _permissionManager ?: AppPermissionManager(this)
         _notificationManager = _notificationManager ?: AppNotificationManager(this)
-
-        runBlocking {
-            _themeColors = _themeColors ?: settings.getThemeColors()
-        }
     }
 
     //private fun setMainFragmentOnCreate() {
@@ -99,15 +88,16 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        WindowCompat.setDecorFitsSystemWindows(window, false)
         initManagers()
+        val viewModel: MainViewModel = runBlocking {
+            MainViewModel(MainState(settings.getThemeColors()))
+        }
+        WindowCompat.setDecorFitsSystemWindows(window, false)
         enableEdgeToEdge()
         setContent {
-            MaterialTheme {
-                AppTheme(themeColors.colorScheme) {
-                    Surface(modifier = Modifier.fillMaxSize()) {
-                        AppLayout(this, NoteRepositoryImpl)
-                    }
+            AppTheme(viewModel.state.themeColors) {
+                Surface(modifier = Modifier.fillMaxSize()) {
+                    AppScreen(viewModel, this, NoteRepositoryImpl)
                 }
             }
         }
@@ -120,20 +110,6 @@ class MainActivity : ComponentActivity() {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         permissionManager.onRequestPermissionsResult(requestCode, permissions, grantResults)
     }
-
-    fun restart(startingMainFragment: MainFragmentType) {
-        val bundle = Bundle()
-        bundle.putInt(BUNDLE_KEY_MAIN_FRAGMENT_TYPE, startingMainFragment.ordinal)
-
-        val intent = Intent(applicationContext, MainActivity::class.java)
-            .addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION)
-            .putExtras(bundle)
-        val options = ActivityOptions.makeCustomAnimation(baseContext, 0, 0)
-
-        startActivity(intent, options.toBundle())
-        finish()
-    }
-
 }
 
 data class MainTab(
@@ -144,7 +120,8 @@ data class MainTab(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AppLayout(
+fun AppScreen(
+    viewModel: MainViewModel,
     mainActivity: MainActivity,
     noteRepository: NoteRepository
 ) {
@@ -259,18 +236,18 @@ fun AppLayout(
                 }
             ) {
                 composable<Screen.Month> {
-                    MonthLayout(navController, mainActivity, noteRepository)
+                    MonthScreen(viewModel, navController, mainActivity, noteRepository)
                 }
                 composable<Screen.Week> {
-                    WeekLayout(navController, mainActivity, noteRepository)
+                    WeekScreen(viewModel, navController, mainActivity, noteRepository)
                 }
                 composable<Screen.Day> {
                     val day = it.toRoute<Screen.Day>()
 
-                    DayLayout(mainActivity, noteRepository, day.isCreateOrEditRequested)
+                    DayScreen(viewModel, mainActivity, noteRepository, day.isCreateOrEditRequested)
                 }
                 composable<Screen.Settings> {
-                    SettingsLayout(mainActivity, noteRepository)
+                    SettingsScreen(viewModel, mainActivity, noteRepository)
                 }
             }
         }

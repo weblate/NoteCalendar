@@ -46,7 +46,11 @@ import java.time.temporal.WeekFields
 import java.util.Locale
 
 @Composable
-fun SettingsLayout(mainActivity: MainActivity, noteRepository: NoteRepository) {
+fun SettingsScreen(
+    viewModel: MainViewModel,
+    mainActivity: MainActivity,
+    noteRepository: NoteRepository
+) {
     val navController = rememberNavController()
 
     NavHost(navController, startDestination = Screen.Settings.route) {
@@ -65,7 +69,7 @@ fun SettingsLayout(mainActivity: MainActivity, noteRepository: NoteRepository) {
                 )
             }
         ) {
-            RootSettingsLayout(mainActivity, noteRepository, navController)
+            RootSettingsLayout(viewModel, mainActivity, noteRepository, navController)
         }
         composable(
             route = Screen.Settings.CustomTheme.route,
@@ -82,7 +86,7 @@ fun SettingsLayout(mainActivity: MainActivity, noteRepository: NoteRepository) {
                 )
             }
         ) {
-            CustomThemeSettingsLayout(mainActivity, navController)
+            CustomThemeSettingsLayout(viewModel, mainActivity, navController)
         }
     }
 }
@@ -90,11 +94,12 @@ fun SettingsLayout(mainActivity: MainActivity, noteRepository: NoteRepository) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RootSettingsLayout(
+    viewModel: MainViewModel,
     mainActivity: MainActivity,
     noteRepository: NoteRepository,
     navController: NavController
 ) {
-    val themeColors = mainActivity.themeColors
+    val themeColors = viewModel.state.themeColors
     // TODO: move these to Color.kt and just set color values without resources
     val lightThemeValues = remember {
         ThemeColors(
@@ -187,7 +192,9 @@ fun RootSettingsLayout(
                     mainActivity.lifecycleScope.launch {
                         mainActivity.settings.setThemeColors(lightThemeValues)
                     }.invokeOnCompletion {
-                        mainActivity.restart(MainFragmentType.ROOT_SETTINGS2)
+                        viewModel.onEvent(
+                            MainEvent.ThemeChange(lightThemeValues)
+                        )
                     }
                 }
             )
@@ -199,7 +206,9 @@ fun RootSettingsLayout(
                     mainActivity.lifecycleScope.launch {
                         mainActivity.settings.setThemeColors(darkThemeValues)
                     }.invokeOnCompletion {
-                        mainActivity.restart(MainFragmentType.ROOT_SETTINGS2)
+                        viewModel.onEvent(
+                            MainEvent.ThemeChange(darkThemeValues)
+                        )
                     }
                 }
             )
@@ -213,7 +222,9 @@ fun RootSettingsLayout(
                     mainActivity.lifecycleScope.launch {
                         mainActivity.settings.setThemeColors(defaultThemeValues)
                     }.invokeOnCompletion {
-                        mainActivity.restart(MainFragmentType.ROOT_SETTINGS2)
+                        viewModel.onEvent(
+                            MainEvent.ThemeChange(defaultThemeValues)
+                        )
                     }
                 }
             )
@@ -371,10 +382,11 @@ fun RootSettingsLayout(
 
 @Composable
 fun CustomThemeSettingsLayout(
+    viewModel: MainViewModel,
     mainActivity: MainActivity,
     navController: NavController
 ) {
-    val themeColors = mainActivity.themeColors
+    val themeColors = viewModel.state.themeColors
     val defaultThemeValues = remember {
         ThemeColors(
             primaryColor = mainActivity.getColorFromAttr(R.attr.colorPrimary),
@@ -410,7 +422,11 @@ fun CustomThemeSettingsLayout(
             onConfirm = { color ->
                 mainActivity.lifecycleScope.launch {
                     mainActivity.settings.setPrimaryColor(color.toArgb())
-                    mainActivity.restart(MainFragmentType.ROOT_SETTINGS2)
+                    viewModel.onEvent(
+                        MainEvent.ThemeChange(
+                            mainActivity.settings.getThemeColors()
+                        )
+                    )
                 }
             },
         )
@@ -428,7 +444,11 @@ fun CustomThemeSettingsLayout(
             onConfirm = { color ->
                 mainActivity.lifecycleScope.launch {
                     mainActivity.settings.setSecondaryColor(color.toArgb())
-                    mainActivity.restart(MainFragmentType.ROOT_SETTINGS2)
+                    viewModel.onEvent(
+                        MainEvent.ThemeChange(
+                            mainActivity.settings.getThemeColors()
+                        )
+                    )
                 }
             },
         )
@@ -446,7 +466,11 @@ fun CustomThemeSettingsLayout(
             onConfirm = { color ->
                 mainActivity.lifecycleScope.launch {
                     mainActivity.settings.setInactiveItemColor(color.toArgb())
-                    mainActivity.restart(MainFragmentType.ROOT_SETTINGS2)
+                    viewModel.onEvent(
+                        MainEvent.ThemeChange(
+                            mainActivity.settings.getThemeColors()
+                        )
+                    )
                 }
             },
         )
@@ -464,7 +488,11 @@ fun CustomThemeSettingsLayout(
             onConfirm = { color ->
                 mainActivity.lifecycleScope.launch {
                     mainActivity.settings.setInactiveItemColorVariant(color.toArgb())
-                    mainActivity.restart(MainFragmentType.ROOT_SETTINGS2)
+                    viewModel.onEvent(
+                        MainEvent.ThemeChange(
+                            mainActivity.settings.getThemeColors()
+                        )
+                    )
                 }
             },
         )
@@ -482,7 +510,11 @@ fun CustomThemeSettingsLayout(
             onConfirm = { color ->
                 mainActivity.lifecycleScope.launch {
                     mainActivity.settings.setNoteColor(color.toArgb())
-                    mainActivity.restart(MainFragmentType.ROOT_SETTINGS2)
+                    viewModel.onEvent(
+                        MainEvent.ThemeChange(
+                            mainActivity.settings.getThemeColors()
+                        )
+                    )
                 }
             },
         )
@@ -500,7 +532,11 @@ fun CustomThemeSettingsLayout(
             onConfirm = { color ->
                 mainActivity.lifecycleScope.launch {
                     mainActivity.settings.setNoteColorVariant(color.toArgb())
-                    mainActivity.restart(MainFragmentType.ROOT_SETTINGS2)
+                    viewModel.onEvent(
+                        MainEvent.ThemeChange(
+                            mainActivity.settings.getThemeColors()
+                        )
+                    )
                 }
             },
         )
@@ -518,7 +554,11 @@ fun CustomThemeSettingsLayout(
             onConfirm = { color ->
                 mainActivity.lifecycleScope.launch {
                     mainActivity.settings.setTextColor(color.toArgb())
-                    mainActivity.restart(MainFragmentType.ROOT_SETTINGS2)
+                    viewModel.onEvent(
+                        MainEvent.ThemeChange(
+                            mainActivity.settings.getThemeColors()
+                        )
+                    )
                 }
             },
         )
@@ -536,7 +576,11 @@ fun CustomThemeSettingsLayout(
             onConfirm = { color ->
                 mainActivity.lifecycleScope.launch {
                     mainActivity.settings.setButtonTextColor(color.toArgb())
-                    mainActivity.restart(MainFragmentType.ROOT_SETTINGS2)
+                    viewModel.onEvent(
+                        MainEvent.ThemeChange(
+                            mainActivity.settings.getThemeColors()
+                        )
+                    )
                 }
             },
         )
@@ -554,7 +598,11 @@ fun CustomThemeSettingsLayout(
             onConfirm = { color ->
                 mainActivity.lifecycleScope.launch {
                     mainActivity.settings.setNoteTextColor(color.toArgb())
-                    mainActivity.restart(MainFragmentType.ROOT_SETTINGS2)
+                    viewModel.onEvent(
+                        MainEvent.ThemeChange(
+                            mainActivity.settings.getThemeColors()
+                        )
+                    )
                 }
             },
         )
@@ -572,7 +620,11 @@ fun CustomThemeSettingsLayout(
             onConfirm = { color ->
                 mainActivity.lifecycleScope.launch {
                     mainActivity.settings.setBackgroundColor(color.toArgb())
-                    mainActivity.restart(MainFragmentType.ROOT_SETTINGS2)
+                    viewModel.onEvent(
+                        MainEvent.ThemeChange(
+                            mainActivity.settings.getThemeColors()
+                        )
+                    )
                 }
             },
         )

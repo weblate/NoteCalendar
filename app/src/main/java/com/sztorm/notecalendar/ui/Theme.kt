@@ -11,12 +11,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.Color
-import com.sztorm.notecalendar.ThemeColors
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
+import com.sztorm.notecalendar.ThemeColors
+
 
 private fun applySystemBarsColor(
     isBackgroundLight: Boolean,
@@ -35,19 +36,21 @@ private fun applySystemBarsColor(
 }
 
 @Composable
-fun AppTheme(colorScheme: ColorScheme, content: @Composable () -> Unit) {
+fun AppTheme(themeColors: ThemeColors, content: @Composable () -> Unit) {
     val view = LocalView.current
-    val isBackgroundLight = colorScheme.background.luminance() > 0.5
+    val isBackgroundLight = themeColors.colorScheme.background.luminance() > 0.5
     val selectBackgroundColor =
         if (isBackgroundLight) Color(0x40000000)
         else Color(0x40ffffff)
 
     SideEffect {
         val window = (view.context as Activity).window
-        applySystemBarsColor(isBackgroundLight, window, view, colorScheme.primary)
+        applySystemBarsColor(
+            isBackgroundLight, window, view, themeColors.colorScheme.primary
+        )
     }
     MaterialTheme(
-        colorScheme = colorScheme,
+        colorScheme = themeColors.colorScheme,
         typography = Typography,
     ) {
         CompositionLocalProvider(

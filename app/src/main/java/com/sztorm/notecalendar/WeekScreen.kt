@@ -158,12 +158,13 @@ tailrec fun MutableList<WeekViewItem>.loadPrevItems(
 }
 
 @Composable
-fun WeekLayout(
+fun WeekScreen(
+    viewModel: MainViewModel,
     navController: NavController,
     mainActivity: MainActivity,
     noteRepository: NoteRepository
 ) {
-    val themeColors = mainActivity.themeColors
+    val themeColors = viewModel.state.themeColors
     val viewedDate = mainActivity.sharedData.viewedDate
     val cachedItemsCount = 60
     val bufferSize = 30
