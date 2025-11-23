@@ -377,8 +377,7 @@ fun DayNoteAddLayout(
     var noteTextFieldState by remember { mutableStateOf(TextFieldState()) }
 
     DayNote(
-        primaryColor = themeColors.noteColor,
-        secondaryColor = themeColors.noteColorVariant,
+        color = themeColors.noteColor,
         modifier = modifier
     ) {
         Row(
@@ -480,8 +479,7 @@ fun DayNoteLayout(
         mutableStateOf(TextFieldState(noteState.value?.text ?: ""))
     }
     DayNote(
-        primaryColor = themeColors.noteColor,
-        secondaryColor = themeColors.noteColorVariant,
+        color = themeColors.noteColor,
         modifier = modifier
     ) {
         Row(
