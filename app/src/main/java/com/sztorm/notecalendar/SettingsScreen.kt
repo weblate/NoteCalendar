@@ -18,7 +18,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.lifecycleScope
@@ -103,44 +102,44 @@ fun RootSettingsLayout(
     // TODO: move these to Color.kt and just set color values without resources
     val lightThemeValues = remember {
         ThemeColors(
-            primaryColor = mainActivity.getColorCompat(R.color.primary_light),
-            secondaryColor = mainActivity.getColorCompat(R.color.secondary_light),
-            inactiveItemColor = mainActivity.getColorCompat(R.color.inactive_light),
-            inactiveItemColorVariant = mainActivity.getColorCompat(R.color.inactive_variant_light),
-            noteColor = mainActivity.getColorCompat(R.color.note_light_primary),
-            noteColorVariant = mainActivity.getColorCompat(R.color.note_light_secondary),
-            textColor = mainActivity.getColorCompat(R.color.black_cool),
-            buttonTextColor = mainActivity.getColorCompat(R.color.white_cool),
-            noteTextColor = mainActivity.getColorCompat(R.color.black_cool),
-            backgroundColor = mainActivity.getColorCompat(R.color.background_light)
+            primaryColor = Color(mainActivity.getColorCompat(R.color.primary_light)),
+            secondaryColor = Color(mainActivity.getColorCompat(R.color.secondary_light)),
+            inactiveItemColor = Color(mainActivity.getColorCompat(R.color.inactive_light)),
+            inactiveItemColorVariant = Color(mainActivity.getColorCompat(R.color.inactive_variant_light)),
+            noteColor = Color(mainActivity.getColorCompat(R.color.note_light_primary)),
+            noteColorVariant = Color(mainActivity.getColorCompat(R.color.note_light_secondary)),
+            textColor = Color(mainActivity.getColorCompat(R.color.black_cool)),
+            buttonTextColor = Color(mainActivity.getColorCompat(R.color.white_cool)),
+            noteTextColor = Color(mainActivity.getColorCompat(R.color.black_cool)),
+            backgroundColor = Color(mainActivity.getColorCompat(R.color.background_light))
         )
     }
     val darkThemeValues = remember {
         ThemeColors(
-            primaryColor = mainActivity.getColorCompat(R.color.primary_dark),
-            secondaryColor = mainActivity.getColorCompat(R.color.secondary_dark),
-            inactiveItemColor = mainActivity.getColorCompat(R.color.inactive_dark),
-            inactiveItemColorVariant = mainActivity.getColorCompat(R.color.inactive_variant_dark),
-            noteColor = mainActivity.getColorCompat(R.color.note_dark_primary),
-            noteColorVariant = mainActivity.getColorCompat(R.color.note_dark_secondary),
-            textColor = mainActivity.getColorCompat(R.color.white_cool),
-            buttonTextColor = mainActivity.getColorCompat(R.color.white_cool),
-            noteTextColor = mainActivity.getColorCompat(R.color.white_cool),
-            backgroundColor = mainActivity.getColorCompat(R.color.background_dark)
+            primaryColor = Color(mainActivity.getColorCompat(R.color.primary_dark)),
+            secondaryColor = Color(mainActivity.getColorCompat(R.color.secondary_dark)),
+            inactiveItemColor = Color(mainActivity.getColorCompat(R.color.inactive_dark)),
+            inactiveItemColorVariant = Color(mainActivity.getColorCompat(R.color.inactive_variant_dark)),
+            noteColor = Color(mainActivity.getColorCompat(R.color.note_dark_primary)),
+            noteColorVariant = Color(mainActivity.getColorCompat(R.color.note_dark_secondary)),
+            textColor = Color(mainActivity.getColorCompat(R.color.white_cool)),
+            buttonTextColor = Color(mainActivity.getColorCompat(R.color.white_cool)),
+            noteTextColor = Color(mainActivity.getColorCompat(R.color.white_cool)),
+            backgroundColor = Color(mainActivity.getColorCompat(R.color.background_dark))
         )
     }
     val defaultThemeValues = remember {
         ThemeColors(
-            primaryColor = mainActivity.getColorFromAttr(R.attr.colorPrimary),
-            secondaryColor = mainActivity.getColorFromAttr(R.attr.colorSecondary),
-            inactiveItemColor = mainActivity.getColorFromAttr(R.attr.colorInactiveItem),
-            inactiveItemColorVariant = mainActivity.getColorFromAttr(R.attr.colorInactiveItemVariant),
-            noteColor = mainActivity.getColorFromAttr(R.attr.colorNote),
-            noteColorVariant = mainActivity.getColorFromAttr(R.attr.colorNoteVariant),
-            textColor = mainActivity.getColorFromAttr(R.attr.colorText),
-            buttonTextColor = mainActivity.getColorFromAttr(R.attr.colorButtonText),
-            noteTextColor = mainActivity.getColorFromAttr(R.attr.colorText),
-            backgroundColor = mainActivity.getColorFromAttr(R.attr.colorBackground)
+            primaryColor = Color(mainActivity.getColorFromAttr(R.attr.colorPrimary)),
+            secondaryColor = Color(mainActivity.getColorFromAttr(R.attr.colorSecondary)),
+            inactiveItemColor = Color(mainActivity.getColorFromAttr(R.attr.colorInactiveItem)),
+            inactiveItemColorVariant = Color(mainActivity.getColorFromAttr(R.attr.colorInactiveItemVariant)),
+            noteColor = Color(mainActivity.getColorFromAttr(R.attr.colorNote)),
+            noteColorVariant = Color(mainActivity.getColorFromAttr(R.attr.colorNoteVariant)),
+            textColor = Color(mainActivity.getColorFromAttr(R.attr.colorText)),
+            buttonTextColor = Color(mainActivity.getColorFromAttr(R.attr.colorButtonText)),
+            noteTextColor = Color(mainActivity.getColorFromAttr(R.attr.colorText)),
+            backgroundColor = Color(mainActivity.getColorFromAttr(R.attr.colorBackground))
         )
     }
     var turnOnNotifications by remember {
@@ -174,19 +173,19 @@ fun RootSettingsLayout(
     ) {
         CategoryPreference(
             title = stringResource(R.string.Settings_Header_Theme),
-            titleColor = Color(themeColors.secondaryColor)
+            titleColor = themeColors.secondaryColor
         ) { enabled ->
             Preference(
                 icon = painterResource(R.drawable.icon_palette),
-                iconColorFilter = ColorFilter.tint(Color(themeColors.secondaryColor)),
+                iconColorFilter = ColorFilter.tint(themeColors.secondaryColor),
                 title = stringResource(R.string.Settings_SetCustomTheme),
-                titleColor = Color(themeColors.textColor),
+                titleColor = themeColors.textColor,
                 enabled = enabled,
                 onClick = { navController.navigate(Screen.Settings.CustomTheme.route) }
             )
             Preference(
                 title = stringResource(R.string.Settings_SetLightTheme),
-                titleColor = Color(themeColors.textColor),
+                titleColor = themeColors.textColor,
                 enabled = enabled,
                 onClick = {
                     mainActivity.lifecycleScope.launch {
@@ -200,7 +199,7 @@ fun RootSettingsLayout(
             )
             Preference(
                 title = stringResource(R.string.Settings_SetDarkTheme),
-                titleColor = Color(themeColors.textColor),
+                titleColor = themeColors.textColor,
                 enabled = enabled,
                 onClick = {
                     mainActivity.lifecycleScope.launch {
@@ -214,9 +213,9 @@ fun RootSettingsLayout(
             )
             Preference(
                 title = stringResource(R.string.Settings_SetDefaultTheme),
-                titleColor = Color(themeColors.textColor),
+                titleColor = themeColors.textColor,
                 summary = stringResource(R.string.Settings_Summary_SetDefaultTheme),
-                summaryColor = Color(themeColors.textColor),
+                summaryColor = themeColors.textColor,
                 enabled = enabled,
                 onClick = {
                     mainActivity.lifecycleScope.launch {
@@ -231,7 +230,7 @@ fun RootSettingsLayout(
         }
         CategoryPreference(
             title = stringResource(R.string.Settings_Header_Notes),
-            titleColor = Color(themeColors.secondaryColor)
+            titleColor = themeColors.secondaryColor
         ) { enabled ->
             ConfirmationPreference(
                 title = stringResource(R.string.Settings_DeleteAllNotes),
@@ -242,13 +241,13 @@ fun RootSettingsLayout(
                     mainActivity.notificationManager.cancelScheduledNotification()
                     Timber.i("${LogTags.NOTIFICATIONS} Canceled notification when \"delete all notes\" was confirmed.")
                 },
-                titleColor = Color(themeColors.textColor),
-                dialogTitleColor = Color(themeColors.textColor),
-                dialogMessageColor = Color(themeColors.textColor),
-                dialogButtonColor = Color(themeColors.primaryColor),
+                titleColor = themeColors.textColor,
+                dialogTitleColor = themeColors.textColor,
+                dialogMessageColor = themeColors.textColor,
+                dialogButtonColor = themeColors.primaryColor,
                 dialogColors = CardDefaults.cardColors().copy(
-                    containerColor = Color(themeColors.backgroundColor),
-                    contentColor = Color(themeColors.backgroundColor),
+                    containerColor = themeColors.backgroundColor,
+                    contentColor = themeColors.backgroundColor,
                 ),
                 enabled = enabled,
             )
@@ -256,7 +255,7 @@ fun RootSettingsLayout(
         }
         CategoryPreference(
             title = stringResource(R.string.Settings_Header_Notifications),
-            titleColor = Color(themeColors.secondaryColor)
+            titleColor = themeColors.secondaryColor
         ) { enabled ->
             SwitchPreference(
                 title = stringResource(R.string.Settings_EnableNotifications),
@@ -282,12 +281,12 @@ fun RootSettingsLayout(
                         mainActivity.settings.setTurnOnNotifications(it)
                     }
                 },
-                textColor = Color(themeColors.textColor),
+                textColor = themeColors.textColor,
                 enabled = enabled,
             )
             TimePickerPreference(
                 title = stringResource(R.string.Settings_NotificationTime),
-                titleColor = Color(themeColors.textColor),
+                titleColor = themeColors.textColor,
                 initialTime = notificationTime,
                 onConfirm = {
                     notificationTime = it
@@ -307,20 +306,20 @@ fun RootSettingsLayout(
                         }
                     }
                 },
-                buttonColor = Color(themeColors.primaryColor),
+                buttonColor = themeColors.primaryColor,
                 dialogColors = CardDefaults.cardColors().copy(
-                    containerColor = Color(themeColors.backgroundColor),
-                    contentColor = Color(themeColors.backgroundColor),
+                    containerColor = themeColors.backgroundColor,
+                    contentColor = themeColors.backgroundColor,
                 ),
                 timePickerColors = TimePickerDefaults.colors().copy(
-                    selectorColor = Color(themeColors.primaryColor),
+                    selectorColor = themeColors.primaryColor,
                 ),
                 enabled = enabled && turnOnNotifications,
             )
         }
         CategoryPreference(
             title = stringResource(R.string.Settings_Header_Other),
-            titleColor = Color(themeColors.secondaryColor)
+            titleColor = themeColors.secondaryColor
         ) { enabled ->
             ListPreference(
                 title = stringResource(R.string.Settings_FirstDayOfWeek),
@@ -332,12 +331,12 @@ fun RootSettingsLayout(
                         mainActivity.settings.setFirstDayOfWeek(value)
                     }
                 },
-                titleColor = Color(themeColors.textColor),
-                summaryColor = Color(themeColors.textColor),
-                buttonColor = Color(themeColors.primaryColor),
+                titleColor = themeColors.textColor,
+                summaryColor = themeColors.textColor,
+                buttonColor = themeColors.primaryColor,
                 dialogColors = CardDefaults.cardColors().copy(
-                    containerColor = Color(themeColors.backgroundColor),
-                    contentColor = Color(themeColors.backgroundColor),
+                    containerColor = themeColors.backgroundColor,
+                    contentColor = themeColors.backgroundColor,
                 ),
                 enabled = enabled
             )
@@ -351,12 +350,12 @@ fun RootSettingsLayout(
                         mainActivity.settings.setStartingView(value)
                     }
                 },
-                titleColor = Color(themeColors.textColor),
-                summaryColor = Color(themeColors.textColor),
-                buttonColor = Color(themeColors.primaryColor),
+                titleColor = themeColors.textColor,
+                summaryColor = themeColors.textColor,
+                buttonColor = themeColors.primaryColor,
                 dialogColors = CardDefaults.cardColors().copy(
-                    containerColor = Color(themeColors.backgroundColor),
-                    contentColor = Color(themeColors.backgroundColor),
+                    containerColor = themeColors.backgroundColor,
+                    contentColor = themeColors.backgroundColor,
                 ),
                 enabled = enabled
             )
@@ -365,7 +364,7 @@ fun RootSettingsLayout(
 
         Preference(
             title = licensesTitle,
-            titleColor = Color(themeColors.textColor),
+            titleColor = themeColors.textColor,
             onClick = {
                 mainActivity.startActivity(
                     LibsBuilder()
@@ -389,39 +388,39 @@ fun CustomThemeSettingsLayout(
     val themeColors = viewModel.state.themeColors
     val defaultThemeValues = remember {
         ThemeColors(
-            primaryColor = mainActivity.getColorFromAttr(R.attr.colorPrimary),
-            secondaryColor = mainActivity.getColorFromAttr(R.attr.colorSecondary),
-            inactiveItemColor = mainActivity.getColorFromAttr(R.attr.colorInactiveItem),
-            inactiveItemColorVariant = mainActivity.getColorFromAttr(R.attr.colorInactiveItemVariant),
-            noteColor = mainActivity.getColorFromAttr(R.attr.colorNote),
-            noteColorVariant = mainActivity.getColorFromAttr(R.attr.colorNoteVariant),
-            textColor = mainActivity.getColorFromAttr(R.attr.colorText),
-            buttonTextColor = mainActivity.getColorFromAttr(R.attr.colorButtonText),
-            noteTextColor = mainActivity.getColorFromAttr(R.attr.colorText),
-            backgroundColor = mainActivity.getColorFromAttr(R.attr.colorBackground)
+            primaryColor = Color(mainActivity.getColorFromAttr(R.attr.colorPrimary)),
+            secondaryColor = Color(mainActivity.getColorFromAttr(R.attr.colorSecondary)),
+            inactiveItemColor = Color(mainActivity.getColorFromAttr(R.attr.colorInactiveItem)),
+            inactiveItemColorVariant = Color(mainActivity.getColorFromAttr(R.attr.colorInactiveItemVariant)),
+            noteColor = Color(mainActivity.getColorFromAttr(R.attr.colorNote)),
+            noteColorVariant = Color(mainActivity.getColorFromAttr(R.attr.colorNoteVariant)),
+            textColor = Color(mainActivity.getColorFromAttr(R.attr.colorText)),
+            buttonTextColor = Color(mainActivity.getColorFromAttr(R.attr.colorButtonText)),
+            noteTextColor = Color(mainActivity.getColorFromAttr(R.attr.colorText)),
+            backgroundColor = Color(mainActivity.getColorFromAttr(R.attr.colorBackground))
         )
     }
     SubpreferenceScreen(
         title = stringResource(R.string.Settings_Header_CustomTheme),
-        titleColor = Color(themeColors.textColor),
-        iconTint = Color(themeColors.textColor),
+        titleColor = themeColors.textColor,
+        iconTint = themeColors.textColor,
         onBackButtonClick = { navController.navigateUp() },
         modifier = Modifier.verticalScroll(rememberScrollState())
     ) {
         ColorPickerPreference(
             title = stringResource(R.string.PrimaryColor),
-            titleColor = Color(themeColors.textColor),
-            initialColor = Color(themeColors.primaryColor),
-            defaultColor = Color(defaultThemeValues.primaryColor),
-            outlineColor = Color(themeColors.textColor),
-            buttonColor = Color(themeColors.primaryColor),
+            titleColor = themeColors.textColor,
+            initialColor = themeColors.primaryColor,
+            defaultColor = defaultThemeValues.primaryColor,
+            outlineColor = themeColors.textColor,
+            buttonColor = themeColors.primaryColor,
             dialogColors = CardDefaults.cardColors().copy(
-                containerColor = Color(themeColors.backgroundColor),
-                contentColor = Color(themeColors.backgroundColor),
+                containerColor = themeColors.backgroundColor,
+                contentColor = themeColors.backgroundColor,
             ),
             onConfirm = { color ->
                 mainActivity.lifecycleScope.launch {
-                    mainActivity.settings.setPrimaryColor(color.toArgb())
+                    mainActivity.settings.setPrimaryColor(color)
                     viewModel.onEvent(
                         MainEvent.ThemeChange(
                             mainActivity.settings.getThemeColors()
@@ -432,18 +431,18 @@ fun CustomThemeSettingsLayout(
         )
         ColorPickerPreference(
             title = stringResource(R.string.SecondaryColor),
-            titleColor = Color(themeColors.textColor),
-            initialColor = Color(themeColors.secondaryColor),
-            defaultColor = Color(defaultThemeValues.secondaryColor),
-            outlineColor = Color(themeColors.textColor),
-            buttonColor = Color(themeColors.primaryColor),
+            titleColor = themeColors.textColor,
+            initialColor = themeColors.secondaryColor,
+            defaultColor = defaultThemeValues.secondaryColor,
+            outlineColor = themeColors.textColor,
+            buttonColor = themeColors.primaryColor,
             dialogColors = CardDefaults.cardColors().copy(
-                containerColor = Color(themeColors.backgroundColor),
-                contentColor = Color(themeColors.backgroundColor),
+                containerColor = themeColors.backgroundColor,
+                contentColor = themeColors.backgroundColor,
             ),
             onConfirm = { color ->
                 mainActivity.lifecycleScope.launch {
-                    mainActivity.settings.setSecondaryColor(color.toArgb())
+                    mainActivity.settings.setSecondaryColor(color)
                     viewModel.onEvent(
                         MainEvent.ThemeChange(
                             mainActivity.settings.getThemeColors()
@@ -454,18 +453,18 @@ fun CustomThemeSettingsLayout(
         )
         ColorPickerPreference(
             title = stringResource(R.string.InactiveItemColor),
-            titleColor = Color(themeColors.textColor),
-            initialColor = Color(themeColors.inactiveItemColor),
-            defaultColor = Color(defaultThemeValues.inactiveItemColor),
-            outlineColor = Color(themeColors.textColor),
-            buttonColor = Color(themeColors.primaryColor),
+            titleColor = themeColors.textColor,
+            initialColor = themeColors.inactiveItemColor,
+            defaultColor = defaultThemeValues.inactiveItemColor,
+            outlineColor = themeColors.textColor,
+            buttonColor = themeColors.primaryColor,
             dialogColors = CardDefaults.cardColors().copy(
-                containerColor = Color(themeColors.backgroundColor),
-                contentColor = Color(themeColors.backgroundColor),
+                containerColor = themeColors.backgroundColor,
+                contentColor = themeColors.backgroundColor,
             ),
             onConfirm = { color ->
                 mainActivity.lifecycleScope.launch {
-                    mainActivity.settings.setInactiveItemColor(color.toArgb())
+                    mainActivity.settings.setInactiveItemColor(color)
                     viewModel.onEvent(
                         MainEvent.ThemeChange(
                             mainActivity.settings.getThemeColors()
@@ -476,18 +475,18 @@ fun CustomThemeSettingsLayout(
         )
         ColorPickerPreference(
             title = stringResource(R.string.InactiveItemColorVariant),
-            titleColor = Color(themeColors.textColor),
-            initialColor = Color(themeColors.inactiveItemColorVariant),
-            defaultColor = Color(defaultThemeValues.inactiveItemColorVariant),
-            outlineColor = Color(themeColors.textColor),
-            buttonColor = Color(themeColors.primaryColor),
+            titleColor = themeColors.textColor,
+            initialColor = themeColors.inactiveItemColorVariant,
+            defaultColor = defaultThemeValues.inactiveItemColorVariant,
+            outlineColor = themeColors.textColor,
+            buttonColor = themeColors.primaryColor,
             dialogColors = CardDefaults.cardColors().copy(
-                containerColor = Color(themeColors.backgroundColor),
-                contentColor = Color(themeColors.backgroundColor),
+                containerColor = themeColors.backgroundColor,
+                contentColor = themeColors.backgroundColor,
             ),
             onConfirm = { color ->
                 mainActivity.lifecycleScope.launch {
-                    mainActivity.settings.setInactiveItemColorVariant(color.toArgb())
+                    mainActivity.settings.setInactiveItemColorVariant(color)
                     viewModel.onEvent(
                         MainEvent.ThemeChange(
                             mainActivity.settings.getThemeColors()
@@ -498,18 +497,18 @@ fun CustomThemeSettingsLayout(
         )
         ColorPickerPreference(
             title = stringResource(R.string.NoteColor),
-            titleColor = Color(themeColors.textColor),
-            initialColor = Color(themeColors.noteColor),
-            defaultColor = Color(defaultThemeValues.noteColor),
-            outlineColor = Color(themeColors.textColor),
-            buttonColor = Color(themeColors.primaryColor),
+            titleColor = themeColors.textColor,
+            initialColor = themeColors.noteColor,
+            defaultColor = defaultThemeValues.noteColor,
+            outlineColor = themeColors.textColor,
+            buttonColor = themeColors.primaryColor,
             dialogColors = CardDefaults.cardColors().copy(
-                containerColor = Color(themeColors.backgroundColor),
-                contentColor = Color(themeColors.backgroundColor),
+                containerColor = themeColors.backgroundColor,
+                contentColor = themeColors.backgroundColor,
             ),
             onConfirm = { color ->
                 mainActivity.lifecycleScope.launch {
-                    mainActivity.settings.setNoteColor(color.toArgb())
+                    mainActivity.settings.setNoteColor(color)
                     viewModel.onEvent(
                         MainEvent.ThemeChange(
                             mainActivity.settings.getThemeColors()
@@ -520,18 +519,18 @@ fun CustomThemeSettingsLayout(
         )
         ColorPickerPreference(
             title = stringResource(R.string.NoteColorVariant),
-            titleColor = Color(themeColors.textColor),
-            initialColor = Color(themeColors.noteColorVariant),
-            defaultColor = Color(defaultThemeValues.noteColorVariant),
-            outlineColor = Color(themeColors.textColor),
-            buttonColor = Color(themeColors.primaryColor),
+            titleColor = themeColors.textColor,
+            initialColor = themeColors.noteColorVariant,
+            defaultColor = defaultThemeValues.noteColorVariant,
+            outlineColor = themeColors.textColor,
+            buttonColor = themeColors.primaryColor,
             dialogColors = CardDefaults.cardColors().copy(
-                containerColor = Color(themeColors.backgroundColor),
-                contentColor = Color(themeColors.backgroundColor),
+                containerColor = themeColors.backgroundColor,
+                contentColor = themeColors.backgroundColor,
             ),
             onConfirm = { color ->
                 mainActivity.lifecycleScope.launch {
-                    mainActivity.settings.setNoteColorVariant(color.toArgb())
+                    mainActivity.settings.setNoteColorVariant(color)
                     viewModel.onEvent(
                         MainEvent.ThemeChange(
                             mainActivity.settings.getThemeColors()
@@ -542,18 +541,18 @@ fun CustomThemeSettingsLayout(
         )
         ColorPickerPreference(
             title = stringResource(R.string.TextColor),
-            titleColor = Color(themeColors.textColor),
-            initialColor = Color(themeColors.textColor),
-            defaultColor = Color(defaultThemeValues.textColor),
-            outlineColor = Color(themeColors.textColor),
-            buttonColor = Color(themeColors.primaryColor),
+            titleColor = themeColors.textColor,
+            initialColor = themeColors.textColor,
+            defaultColor = defaultThemeValues.textColor,
+            outlineColor = themeColors.textColor,
+            buttonColor = themeColors.primaryColor,
             dialogColors = CardDefaults.cardColors().copy(
-                containerColor = Color(themeColors.backgroundColor),
-                contentColor = Color(themeColors.backgroundColor),
+                containerColor = themeColors.backgroundColor,
+                contentColor = themeColors.backgroundColor,
             ),
             onConfirm = { color ->
                 mainActivity.lifecycleScope.launch {
-                    mainActivity.settings.setTextColor(color.toArgb())
+                    mainActivity.settings.setTextColor(color)
                     viewModel.onEvent(
                         MainEvent.ThemeChange(
                             mainActivity.settings.getThemeColors()
@@ -564,18 +563,18 @@ fun CustomThemeSettingsLayout(
         )
         ColorPickerPreference(
             title = stringResource(R.string.ButtonTextColor),
-            titleColor = Color(themeColors.textColor),
-            initialColor = Color(themeColors.buttonTextColor),
-            defaultColor = Color(defaultThemeValues.buttonTextColor),
-            outlineColor = Color(themeColors.textColor),
-            buttonColor = Color(themeColors.primaryColor),
+            titleColor = themeColors.textColor,
+            initialColor = themeColors.buttonTextColor,
+            defaultColor = defaultThemeValues.buttonTextColor,
+            outlineColor = themeColors.textColor,
+            buttonColor = themeColors.primaryColor,
             dialogColors = CardDefaults.cardColors().copy(
-                containerColor = Color(themeColors.backgroundColor),
-                contentColor = Color(themeColors.backgroundColor),
+                containerColor = themeColors.backgroundColor,
+                contentColor = themeColors.backgroundColor,
             ),
             onConfirm = { color ->
                 mainActivity.lifecycleScope.launch {
-                    mainActivity.settings.setButtonTextColor(color.toArgb())
+                    mainActivity.settings.setButtonTextColor(color)
                     viewModel.onEvent(
                         MainEvent.ThemeChange(
                             mainActivity.settings.getThemeColors()
@@ -586,18 +585,18 @@ fun CustomThemeSettingsLayout(
         )
         ColorPickerPreference(
             title = stringResource(R.string.NoteTextColor),
-            titleColor = Color(themeColors.textColor),
-            initialColor = Color(themeColors.noteTextColor),
-            defaultColor = Color(defaultThemeValues.noteTextColor),
-            outlineColor = Color(themeColors.textColor),
-            buttonColor = Color(themeColors.primaryColor),
+            titleColor = themeColors.textColor,
+            initialColor = themeColors.noteTextColor,
+            defaultColor = defaultThemeValues.noteTextColor,
+            outlineColor = themeColors.textColor,
+            buttonColor = themeColors.primaryColor,
             dialogColors = CardDefaults.cardColors().copy(
-                containerColor = Color(themeColors.backgroundColor),
-                contentColor = Color(themeColors.backgroundColor),
+                containerColor = themeColors.backgroundColor,
+                contentColor = themeColors.backgroundColor,
             ),
             onConfirm = { color ->
                 mainActivity.lifecycleScope.launch {
-                    mainActivity.settings.setNoteTextColor(color.toArgb())
+                    mainActivity.settings.setNoteTextColor(color)
                     viewModel.onEvent(
                         MainEvent.ThemeChange(
                             mainActivity.settings.getThemeColors()
@@ -608,18 +607,18 @@ fun CustomThemeSettingsLayout(
         )
         ColorPickerPreference(
             title = stringResource(R.string.BackgroundColor),
-            titleColor = Color(themeColors.textColor),
-            initialColor = Color(themeColors.backgroundColor),
-            defaultColor = Color(defaultThemeValues.backgroundColor),
-            outlineColor = Color(themeColors.textColor),
-            buttonColor = Color(themeColors.primaryColor),
+            titleColor = themeColors.textColor,
+            initialColor = themeColors.backgroundColor,
+            defaultColor = defaultThemeValues.backgroundColor,
+            outlineColor = themeColors.textColor,
+            buttonColor = themeColors.primaryColor,
             dialogColors = CardDefaults.cardColors().copy(
-                containerColor = Color(themeColors.backgroundColor),
-                contentColor = Color(themeColors.backgroundColor),
+                containerColor = themeColors.backgroundColor,
+                contentColor = themeColors.backgroundColor,
             ),
             onConfirm = { color ->
                 mainActivity.lifecycleScope.launch {
-                    mainActivity.settings.setBackgroundColor(color.toArgb())
+                    mainActivity.settings.setBackgroundColor(color)
                     viewModel.onEvent(
                         MainEvent.ThemeChange(
                             mainActivity.settings.getThemeColors()

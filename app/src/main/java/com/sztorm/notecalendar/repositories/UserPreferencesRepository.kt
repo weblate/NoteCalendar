@@ -1,7 +1,8 @@
 package com.sztorm.notecalendar.repositories
 
 import android.content.Context
-import androidx.annotation.ColorInt
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.datastore.core.DataStore
 import androidx.datastore.core.IOException
 import androidx.datastore.preferences.SharedPreferencesMigration
@@ -54,44 +55,44 @@ class UserPreferencesRepository(private val context: Context) {
     private fun LocalTime.asInt(): Int = hour or (minute shl HOUR_BITS_SIZE)
 
     suspend fun getBackgroundColor(
-        @ColorInt default: Int = context.getColorFromAttr(R.attr.colorBackground)
-    ): Int = getPreference(PreferenceKeys.BackgroundColor, default)
+        default: Color = Color(context.getColorFromAttr(R.attr.colorBackground))
+    ) = Color(getPreference(PreferenceKeys.BackgroundColor, default.toArgb()))
 
     suspend fun getButtonTextColor(
-        @ColorInt default: Int = context.getColorFromAttr(R.attr.colorButtonText)
-    ): Int = getPreference(PreferenceKeys.ButtonTextColor, default)
+        default: Color = Color(context.getColorFromAttr(R.attr.colorButtonText))
+    ) = Color(getPreference(PreferenceKeys.ButtonTextColor, default.toArgb()))
 
     suspend fun getInactiveItemColor(
-        @ColorInt default: Int = context.getColorFromAttr(R.attr.colorInactiveItem)
-    ): Int = getPreference(PreferenceKeys.InactiveItemColor, default)
+        default: Color = Color(context.getColorFromAttr(R.attr.colorInactiveItem))
+    ) = Color(getPreference(PreferenceKeys.InactiveItemColor, default.toArgb()))
 
     suspend fun getInactiveItemColorVariant(
-        @ColorInt default: Int = context.getColorFromAttr(R.attr.colorInactiveItemVariant)
-    ): Int = getPreference(PreferenceKeys.InactiveItemColorVariant, default)
+        default: Color = Color(context.getColorFromAttr(R.attr.colorInactiveItemVariant))
+    ) = Color(getPreference(PreferenceKeys.InactiveItemColorVariant, default.toArgb()))
 
     suspend fun getNoteColor(
-        @ColorInt default: Int = context.getColorFromAttr(R.attr.colorNote)
-    ): Int = getPreference(PreferenceKeys.NoteColor, default)
+        default: Color = Color(context.getColorFromAttr(R.attr.colorNote))
+    ) = Color(getPreference(PreferenceKeys.NoteColor, default.toArgb()))
 
     suspend fun getNoteColorVariant(
-        @ColorInt default: Int = context.getColorFromAttr(R.attr.colorNoteVariant)
-    ): Int = getPreference(PreferenceKeys.NoteColorVariant, default)
+        default: Color = Color(context.getColorFromAttr(R.attr.colorNoteVariant))
+    ) = Color(getPreference(PreferenceKeys.NoteColorVariant, default.toArgb()))
 
     suspend fun getNoteTextColor(
-        @ColorInt default: Int = context.getColorFromAttr(R.attr.colorNoteText)
-    ): Int = getPreference(PreferenceKeys.NoteTextColor, default)
+        default: Color = Color(context.getColorFromAttr(R.attr.colorNoteText))
+    ) = Color(getPreference(PreferenceKeys.NoteTextColor, default.toArgb()))
 
     suspend fun getPrimaryColor(
-        @ColorInt default: Int = context.getColorFromAttr(R.attr.colorPrimary)
-    ): Int = getPreference(PreferenceKeys.PrimaryColor, default)
+        default: Color = Color(context.getColorFromAttr(R.attr.colorPrimary))
+    ) = Color(getPreference(PreferenceKeys.PrimaryColor, default.toArgb()))
 
     suspend fun getSecondaryColor(
-        @ColorInt default: Int = context.getColorFromAttr(R.attr.colorSecondary)
-    ): Int = getPreference(PreferenceKeys.SecondaryColor, default)
+        default: Color = Color(context.getColorFromAttr(R.attr.colorSecondary))
+    ) = Color(getPreference(PreferenceKeys.SecondaryColor, default.toArgb()))
 
     suspend fun getTextColor(
-        @ColorInt default: Int = context.getColorFromAttr(R.attr.colorText)
-    ): Int = getPreference(PreferenceKeys.TextColor, default)
+        default: Color = Color(context.getColorFromAttr(R.attr.colorText))
+    ) = Color(getPreference(PreferenceKeys.TextColor, default.toArgb()))
 
     suspend fun getThemeColors() = ThemeColors(
         getPrimaryColor(),
@@ -123,63 +124,63 @@ class UserPreferencesRepository(private val context: Context) {
     ): StartingViewType = getPreference(PreferenceKeys.StartingView, default.ordinal.toString())
         .let { StartingViewType.entries[it.toInt()] }
 
-    suspend fun setBackgroundColor(@ColorInt value: Int) {
+    suspend fun setBackgroundColor(value: Color) {
         context.preferences.edit {
-            it[PreferenceKeys.BackgroundColor] = value
+            it[PreferenceKeys.BackgroundColor] = value.toArgb()
         }
     }
 
-    suspend fun setButtonTextColor(@ColorInt value: Int) {
+    suspend fun setButtonTextColor(value: Color) {
         context.preferences.edit {
-            it[PreferenceKeys.ButtonTextColor] = value
+            it[PreferenceKeys.ButtonTextColor] = value.toArgb()
         }
     }
 
-    suspend fun setInactiveItemColor(@ColorInt value: Int) {
+    suspend fun setInactiveItemColor(value: Color) {
         context.preferences.edit {
-            it[PreferenceKeys.InactiveItemColor] = value
+            it[PreferenceKeys.InactiveItemColor] = value.toArgb()
         }
     }
 
-    suspend fun setInactiveItemColorVariant(@ColorInt value: Int) {
+    suspend fun setInactiveItemColorVariant(value: Color) {
         context.preferences.edit {
-            it[PreferenceKeys.InactiveItemColorVariant] = value
+            it[PreferenceKeys.InactiveItemColorVariant] = value.toArgb()
         }
     }
 
-    suspend fun setNoteColor(@ColorInt value: Int) {
+    suspend fun setNoteColor(value: Color) {
         context.preferences.edit {
-            it[PreferenceKeys.NoteColor] = value
+            it[PreferenceKeys.NoteColor] = value.toArgb()
         }
     }
 
-    suspend fun setNoteColorVariant(@ColorInt value: Int) {
+    suspend fun setNoteColorVariant(value: Color) {
         context.preferences.edit {
-            it[PreferenceKeys.NoteColorVariant] = value
+            it[PreferenceKeys.NoteColorVariant] = value.toArgb()
         }
     }
 
-    suspend fun setNoteTextColor(@ColorInt value: Int) {
+    suspend fun setNoteTextColor(value: Color) {
         context.preferences.edit {
-            it[PreferenceKeys.NoteTextColor] = value
+            it[PreferenceKeys.NoteTextColor] = value.toArgb()
         }
     }
 
-    suspend fun setPrimaryColor(@ColorInt value: Int) {
+    suspend fun setPrimaryColor(value: Color) {
         context.preferences.edit {
-            it[PreferenceKeys.PrimaryColor] = value
+            it[PreferenceKeys.PrimaryColor] = value.toArgb()
         }
     }
 
-    suspend fun setSecondaryColor(@ColorInt value: Int) {
+    suspend fun setSecondaryColor(value: Color) {
         context.preferences.edit {
-            it[PreferenceKeys.SecondaryColor] = value
+            it[PreferenceKeys.SecondaryColor] = value.toArgb()
         }
     }
 
-    suspend fun setTextColor(@ColorInt value: Int) {
+    suspend fun setTextColor(value: Color) {
         context.preferences.edit {
-            it[PreferenceKeys.TextColor] = value
+            it[PreferenceKeys.TextColor] = value.toArgb()
         }
     }
 

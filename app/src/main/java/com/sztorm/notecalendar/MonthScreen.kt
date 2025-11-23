@@ -19,7 +19,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -72,7 +71,7 @@ fun MonthScreen(
             text = currentYearMonth.getLocalizedName(),
             fontSize = 38.sp,
             fontWeight = FontWeight.Light,
-            color = Color(themeColors.textColor),
+            color = themeColors.textColor,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(15.dp)
@@ -81,8 +80,8 @@ fun MonthScreen(
             modifier = Modifier.padding(vertical = 8.dp),
             firstDayOfWeek = firstDayOfWeek,
             dayOfWeekText = { it.getLocalizedShortName() },
-            backgroundColor = Color(themeColors.secondaryColor),
-            textColor = Color(themeColors.buttonTextColor),
+            backgroundColor = themeColors.secondaryColor,
+            textColor = themeColors.buttonTextColor,
             fontSize = 16.sp,
         )
         InfiniteHorizontalPager(
@@ -159,11 +158,11 @@ private fun DayLayout(
                     when {
                         dayData.isSelected && dayData.hasNote -> {
                             drawCircle(
-                                color = Color(themeColors.secondaryColor),
+                                color = themeColors.secondaryColor,
                                 radius = secondRadius
                             )
                             drawCircle(
-                                color = Color(themeColors.primaryColor),
+                                color = themeColors.primaryColor,
                                 radius = radius,
                                 style = stroke
                             )
@@ -171,14 +170,14 @@ private fun DayLayout(
 
                         dayData.isSelected -> {
                             drawCircle(
-                                color = Color(themeColors.secondaryColor),
+                                color = themeColors.secondaryColor,
                                 radius = radiusWithStroke
                             )
                         }
 
                         dayData.hasNote && dayData.isInCurrentMonth -> {
                             drawCircle(
-                                color = Color(themeColors.primaryColor),
+                                color = themeColors.primaryColor,
                                 radius = radius,
                                 style = stroke
                             )
@@ -186,7 +185,7 @@ private fun DayLayout(
 
                         dayData.hasNote -> {
                             drawCircle(
-                                color = Color(themeColors.primaryColor)
+                                color = themeColors.primaryColor
                                     .copy(alpha = 0.3333333f),
                                 radius = radius,
                                 style = stroke
@@ -199,10 +198,10 @@ private fun DayLayout(
         Text(
             text = dayData.date.dayOfMonth.toString(),
             color = when {
-                dayData.isSelected -> Color(themeColors.buttonTextColor)
-                dayData.isToday -> Color(themeColors.secondaryColor)
-                dayData.isInCurrentMonth -> Color(themeColors.textColor)
-                else -> Color(themeColors.inactiveTextColor)
+                dayData.isSelected -> themeColors.buttonTextColor
+                dayData.isToday -> themeColors.secondaryColor
+                dayData.isInCurrentMonth -> themeColors.textColor
+                else -> themeColors.inactiveTextColor
             }
         )
     }

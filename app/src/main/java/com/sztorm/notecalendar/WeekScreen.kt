@@ -20,7 +20,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -206,28 +205,20 @@ fun WeekScreen(
         onReachTop = { days.loadPrevItems(isSelected, isToday, hasNote, bufferSize) },
         onReachBottom = { days.loadNextItems(isSelected, isToday, hasNote, bufferSize) }
     ) { index, item ->
-        val backgroundColor = Color(
-            when {
-                index.isEven -> themeColors.backgroundColor
-                else -> themeColors.backgroundColorVariant
-            }
-        )
+        val backgroundColor = when {
+            index.isEven -> themeColors.backgroundColor
+            else -> themeColors.backgroundColorVariant
+        }
         when (item) {
             is WeekViewDay -> {
-                val dayOfMonthTextColor = Color(
-                    when {
-                        item.isSelected -> themeColors.buttonTextColor
-                        else -> themeColors.getTextColorOf(
-                            item.date.dayOfWeek, firstDayOfWeek
-                        )
-                    }
-                )
-                val dayOfWeekTextColor = Color(
-                    when {
-                        item.isToday -> themeColors.secondaryColor
-                        else -> themeColors.textColor
-                    }
-                )
+                val dayOfMonthTextColor = when {
+                    item.isSelected -> themeColors.buttonTextColor
+                    else -> themeColors.getTextColorOf(item.date.dayOfWeek, firstDayOfWeek)
+                }
+                val dayOfWeekTextColor = when {
+                    item.isToday -> themeColors.secondaryColor
+                    else -> themeColors.textColor
+                }
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
@@ -268,11 +259,11 @@ fun WeekScreen(
                                     when {
                                         item.isSelected && item.hasNote -> {
                                             drawCircle(
-                                                color = Color(themeColors.secondaryColor),
+                                                color = themeColors.secondaryColor,
                                                 radius = secondRadius
                                             )
                                             drawCircle(
-                                                color = Color(themeColors.primaryColor),
+                                                color = themeColors.primaryColor,
                                                 radius = radius,
                                                 style = stroke
                                             )
@@ -280,14 +271,14 @@ fun WeekScreen(
 
                                         item.isSelected -> {
                                             drawCircle(
-                                                color = Color(themeColors.secondaryColor),
+                                                color = themeColors.secondaryColor,
                                                 radius = radiusWithStroke
                                             )
                                         }
 
                                         item.hasNote -> {
                                             drawCircle(
-                                                color = Color(themeColors.primaryColor),
+                                                color = themeColors.primaryColor,
                                                 radius = radius,
                                                 style = stroke
                                             )
@@ -309,7 +300,7 @@ fun WeekScreen(
                     text = item.yearMonth.getLocalizedName(),
                     fontSize = 28.sp,
                     textAlign = TextAlign.Center,
-                    color = Color(themeColors.textColor),
+                    color = themeColors.textColor,
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(color = backgroundColor)

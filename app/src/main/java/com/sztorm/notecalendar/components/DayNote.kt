@@ -9,12 +9,12 @@ import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Fill
-import com.sztorm.notecalendar.ThemeColors
 
 @Composable
-fun ThemedNote(
+fun DayNote(
     modifier: Modifier = Modifier,
-    themeValues: ThemeColors,
+    primaryColor: Color,
+    secondaryColor: Color,
     content: @Composable (ColumnScope.() -> Unit)
 ) {
     Column(
@@ -37,8 +37,8 @@ fun ThemedNote(
                 layer1.close()
 
                 onDrawBehind {
-                    drawPath(layer0, Color(themeValues.noteColor), style = Fill)
-                    drawPath(layer1, Color(themeValues.noteColorVariant), style = Fill)
+                    drawPath(layer0, primaryColor, style = Fill)
+                    drawPath(layer1, secondaryColor, style = Fill)
                 }
             }
             .fillMaxSize(),

@@ -42,7 +42,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalFocusManager
@@ -55,7 +54,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.lifecycleScope
 import com.sztorm.notecalendar.components.ThemedButton
 import com.sztorm.notecalendar.components.ThemedIconButton
-import com.sztorm.notecalendar.components.ThemedNote
+import com.sztorm.notecalendar.components.DayNote
 import com.sztorm.notecalendar.repositories.NoteRepository
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -175,7 +174,7 @@ fun DayPageLayout(
             BasicText(
                 text = date.dayOfMonth.toString(),
                 style = LocalTextStyle.current.copy(
-                    color = Color(themeColors.textColor),
+                    color = themeColors.textColor,
                     textAlign = TextAlign.Center,
                 ),
                 autoSize = TextAutoSize.StepBased(maxFontSize = 300.sp, stepSize = 0.1.sp),
@@ -188,7 +187,7 @@ fun DayPageLayout(
             BasicText(
                 text = date.month.getLocalizedGenitiveCaseName(),
                 style = LocalTextStyle.current.copy(
-                    color = Color(themeColors.textColor),
+                    color = themeColors.textColor,
                     textAlign = TextAlign.Center,
                 ),
                 autoSize = TextAutoSize.StepBased(stepSize = 0.1.sp),
@@ -201,7 +200,7 @@ fun DayPageLayout(
             BasicText(
                 text = date.dayOfWeek.getLocalizedName(),
                 style = LocalTextStyle.current.copy(
-                    color = Color(themeColors.textColor),
+                    color = themeColors.textColor,
                     textAlign = TextAlign.Center,
                 ),
                 autoSize = TextAutoSize.StepBased(stepSize = 0.1.sp),
@@ -236,25 +235,25 @@ fun DayPageLayout(
                                 animationSpec = tween(durationMillis = 500),
                                 initialOffsetX = { -it }
                             ) togetherWith
-                                fadeOut(animationSpec = tween(durationMillis = 400)) +
-                                slideOutVertically(
-                                    animationSpec = tween(durationMillis = 500),
-                                    targetOffsetY = { (it * 0.1f).toInt() }
-                                )
+                            fadeOut(animationSpec = tween(durationMillis = 400)) +
+                            slideOutVertically(
+                                animationSpec = tween(durationMillis = 500),
+                                targetOffsetY = { (it * 0.1f).toInt() }
+                            )
                         }
 
                         DayNoteTransitionState.Adding -> {
                             fadeIn(animationSpec = tween(durationMillis = 400)) togetherWith
-                                ExitTransition.None
+                            ExitTransition.None
                         }
 
                         else -> {
                             EnterTransition.None togetherWith
-                                fadeOut(animationSpec = tween(durationMillis = 400)) +
-                                slideOutVertically(
-                                    animationSpec = tween(durationMillis = 500),
-                                    targetOffsetY = { it }
-                                )
+                            fadeOut(animationSpec = tween(durationMillis = 400)) +
+                            slideOutVertically(
+                                animationSpec = tween(durationMillis = 500),
+                                targetOffsetY = { it }
+                            )
                         }
                     }
                 },
@@ -323,7 +322,7 @@ fun DayNoteEmptyLayout(
         ) {
             ThemedButton(
                 onClick = { dayNoteState.value = DayNoteState.Adding },
-                themeValues = themeColors,
+                themeColors = themeColors,
                 modifier = Modifier
                     .weight(1f)
                     .padding(start = 10.dp, top = 5.dp, end = 10.dp, bottom = 0.dp),
@@ -349,7 +348,7 @@ fun DayNoteEmptyLayout(
                             }
                         }
                     },
-                    themeValues = themeColors,
+                    themeColors = themeColors,
                     modifier = Modifier
                         .weight(1f)
                         .padding(start = 10.dp, top = 5.dp, end = 10.dp, bottom = 0.dp),
@@ -377,8 +376,9 @@ fun DayNoteAddLayout(
     val focusManager = LocalFocusManager.current
     var noteTextFieldState by remember { mutableStateOf(TextFieldState()) }
 
-    ThemedNote(
-        themeValues = themeColors,
+    DayNote(
+        primaryColor = themeColors.noteColor,
+        secondaryColor = themeColors.noteColorVariant,
         modifier = modifier
     ) {
         Row(
@@ -407,7 +407,7 @@ fun DayNoteAddLayout(
                         }
                     }
                 },
-                themeValues = themeColors,
+                themeColors = themeColors,
                 modifier = Modifier
                     .wrapContentSize()
                     .padding(start = 10.dp, top = 10.dp, end = 0.dp, bottom = 10.dp),
@@ -420,7 +420,7 @@ fun DayNoteAddLayout(
                     noteTextFieldState = TextFieldState()
                     dayNoteState.value = DayNoteState.Empty
                 },
-                themeValues = themeColors,
+                themeColors = themeColors,
                 modifier = Modifier
                     .wrapContentSize()
                     .padding(start = 5.dp, top = 10.dp, end = 0.dp, bottom = 10.dp),
@@ -437,17 +437,23 @@ fun DayNoteAddLayout(
                 state = noteTextFieldState,
                 lineLimits = TextFieldLineLimits.MultiLine(),
                 textStyle = TextStyle(
-                    color = Color(themeColors.noteTextColor),
+                    color = themeColors.noteTextColor,
                     fontSize = 24.sp,
                     lineHeight = 26.sp,
                 ),
-                cursorBrush = SolidColor(Color(themeColors.secondaryColor)),
+                cursorBrush = SolidColor(themeColors.secondaryColor),
                 modifier = Modifier
                     .fillMaxWidth()
                     .wrapContentHeight()
-                    .then(if (dayNoteState.value == DayNoteState.Empty) Modifier.focusProperties {
-                        canFocus = false
-                    } else Modifier)
+                    .then(
+                        when (dayNoteState.value) {
+                            DayNoteState.Empty -> Modifier.focusProperties {
+                                canFocus = false
+                            }
+
+                            else -> Modifier
+                        }
+                    )
                     .focusRequester(focusRequester)
             )
         }
@@ -473,8 +479,9 @@ fun DayNoteLayout(
     var noteTextFieldState by remember {
         mutableStateOf(TextFieldState(noteState.value?.text ?: ""))
     }
-    ThemedNote(
-        themeValues = themeColors,
+    DayNote(
+        primaryColor = themeColors.noteColor,
+        secondaryColor = themeColors.noteColorVariant,
         modifier = modifier
     ) {
         Row(
@@ -503,7 +510,7 @@ fun DayNoteLayout(
                             }
                         }
                     },
-                    themeValues = themeColors,
+                    themeColors = themeColors,
                     modifier = Modifier
                         .wrapContentSize()
                         .padding(start = 10.dp, top = 10.dp, end = 0.dp, bottom = 10.dp),
@@ -516,7 +523,7 @@ fun DayNoteLayout(
                         noteTextFieldState = TextFieldState(noteState.value?.text ?: "")
                         focusManager.clearFocus()
                     },
-                    themeValues = themeColors,
+                    themeColors = themeColors,
                     modifier = Modifier
                         .wrapContentSize()
                         .padding(start = 5.dp, top = 10.dp, end = 0.dp, bottom = 10.dp),
@@ -529,7 +536,7 @@ fun DayNoteLayout(
                         dayNoteState.value = DayNoteState.Editing
                         focusRequester.requestFocus()
                     },
-                    themeValues = themeColors,
+                    themeColors = themeColors,
                     icon = painterResource(R.drawable.icon_edit),
                     contentDescription = stringResource(R.string.EditNote),
                     modifier = Modifier
@@ -554,7 +561,7 @@ fun DayNoteLayout(
                         dayNoteState.value = DayNoteState.Empty
                         focusManager.clearFocus()
                     },
-                    themeValues = themeColors,
+                    themeColors = themeColors,
                     icon = painterResource(R.drawable.icon_delete),
                     contentDescription = stringResource(R.string.DeleteNote),
                     modifier = Modifier
@@ -573,11 +580,11 @@ fun DayNoteLayout(
                 readOnly = dayNoteState.value == DayNoteState.Reading,
                 lineLimits = TextFieldLineLimits.MultiLine(),
                 textStyle = TextStyle(
-                    color = Color(themeColors.noteTextColor),
+                    color = themeColors.noteTextColor,
                     fontSize = 24.sp,
                     lineHeight = 26.sp,
                 ),
-                cursorBrush = SolidColor(Color(themeColors.secondaryColor)),
+                cursorBrush = SolidColor(themeColors.secondaryColor),
                 modifier = Modifier
                     .fillMaxWidth()
                     .wrapContentHeight()

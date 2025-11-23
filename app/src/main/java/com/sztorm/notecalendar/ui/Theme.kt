@@ -38,7 +38,7 @@ private fun applySystemBarsColor(
 @Composable
 fun AppTheme(themeColors: ThemeColors, content: @Composable () -> Unit) {
     val view = LocalView.current
-    val isBackgroundLight = themeColors.colorScheme.background.luminance() > 0.5
+    val isBackgroundLight = themeColors.backgroundColor.luminance() > 0.5
     val selectBackgroundColor =
         if (isBackgroundLight) Color(0x40000000)
         else Color(0x40ffffff)
@@ -46,11 +46,11 @@ fun AppTheme(themeColors: ThemeColors, content: @Composable () -> Unit) {
     SideEffect {
         val window = (view.context as Activity).window
         applySystemBarsColor(
-            isBackgroundLight, window, view, themeColors.colorScheme.primary
+            isBackgroundLight, window, view, themeColors.primaryColor
         )
     }
     MaterialTheme(
-        colorScheme = themeColors.colorScheme,
+        colorScheme = themeColors.toColorScheme(),
         typography = Typography,
     ) {
         CompositionLocalProvider(

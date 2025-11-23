@@ -1,37 +1,27 @@
 package com.sztorm.notecalendar
 
-import androidx.annotation.ColorInt
 import androidx.compose.material3.lightColorScheme
-import androidx.core.graphics.ColorUtils
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
 import java.time.DayOfWeek
-import androidx.compose.ui.graphics.Color as CColor
 
 class ThemeColors(
-    @field:ColorInt val primaryColor: Int,
-    @field:ColorInt val secondaryColor: Int,
-    @field:ColorInt val inactiveItemColor: Int,
-    @field:ColorInt val inactiveItemColorVariant: Int,
-    @field:ColorInt val noteColor: Int,
-    @field:ColorInt val noteColorVariant: Int,
-    @field:ColorInt val textColor: Int,
-    @field:ColorInt val buttonTextColor: Int,
-    @field:ColorInt val noteTextColor: Int,
-    @field:ColorInt val backgroundColor: Int
+    val primaryColor: Color,
+    val secondaryColor: Color,
+    val inactiveItemColor: Color,
+    val inactiveItemColorVariant: Color,
+    val noteColor: Color,
+    val noteColorVariant: Color,
+    val textColor: Color,
+    val buttonTextColor: Color,
+    val noteTextColor: Color,
+    val backgroundColor: Color
 ) {
-    val colorScheme = lightColorScheme().copy(
-        primary = CColor(primaryColor),
-        secondary = CColor(secondaryColor),
-        background = CColor(backgroundColor),
-        surface = CColor(backgroundColor),
-        surfaceVariant = CColor(backgroundColor),
-        surfaceTint = CColor(backgroundColor),
-        surfaceContainer = CColor(backgroundColor)
-    )
-    val backgroundColorVariant: Int = ColorUtils.blendARGB(
-        backgroundColor, 0xffffffff.toInt(), 0.06f) // TODO: make it modifiable from settigns
-    val inactiveTextColor: Int = ColorUtils.setAlphaComponent(textColor, 255 / 3)
+    val backgroundColorVariant =
+        lerp(backgroundColor, Color.White, 0.06f) // TODO: make it modifiable from settigns
+    val inactiveTextColor = textColor.copy(alpha = 0.3333333f)
 
-    fun getTextColorOf(dayOfWeek: DayOfWeek, firstDayOfWeek: DayOfWeek): Int {
+    fun getTextColorOf(dayOfWeek: DayOfWeek, firstDayOfWeek: DayOfWeek): Color {
         val sixthDayOfWeek: DayOfWeek = firstDayOfWeek - 2
         val seventhDayOfWeek: DayOfWeek = firstDayOfWeek - 1
 
@@ -41,4 +31,14 @@ class ThemeColors(
             else -> textColor
         }
     }
+
+    fun toColorScheme() = lightColorScheme().copy(
+        primary = primaryColor,
+        secondary = secondaryColor,
+        background = backgroundColor,
+        surface = backgroundColor,
+        surfaceVariant = backgroundColor,
+        surfaceTint = backgroundColor,
+        surfaceContainer = backgroundColor
+    )
 }
