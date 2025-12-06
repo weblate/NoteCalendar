@@ -28,7 +28,7 @@ fun ThemedButton(
     colors = ButtonColors(
         containerColor = themeColors.primaryColor,
         contentColor = themeColors.buttonTextColor,
-        disabledContainerColor = themeColors.inactiveItemColor,
+        disabledContainerColor = themeColors.inactiveElementColor,
         disabledContentColor = themeColors.buttonTextColor
     ),
     content = content

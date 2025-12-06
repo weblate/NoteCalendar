@@ -6,9 +6,9 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 
 object PreferenceKeys {
     val BackgroundColor = intPreferencesKey("PrefKey_BackgroundColor")
+    val BackgroundColorVariant = intPreferencesKey("PrefKey_BackgroundColorVariant")
     val ButtonTextColor = intPreferencesKey("PrefKey_ButtonTextColor")
-    val InactiveItemColor = intPreferencesKey("PrefKey_InactiveItemColor")
-    val InactiveItemColorVariant = intPreferencesKey("PrefKey_InactiveItemColorVariant")
+    val InactiveElementColor = intPreferencesKey("PrefKey_InactiveElementColor")
     val NoteColor = intPreferencesKey("PrefKey_NoteColor")
     val NoteColorVariant = intPreferencesKey("PrefKey_NoteColorVariant")
     val NoteTextColor = intPreferencesKey("PrefKey_NoteTextColor")

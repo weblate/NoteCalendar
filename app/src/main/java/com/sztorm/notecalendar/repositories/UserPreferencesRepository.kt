@@ -11,10 +11,10 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.preferencesDataStore
 import com.sztorm.notecalendar.PreferenceKeys
-import com.sztorm.notecalendar.R
 import com.sztorm.notecalendar.StartingViewType
 import com.sztorm.notecalendar.ThemeColors
-import com.sztorm.notecalendar.helpers.ContextHelper.Companion.getColorFromAttr
+import com.sztorm.notecalendar.helpers.ContextHelper.Companion.isDarkThemeEnabled
+import com.sztorm.notecalendar.ui.getDefaultThemeColors
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -55,56 +55,66 @@ class UserPreferencesRepository(private val context: Context) {
     private fun LocalTime.asInt(): Int = hour or (minute shl HOUR_BITS_SIZE)
 
     suspend fun getBackgroundColor(
-        default: Color = Color(context.getColorFromAttr(R.attr.colorBackground))
+        default: Color = getDefaultThemeColors(context.isDarkThemeEnabled)
+            .backgroundColor
     ) = Color(getPreference(PreferenceKeys.BackgroundColor, default.toArgb()))
 
+    suspend fun getBackgroundColorVariant(
+        default: Color = getDefaultThemeColors(context.isDarkThemeEnabled)
+            .backgroundColorVariant
+    ) = Color(getPreference(PreferenceKeys.BackgroundColorVariant, default.toArgb()))
+
     suspend fun getButtonTextColor(
-        default: Color = Color(context.getColorFromAttr(R.attr.colorButtonText))
+        default: Color = getDefaultThemeColors(context.isDarkThemeEnabled)
+            .buttonTextColor
     ) = Color(getPreference(PreferenceKeys.ButtonTextColor, default.toArgb()))
 
-    suspend fun getInactiveItemColor(
-        default: Color = Color(context.getColorFromAttr(R.attr.colorInactiveItem))
-    ) = Color(getPreference(PreferenceKeys.InactiveItemColor, default.toArgb()))
-
-    suspend fun getInactiveItemColorVariant(
-        default: Color = Color(context.getColorFromAttr(R.attr.colorInactiveItemVariant))
-    ) = Color(getPreference(PreferenceKeys.InactiveItemColorVariant, default.toArgb()))
+    suspend fun getInactiveElementColor(
+        default: Color = getDefaultThemeColors(context.isDarkThemeEnabled)
+            .inactiveElementColor
+    ) = Color(getPreference(PreferenceKeys.InactiveElementColor, default.toArgb()))
 
     suspend fun getNoteColor(
-        default: Color = Color(context.getColorFromAttr(R.attr.colorNote))
+        default: Color = getDefaultThemeColors(context.isDarkThemeEnabled)
+            .noteColor
     ) = Color(getPreference(PreferenceKeys.NoteColor, default.toArgb()))
 
     suspend fun getNoteColorVariant(
-        default: Color = Color(context.getColorFromAttr(R.attr.colorNoteVariant))
+        default: Color = getDefaultThemeColors(context.isDarkThemeEnabled)
+            .noteColorVariant
     ) = Color(getPreference(PreferenceKeys.NoteColorVariant, default.toArgb()))
 
     suspend fun getNoteTextColor(
-        default: Color = Color(context.getColorFromAttr(R.attr.colorNoteText))
+        default: Color = getDefaultThemeColors(context.isDarkThemeEnabled)
+            .noteTextColor
     ) = Color(getPreference(PreferenceKeys.NoteTextColor, default.toArgb()))
 
     suspend fun getPrimaryColor(
-        default: Color = Color(context.getColorFromAttr(R.attr.colorPrimary))
+        default: Color = getDefaultThemeColors(context.isDarkThemeEnabled)
+            .primaryColor
     ) = Color(getPreference(PreferenceKeys.PrimaryColor, default.toArgb()))
 
     suspend fun getSecondaryColor(
-        default: Color = Color(context.getColorFromAttr(R.attr.colorSecondary))
+        default: Color = getDefaultThemeColors(context.isDarkThemeEnabled)
+            .secondaryColor
     ) = Color(getPreference(PreferenceKeys.SecondaryColor, default.toArgb()))
 
     suspend fun getTextColor(
-        default: Color = Color(context.getColorFromAttr(R.attr.colorText))
+        default: Color = getDefaultThemeColors(context.isDarkThemeEnabled)
+            .textColor
     ) = Color(getPreference(PreferenceKeys.TextColor, default.toArgb()))
 
     suspend fun getThemeColors() = ThemeColors(
         getPrimaryColor(),
         getSecondaryColor(),
-        getInactiveItemColor(),
-        getInactiveItemColorVariant(),
+        getInactiveElementColor(),
         getNoteColor(),
         getNoteColorVariant(),
         getTextColor(),
         getButtonTextColor(),
         getNoteTextColor(),
-        getBackgroundColor()
+        getBackgroundColor(),
+        getBackgroundColorVariant(),
     )
 
     suspend fun getTurnOnNotifications(default: Boolean = false): Boolean =
@@ -130,21 +140,21 @@ class UserPreferencesRepository(private val context: Context) {
         }
     }
 
+    suspend fun setBackgroundColorVariant(value: Color) {
+        context.preferences.edit {
+            it[PreferenceKeys.BackgroundColorVariant] = value.toArgb()
+        }
+    }
+
     suspend fun setButtonTextColor(value: Color) {
         context.preferences.edit {
             it[PreferenceKeys.ButtonTextColor] = value.toArgb()
         }
     }
 
-    suspend fun setInactiveItemColor(value: Color) {
+    suspend fun setInactiveElementColor(value: Color) {
         context.preferences.edit {
-            it[PreferenceKeys.InactiveItemColor] = value.toArgb()
-        }
-    }
-
-    suspend fun setInactiveItemColorVariant(value: Color) {
-        context.preferences.edit {
-            it[PreferenceKeys.InactiveItemColorVariant] = value.toArgb()
+            it[PreferenceKeys.InactiveElementColor] = value.toArgb()
         }
     }
 
@@ -188,14 +198,14 @@ class UserPreferencesRepository(private val context: Context) {
         with(themeColors) {
             setPrimaryColor(primaryColor)
             setSecondaryColor(secondaryColor)
-            setInactiveItemColor(inactiveItemColor)
-            setInactiveItemColorVariant(inactiveItemColorVariant)
+            setInactiveElementColor(inactiveElementColor)
             setNoteColor(noteColor)
             setNoteColorVariant(noteColorVariant)
             setTextColor(textColor)
             setButtonTextColor(buttonTextColor)
             setNoteTextColor(noteTextColor)
             setBackgroundColor(backgroundColor)
+            setBackgroundColorVariant(backgroundColorVariant)
         }
 
     suspend fun setTurnOnNotifications(value: Boolean) {

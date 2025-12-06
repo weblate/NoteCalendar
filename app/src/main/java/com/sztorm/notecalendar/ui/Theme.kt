@@ -4,7 +4,7 @@ import android.app.Activity
 import android.view.View
 import android.view.Window
 import androidx.compose.foundation.LocalIndication
-import androidx.compose.material3.ColorScheme
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
@@ -18,6 +18,34 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import com.sztorm.notecalendar.ThemeColors
 
+val DarkThemeColors = ThemeColors(
+    primaryColor = PrimaryDark,
+    secondaryColor = SecondaryDark,
+    inactiveElementColor = InactiveDark,
+    noteColor = NoteDark,
+    noteColorVariant = NoteVariantDark,
+    textColor = TextDark,
+    buttonTextColor = ButtonTextDark,
+    noteTextColor = NoteTextDark,
+    backgroundColor = BackgroundDark,
+    backgroundColorVariant = BackgroundVariantDark
+)
+
+val LightThemeColors = ThemeColors(
+    primaryColor = PrimaryLight,
+    secondaryColor = SecondaryLight,
+    inactiveElementColor = InactiveLight,
+    noteColor = NoteLight,
+    noteColorVariant = NoteVariantLight,
+    textColor = TextLight,
+    buttonTextColor = ButtonTextLight,
+    noteTextColor = NoteTextLight,
+    backgroundColor = BackgroundLight,
+    backgroundColorVariant = BackgroundVariantLight
+)
+
+fun getDefaultThemeColors(isDarkTheme: Boolean) =
+    if (isDarkTheme) DarkThemeColors else LightThemeColors
 
 private fun applySystemBarsColor(
     isBackgroundLight: Boolean,
@@ -50,7 +78,7 @@ fun AppTheme(themeColors: ThemeColors, content: @Composable () -> Unit) {
         )
     }
     MaterialTheme(
-        colorScheme = themeColors.toColorScheme(),
+        colorScheme = themeColors.getColorScheme(isSystemInDarkTheme()),
         typography = Typography,
     ) {
         CompositionLocalProvider(
