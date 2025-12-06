@@ -48,7 +48,7 @@ fun MonthScreen(
     noteRepository: NoteRepository
 ) {
     val themeColors = viewModel.state.themeColors
-    val selectedDateYearMonth = mainActivity.sharedData.viewedDate.yearMonth
+    val selectedDateYearMonth = viewModel.state.dayScreenDate.yearMonth
     val today = LocalDate.now()
     var firstDayOfWeek by remember {
         mutableStateOf(WeekFields.of(Locale.getDefault()).firstDayOfWeek)
@@ -109,10 +109,9 @@ fun MonthScreen(
                     modifier = modifier,
                     viewModel = viewModel,
                     navController = navController,
-                    mainActivity = mainActivity,
                     dayData = MonthViewDay(
                         date = date,
-                        isSelected = mainActivity.sharedData.viewedDate == date,
+                        isSelected = viewModel.state.dayScreenDate == date,
                         isToday = date == today,
                         isInCurrentMonth = date.month == yearMonth.month,
                         hasNote = notesCache.getBy(date) != null
@@ -128,7 +127,6 @@ private fun DayLayout(
     modifier: Modifier,
     viewModel: MainViewModel,
     navController: NavController,
-    mainActivity: MainActivity,
     dayData: MonthViewDay
 ) {
     val themeColors = viewModel.state.themeColors
@@ -139,11 +137,15 @@ private fun DayLayout(
             .aspectRatio(1f)
             .combinedClickable(
                 onClick = {
-                    mainActivity.sharedData.viewedDate = dayData.date
+                    viewModel.onEvent(
+                        MainEvent.DayScreenDateChange(dayData.date)
+                    )
                     navController.navigate(Screen.Day())
                 },
                 onLongClick = {
-                    mainActivity.sharedData.viewedDate = dayData.date
+                    viewModel.onEvent(
+                        MainEvent.DayScreenDateChange(dayData.date)
+                    )
                     navController.navigate(Screen.Day(isCreateOrEditRequested = true))
                 }
             )

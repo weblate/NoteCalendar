@@ -52,7 +52,6 @@ class MainActivity : ComponentActivity() {
     private var _settings: UserPreferencesRepository? = null
     private var _permissionManager: AppPermissionManager? = null
     private var _notificationManager: AppNotificationManager? = null
-    val sharedData = AppSharedData(viewedDate = LocalDate.now())
     val settings: UserPreferencesRepository
         get() = _settings!!
     val permissionManager: AppPermissionManager
@@ -84,7 +83,10 @@ class MainActivity : ComponentActivity() {
 
         runBlocking {
             viewModel = MainViewModel(
-                MainState(settings.getThemeColors())
+                initialState = MainState(
+                    themeColors = settings.getThemeColors(),
+                    dayScreenDate = LocalDate.now()
+                )
             )
             startingView = if (bundleResult != null && bundleResult.isLaunchedFromNotification) {
                 StartingViewType.DAY_VIEW

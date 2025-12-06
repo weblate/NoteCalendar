@@ -164,18 +164,18 @@ fun WeekScreen(
     noteRepository: NoteRepository
 ) {
     val themeColors = viewModel.state.themeColors
-    val viewedDate = mainActivity.sharedData.viewedDate
+    val dayScreenDate = viewModel.state.dayScreenDate
     val cachedItemsCount = 60
     val bufferSize = 30
     val today = LocalDate.now()
-    val isSelected = { date: LocalDate -> date == viewedDate }
+    val isSelected = { date: LocalDate -> date == dayScreenDate }
     val isToday = { date: LocalDate -> date == today }
     val hasNote = { date: LocalDate -> noteRepository.getBy(date) != null }
     var firstDayOfWeek by remember {
         mutableStateOf(WeekFields.of(Locale.getDefault()).firstDayOfWeek)
     }
     val days = remember {
-        val startDate: LocalDate = viewedDate.minusDays(cachedItemsCount / 2L)
+        val startDate: LocalDate = dayScreenDate.minusDays(cachedItemsCount / 2L)
 
         mutableStateListOf<WeekViewItem>().apply {
             initItems(
@@ -226,11 +226,15 @@ fun WeekScreen(
                         .background(color = backgroundColor)
                         .combinedClickable(
                             onClick = {
-                                mainActivity.sharedData.viewedDate = item.date
+                                viewModel.onEvent(
+                                    MainEvent.DayScreenDateChange(item.date)
+                                )
                                 navController.navigate(Screen.Day())
                             },
                             onLongClick = {
-                                mainActivity.sharedData.viewedDate = item.date
+                                viewModel.onEvent(
+                                    MainEvent.DayScreenDateChange(item.date)
+                                )
                                 navController.navigate(
                                     Screen.Day(isCreateOrEditRequested = true)
                                 )

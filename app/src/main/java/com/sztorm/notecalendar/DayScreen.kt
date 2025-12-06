@@ -82,7 +82,7 @@ fun DayScreen(
     noteRepository: NoteRepository,
     isCreateOrEditRequested: Boolean = false
 ) {
-    var prevDate: LocalDate by remember { mutableStateOf(mainActivity.sharedData.viewedDate) }
+    var prevDate: LocalDate by remember { mutableStateOf(viewModel.state.dayScreenDate) }
     var startDate: LocalDate by remember { mutableStateOf(prevDate) }
     var isCreateOrEditRequested by remember { mutableStateOf(isCreateOrEditRequested) }
 
@@ -117,7 +117,9 @@ fun DayScreen(
                         isCreateOrEditRequested = false
                         prevDate = startDate
                         startDate = startDate.minusDays(velocity.sign.toLong())
-                        mainActivity.sharedData.viewedDate = startDate
+                        viewModel.onEvent(
+                            MainEvent.DayScreenDateChange(startDate)
+                        )
                     }
                 }
             ),
@@ -141,7 +143,7 @@ fun DayPageLayout(
     isCreateOrEditRequested: Boolean
 ) {
     LaunchedEffect(Unit) {
-        mainActivity.sharedData.viewedDate = date
+        viewModel.onEvent(MainEvent.DayScreenDateChange(date))
     }
     val noteState = remember {
         mutableStateOf(noteRepository.getBy(date))
@@ -389,7 +391,7 @@ fun DayNoteAddLayout(
                 onClick = {
                     focusManager.clearFocus()
                     val noteData = NoteData(
-                        date = mainActivity.sharedData.viewedDate.toString(),
+                        date = viewModel.state.dayScreenDate.toString(),
                         text = noteTextFieldState.text.toString()
                     )
                     noteRepository.add(noteData)
@@ -492,7 +494,7 @@ fun DayNoteLayout(
                     onClick = {
                         dayNoteState.value = DayNoteState.Reading
                         val note = NoteData(
-                            date = mainActivity.sharedData.viewedDate.toString(),
+                            date = viewModel.state.dayScreenDate.toString(),
                             text = noteTextFieldState.text.toString()
                         )
                         noteRepository.update(note)
