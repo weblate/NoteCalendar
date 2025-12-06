@@ -13,7 +13,7 @@ import androidx.datastore.preferences.preferencesDataStore
 import com.sztorm.notecalendar.PreferenceKeys
 import com.sztorm.notecalendar.StartingViewType
 import com.sztorm.notecalendar.ThemeColors
-import com.sztorm.notecalendar.helpers.ContextHelper.Companion.isDarkThemeEnabled
+import com.sztorm.notecalendar.isDarkThemeEnabled
 import com.sztorm.notecalendar.ui.getDefaultThemeColors
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first

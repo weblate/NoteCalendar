@@ -5,7 +5,11 @@ package com.sztorm.notecalendar
 import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.ClipData
+import android.content.Context
+import android.content.Intent
+import android.content.res.Configuration
 import android.os.Build
+import android.os.Parcelable
 import androidx.annotation.StringRes
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
@@ -25,6 +29,18 @@ import java.time.Month
 import java.time.YearMonth
 import java.time.format.TextStyle
 import java.util.Locale as JLocale
+
+fun <T : Parcelable> Intent.getParcelableExtraCompat(name: String, clazz: Class<T>): T? {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        return getParcelableExtra(name, clazz)
+    }
+    @Suppress("DEPRECATION")
+    return getParcelableExtra(name)
+}
+
+val Context.isDarkThemeEnabled: Boolean
+    get() = (this.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
+    Configuration.UI_MODE_NIGHT_YES
 
 val Int.isEven
     get() = (this and 1) == 0
