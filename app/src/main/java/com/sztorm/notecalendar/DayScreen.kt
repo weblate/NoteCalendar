@@ -44,6 +44,7 @@ import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -52,9 +53,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.lifecycleScope
+import com.sztorm.notecalendar.components.DayNote
 import com.sztorm.notecalendar.components.ThemedButton
 import com.sztorm.notecalendar.components.ThemedIconButton
-import com.sztorm.notecalendar.components.DayNote
 import com.sztorm.notecalendar.repositories.NoteRepository
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -380,6 +381,8 @@ fun DayNoteAddLayout(
 
     DayNote(
         color = themeColors.noteColor,
+        bendTint = themeColors.noteColorVariant,
+        bendShadowWidth = with(LocalDensity.current) { 2.dp.toPx() },
         modifier = modifier
     ) {
         Row(
@@ -482,6 +485,8 @@ fun DayNoteLayout(
     }
     DayNote(
         color = themeColors.noteColor,
+        bendTint = themeColors.noteColorVariant,
+        bendShadowWidth = with(LocalDensity.current) { 2.dp.toPx() },
         modifier = modifier
     ) {
         Row(
