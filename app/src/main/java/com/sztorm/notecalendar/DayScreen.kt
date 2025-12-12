@@ -25,11 +25,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.text.input.TextFieldState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -171,47 +172,50 @@ fun DayPageLayout(
     Column(modifier = modifier) {
         Column(
             modifier = draggableModifier
+                .verticalScroll(rememberScrollState())
                 .fillMaxWidth()
-                .weight(0.72f)
+                .weight(0.6f)
         ) {
+            Spacer(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(0.5f)
+            )
             BasicText(
                 text = date.dayOfMonth.toString(),
                 style = LocalTextStyle.current.copy(
                     color = themeColors.textColor,
                     textAlign = TextAlign.Center,
+                    fontSize = 140.sp
                 ),
-                autoSize = TextAutoSize.StepBased(maxFontSize = 300.sp, stepSize = 0.1.sp),
                 maxLines = 1,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .weight(0.44f)
-                    .padding(5.dp)
+                    .weight(4f)
             )
             BasicText(
                 text = date.month.getLocalizedGenitiveCaseName(),
                 style = LocalTextStyle.current.copy(
                     color = themeColors.textColor,
                     textAlign = TextAlign.Center,
+                    fontSize = 36.sp
                 ),
-                autoSize = TextAutoSize.StepBased(stepSize = 0.1.sp),
                 maxLines = 1,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .weight(0.18f)
-                    .padding(5.dp)
+                    .weight(1.5f)
             )
             BasicText(
                 text = date.dayOfWeek.getLocalizedName(),
                 style = LocalTextStyle.current.copy(
                     color = themeColors.textColor,
                     textAlign = TextAlign.Center,
+                    fontSize = 24.sp
                 ),
-                autoSize = TextAutoSize.StepBased(stepSize = 0.1.sp),
                 maxLines = 1,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .weight(0.10f)
-                    .padding(5.dp)
+                    .weight(1f)
             )
         }
         Column(
