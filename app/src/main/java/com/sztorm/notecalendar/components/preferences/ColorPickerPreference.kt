@@ -35,6 +35,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogProperties
 import com.sztorm.notecalendar.R
 import com.sztorm.notecalendar.components.ColorPicker
+import com.sztorm.notecalendar.components.ColorPickerColors
+import com.sztorm.notecalendar.components.ColorPickerDefaults
 import com.sztorm.notecalendar.components.ConfirmationDialog
 import com.sztorm.notecalendar.components.RgbColor
 import com.sztorm.notecalendar.components.rememberColorPickerState
@@ -54,6 +56,7 @@ fun ColorPickerPreference(
     dividerColor: Color = DividerDefaults.color,
     dialogColors: CardColors = CardDefaults.cardColors(),
     buttonColor: Color = Color.Unspecified,
+    colorPickerColors: ColorPickerColors = ColorPickerDefaults.colors(),
     icon: Painter? = null,
     iconColorFilter: ColorFilter? = null,
     enabled: Boolean = true
@@ -175,7 +178,7 @@ fun ColorPickerPreference(
                 )
             }
             Row(modifier = Modifier.fillMaxWidth()) {
-                ColorPicker(state = colorPickerState)
+                ColorPicker(state = colorPickerState, colors = colorPickerColors)
             }
         }
     }

@@ -26,6 +26,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.mikepenz.aboutlibraries.LibsBuilder
+import com.sztorm.notecalendar.components.ColorPickerDefaults
 import com.sztorm.notecalendar.components.preferences.CategoryPreference
 import com.sztorm.notecalendar.components.preferences.ColorPickerPreference
 import com.sztorm.notecalendar.components.preferences.ConfirmationPreference
@@ -364,6 +365,12 @@ fun CustomThemeSettingsLayout(
             dialogColors = CardDefaults.cardColors().copy(
                 containerColor = themeColors.backgroundColor,
                 contentColor = themeColors.backgroundColor,
+            ),
+            colorPickerColors = ColorPickerDefaults.colors().copy(
+                backgroundColor = themeColors.backgroundColor,
+                labelColor = themeColors.textColor,
+                tabButtonColor = themeColors.primaryColor,
+                iconButtonColor = themeColors.textColor,
             ),
             onConfirm = { color ->
                 mainActivity.lifecycleScope.launch {

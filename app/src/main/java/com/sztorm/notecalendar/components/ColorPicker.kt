@@ -1,7 +1,9 @@
 package com.sztorm.notecalendar.components
 
 import android.content.ClipData
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -16,18 +18,25 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults.outlinedIconButtonColors
 import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedIconButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonColors
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderColors
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextFieldColors
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableFloatState
 import androidx.compose.runtime.MutableState
@@ -417,7 +426,43 @@ private class ColorPickerStateImpl : ColorPickerState {
     }
 }
 
-data class ColorPickerColors(val c: Color)
+object ColorPickerDefaults {
+    private var defaultColorsCached: ColorPickerColors? = null
+    private val defaultColors: ColorPickerColors
+        @Composable
+        get() {
+            val cached = defaultColorsCached
+
+            if (cached != null) return cached
+            else {
+                val result = ColorPickerColors(
+                    backgroundColor = MaterialTheme.colorScheme.background,
+                    labelColor = MaterialTheme.colorScheme.onBackground,
+                    tabButtonColor = MaterialTheme.colorScheme.primary,
+                    iconButtonColor = MaterialTheme.colorScheme.onBackground,
+                    textFieldColors = OutlinedTextFieldDefaults.colors(),
+                    sliderColors = SliderDefaults.colors(),
+                    segmentedButtonColors = SegmentedButtonDefaults.colors()
+                )
+                defaultColorsCached = result
+
+                return result
+            }
+        }
+
+    @Composable
+    fun colors() = defaultColors
+}
+
+data class ColorPickerColors(
+    val backgroundColor: Color,
+    val labelColor: Color,
+    val tabButtonColor: Color,
+    val iconButtonColor: Color,
+    val textFieldColors: TextFieldColors,
+    val sliderColors: SliderColors,
+    val segmentedButtonColors: SegmentedButtonColors
+)
 
 private enum class CurrentAction {
     None,
@@ -442,14 +487,18 @@ fun rememberColorPickerState(color: Color): ColorPickerState =
 fun ColorPicker(
     state: ColorPickerState,
     modifier: Modifier = Modifier,
-    colors: ColorPickerColors = ColorPickerColors(c = Color.Unspecified)
+    colors: ColorPickerColors = ColorPickerDefaults.colors()
     // TODO: colorPickerValues or smth like that for labels like Red, Blue, Green, Hue, ..
 ) {
     val navController = rememberNavController()
     val initialTab = TabType.ColorCodes
     var selectedTabIndex by rememberSaveable { mutableIntStateOf(initialTab.ordinal) }
 
-    Column(modifier = modifier.fillMaxWidth()) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(color = colors.backgroundColor)
+    ) {
         when (TabType.entries[selectedTabIndex]) {
             TabType.ColorCodes -> HsvColorPicker(state)
             TabType.Rgb -> RgbColorPicker(state)
@@ -457,7 +506,10 @@ fun ColorPicker(
             TabType.Hsl -> HslColorPicker(state)
         }
         Spacer(modifier = Modifier.height(8.dp))
-        PrimaryTabRow(selectedTabIndex = selectedTabIndex) {
+        PrimaryTabRow(
+            selectedTabIndex = selectedTabIndex,
+            divider = { HorizontalDivider(color = colors.textFieldColors.unfocusedIndicatorColor) }
+        ) {
             TabType.entries.forEachIndexed { index, tab ->
                 Tab(
                     selected = selectedTabIndex == index,
@@ -468,7 +520,8 @@ fun ColorPicker(
                     text = {
                         Text(
                             text = tab.label,
-                            overflow = TextOverflow.Ellipsis
+                            overflow = TextOverflow.Ellipsis,
+                            color = colors.tabButtonColor
                         )
                     }
                 )
@@ -478,10 +531,10 @@ fun ColorPicker(
             navController = navController,
             startDestination = initialTab.route
         ) {
-            composable(TabType.ColorCodes.route) { ColorCodesTab(state) }
-            composable(TabType.Rgb.route) { RgbTab(state) }
-            composable(TabType.Hsv.route) { HsvTab(state) }
-            composable(TabType.Hsl.route) { HslTab(state) }
+            composable(TabType.ColorCodes.route) { ColorCodesTab(state, colors) }
+            composable(TabType.Rgb.route) { RgbTab(state, colors) }
+            composable(TabType.Hsv.route) { HsvTab(state, colors) }
+            composable(TabType.Hsl.route) { HslTab(state, colors) }
         }
     }
 }
@@ -1177,6 +1230,7 @@ private fun ColorCodeRow(
     value: String,
     onValueChange: (String) -> Unit,
     onPaste: (ClipData) -> Unit,
+    colors: ColorPickerColors,
     modifier: Modifier = Modifier,
 ) {
     val clipboardManager = LocalClipboard.current
@@ -1193,6 +1247,7 @@ private fun ColorCodeRow(
             readOnly = true,
             singleLine = true,
             textStyle = LocalTextStyle.current.copy(textAlign = TextAlign.Center),
+            colors = colors.textFieldColors,
             modifier = Modifier.width(205.dp * LocalDensity.current.fontScale)
         )
         OutlinedIconButton(
@@ -1203,15 +1258,17 @@ private fun ColorCodeRow(
                     )
                 }
             },
+            border = BorderStroke(width = 1.dp, color = colors.iconButtonColor),
             colors = outlinedIconButtonColors(
-                contentColor = Color.Black,
+                contentColor = colors.tabButtonColor,
             ),
+            modifier = Modifier.padding(start = 4.dp)
         ) {
             Icon(
                 imageVector = ImageVector
                     .vectorResource(R.drawable.icon_outline_content_copy_24),
                 contentDescription = "copy",
-                tint = Color.Black
+                tint = colors.iconButtonColor
             )
         }
         OutlinedIconButton(
@@ -1222,37 +1279,39 @@ private fun ColorCodeRow(
                     }
                 }
             },
+            border = BorderStroke(width = 1.dp, color = colors.iconButtonColor),
             colors = outlinedIconButtonColors(
-                contentColor = Color.Black,
+                contentColor = colors.tabButtonColor,
             ),
+            modifier = Modifier.padding(start = 4.dp)
         ) {
             Icon(
                 imageVector = ImageVector
                     .vectorResource(R.drawable.icon_outline_content_paste_24),
                 contentDescription = "paste",
-                tint = Color.Black
+                tint = colors.iconButtonColor
             )
         }
     }
 }
 
 @Composable
-private fun ColorCodesTab(state: ColorPickerState) {
+private fun ColorCodesTab(state: ColorPickerState, colors: ColorPickerColors) {
     var hexCodeState by remember(state.rgb) {
         val (r, g, b) = state.rgb.toColor().toColorRGBA32()
         mutableStateOf("#%02x%02x%02x".format(r.toInt(), g.toInt(), b.toInt()))
     }
     var rgbCodeState by remember(state.rgb) {
         val (r, g, b) = state.rgb.toColor().toColorRGBA32()
-        mutableStateOf("rgb(%d,%d,%d)".format(r.toInt(), g.toInt(), b.toInt()))
+        mutableStateOf("rgb(%d, %d, %d)".format(r.toInt(), g.toInt(), b.toInt()))
     }
     var hsvCodeState by remember(state.rgb) {
         val (h, s, v) = state.hsv
-        mutableStateOf("hsv(%.0f,%.0f%%,%.0f%%)".format(h, s * 100f, v * 100f))
+        mutableStateOf("hsv(%.0f, %.0f%%, %.0f%%)".format(h, s * 100f, v * 100f))
     }
     var hslCodeState by remember(state.rgb) {
         val (h, s, l) = state.hsl
-        mutableStateOf("hsl(%.0f,%.0f%%,%.0f%%)".format(h, s * 100f, l * 100f))
+        mutableStateOf("hsl(%.0f, %.0f%%, %.0f%%)".format(h, s * 100f, l * 100f))
     }
     Column(
         modifier = Modifier.fillMaxWidth()
@@ -1267,6 +1326,7 @@ private fun ColorCodesTab(state: ColorPickerState) {
                     .firstOrNull()
                     ?.let { state.rgb = it.toColor().toRgbColor() }
             },
+            colors = colors,
             modifier = Modifier.padding(top = 8.dp)
         )
         ColorCodeRow(
@@ -1279,6 +1339,7 @@ private fun ColorCodesTab(state: ColorPickerState) {
                     .firstOrNull()
                     ?.let { state.rgb = it }
             },
+            colors = colors,
             modifier = Modifier.padding(top = 8.dp)
         )
         ColorCodeRow(
@@ -1291,6 +1352,7 @@ private fun ColorCodesTab(state: ColorPickerState) {
                     .firstOrNull()
                     ?.let { state.hsv = it }
             },
+            colors = colors,
             modifier = Modifier.padding(top = 8.dp)
         )
         ColorCodeRow(
@@ -1303,6 +1365,7 @@ private fun ColorCodesTab(state: ColorPickerState) {
                     .firstOrNull()
                     ?.let { state.hsl = it }
             },
+            colors = colors,
             modifier = Modifier.padding(top = 8.dp)
         )
     }
@@ -1333,6 +1396,8 @@ private fun ColorComponentSlider(
     prefix: @Composable (() -> Unit)? = null,
     suffix: @Composable (() -> Unit)? = null,
     textColor: Color = Color.Unspecified,
+    textFieldColors: TextFieldColors,
+    sliderColors: SliderColors
 ) = ColorComponentSlider(
     text = text,
     value = value,
@@ -1344,7 +1409,9 @@ private fun ColorComponentSlider(
     onValueChange = onValueChange,
     prefix = prefix,
     suffix = suffix,
-    textColor = textColor
+    textColor = textColor,
+    textFieldColors = textFieldColors,
+    sliderColors = sliderColors
 )
 
 @Composable
@@ -1356,6 +1423,8 @@ private fun ColorComponentSlider(
     prefix: @Composable (() -> Unit)? = null,
     suffix: @Composable (() -> Unit)? = null,
     textColor: Color = Color.Unspecified,
+    textFieldColors: TextFieldColors,
+    sliderColors: SliderColors
 ) = ColorComponentSlider(
     text = text,
     value = value,
@@ -1368,7 +1437,9 @@ private fun ColorComponentSlider(
     steps = valueRange.last + 1 - valueRange.first,
     prefix = prefix,
     suffix = suffix,
-    textColor = textColor
+    textColor = textColor,
+    textFieldColors = textFieldColors,
+    sliderColors = sliderColors
 )
 
 @Composable
@@ -1385,6 +1456,8 @@ private inline fun <reified T : Comparable<T>> ColorComponentSlider(
     noinline prefix: @Composable (() -> Unit)? = null,
     noinline suffix: @Composable (() -> Unit)? = null,
     textColor: Color = Color.Unspecified,
+    textFieldColors: TextFieldColors,
+    sliderColors: SliderColors
 ) {
     // TODO: allow to select text
     var textState by remember(value) {
@@ -1412,7 +1485,8 @@ private inline fun <reified T : Comparable<T>> ColorComponentSlider(
                     value = toFloat(value),
                     onValueChange = { onValueChange(floatToT(it)) },
                     valueRange = toFloat(valueRange.start)..toFloat(valueRange.endInclusive),
-                    steps = steps
+                    steps = steps,
+                    colors = sliderColors
                 )
             }
             Spacer(modifier = Modifier.width(16.dp))
@@ -1438,6 +1512,7 @@ private inline fun <reified T : Comparable<T>> ColorComponentSlider(
                         keyboardType = KeyboardType.Decimal,
                     ),
                     textStyle = LocalTextStyle.current.copy(textAlign = TextAlign.Center),
+                    colors = textFieldColors,
                     prefix = prefix,
                     suffix = suffix,
                     modifier = Modifier.onFocusChanged {
@@ -1450,7 +1525,7 @@ private inline fun <reified T : Comparable<T>> ColorComponentSlider(
 }
 
 @Composable
-private fun RgbTab(state: ColorPickerState) {
+private fun RgbTab(state: ColorPickerState, colors: ColorPickerColors) {
     var selectedValueFormatIndex by remember { mutableIntStateOf(0) }
     fun is0To1Format() = selectedValueFormatIndex == 0
     val valueFormats = listOf("0..1", "0..255")
@@ -1469,7 +1544,8 @@ private fun RgbTab(state: ColorPickerState) {
                     ),
                     onClick = { selectedValueFormatIndex = index },
                     selected = index == selectedValueFormatIndex,
-                    label = { Text(label) }
+                    label = { Text(label) },
+                    colors = colors.segmentedButtonColors
                 )
             }
         }
@@ -1481,7 +1557,9 @@ private fun RgbTab(state: ColorPickerState) {
                     valueRange = 0f..1f,
                     onValueChange = { state.rgb = state.rgb.copy(red = it) },
                     format = { it.formatUpToTwoDecimalPlaces() },
-                    textColor = Color.Black
+                    textColor = colors.labelColor,
+                    sliderColors = colors.sliderColors,
+                    textFieldColors = colors.textFieldColors
                 )
             } else {
                 ColorComponentSlider(
@@ -1489,7 +1567,9 @@ private fun RgbTab(state: ColorPickerState) {
                     value = (state.rgb.red * 255f).roundToInt(),
                     valueRange = 0..255,
                     onValueChange = { state.rgb = state.rgb.copy(red = it.toFloat() / 255f) },
-                    textColor = Color.Black
+                    textColor = colors.labelColor,
+                    sliderColors = colors.sliderColors,
+                    textFieldColors = colors.textFieldColors
                 )
             }
         }
@@ -1501,7 +1581,9 @@ private fun RgbTab(state: ColorPickerState) {
                     valueRange = 0f..1f,
                     onValueChange = { state.rgb = state.rgb.copy(green = it) },
                     format = { it.formatUpToTwoDecimalPlaces() },
-                    textColor = Color.Black
+                    textColor = colors.labelColor,
+                    sliderColors = colors.sliderColors,
+                    textFieldColors = colors.textFieldColors
                 )
             } else {
                 ColorComponentSlider(
@@ -1509,7 +1591,9 @@ private fun RgbTab(state: ColorPickerState) {
                     value = (state.rgb.green * 255f).roundToInt(),
                     valueRange = 0..255,
                     onValueChange = { state.rgb = state.rgb.copy(green = it.toFloat() / 255f) },
-                    textColor = Color.Black
+                    textColor = colors.labelColor,
+                    sliderColors = colors.sliderColors,
+                    textFieldColors = colors.textFieldColors
                 )
             }
         }
@@ -1521,7 +1605,9 @@ private fun RgbTab(state: ColorPickerState) {
                     valueRange = 0f..1f,
                     onValueChange = { state.rgb = state.rgb.copy(blue = it) },
                     format = { it.formatUpToTwoDecimalPlaces() },
-                    textColor = Color.Black
+                    textColor = colors.labelColor,
+                    sliderColors = colors.sliderColors,
+                    textFieldColors = colors.textFieldColors
                 )
             } else {
                 ColorComponentSlider(
@@ -1529,7 +1615,9 @@ private fun RgbTab(state: ColorPickerState) {
                     value = (state.rgb.blue * 255).roundToInt(),
                     valueRange = 0..255,
                     onValueChange = { state.rgb = state.rgb.copy(blue = it.toFloat() / 255f) },
-                    textColor = Color.Black
+                    textColor = colors.labelColor,
+                    sliderColors = colors.sliderColors,
+                    textFieldColors = colors.textFieldColors
                 )
             }
         }
@@ -1537,7 +1625,7 @@ private fun RgbTab(state: ColorPickerState) {
 }
 
 @Composable
-private fun HsvTab(state: ColorPickerState) {
+private fun HsvTab(state: ColorPickerState, colors: ColorPickerColors) {
     var selectedValueFormatIndex by remember { mutableIntStateOf(0) }
     fun is0To1Format() = selectedValueFormatIndex == 0
     val valueFormats = listOf("0..1", "0%..100%")
@@ -1556,7 +1644,8 @@ private fun HsvTab(state: ColorPickerState) {
                     ),
                     onClick = { selectedValueFormatIndex = index },
                     selected = index == selectedValueFormatIndex,
-                    label = { Text(label) }
+                    label = { Text(label) },
+                    colors = colors.segmentedButtonColors
                 )
             }
         }
@@ -1568,7 +1657,9 @@ private fun HsvTab(state: ColorPickerState) {
                 onValueChange = { state.hsv = state.hsv.copy(hue = it) },
                 format = { it.formatToInteger() },
                 suffix = { Text("°") },
-                textColor = Color.Black
+                textColor = colors.labelColor,
+                sliderColors = colors.sliderColors,
+                textFieldColors = colors.textFieldColors
             )
         }
         if (is0To1Format()) {
@@ -1579,7 +1670,9 @@ private fun HsvTab(state: ColorPickerState) {
                     valueRange = 0f..1f,
                     onValueChange = { state.hsv = state.hsv.copy(saturation = it) },
                     format = { it.formatUpToTwoDecimalPlaces() },
-                    textColor = Color.Black
+                    textColor = colors.labelColor,
+                    sliderColors = colors.sliderColors,
+                    textFieldColors = colors.textFieldColors
                 )
             }
         } else {
@@ -1591,7 +1684,9 @@ private fun HsvTab(state: ColorPickerState) {
                     onValueChange = { state.hsv = state.hsv.copy(saturation = it * 0.01f) },
                     format = { it.formatToInteger() },
                     suffix = { Text("%") },
-                    textColor = Color.Black
+                    textColor = colors.labelColor,
+                    sliderColors = colors.sliderColors,
+                    textFieldColors = colors.textFieldColors
                 )
             }
         }
@@ -1603,7 +1698,9 @@ private fun HsvTab(state: ColorPickerState) {
                     valueRange = 0f..1f,
                     onValueChange = { state.hsv = state.hsv.copy(value = it) },
                     format = { it.formatUpToTwoDecimalPlaces() },
-                    textColor = Color.Black
+                    textColor = colors.labelColor,
+                    sliderColors = colors.sliderColors,
+                    textFieldColors = colors.textFieldColors
                 )
             }
         } else {
@@ -1615,7 +1712,9 @@ private fun HsvTab(state: ColorPickerState) {
                     onValueChange = { state.hsv = state.hsv.copy(value = it * 0.01f) },
                     format = { it.formatToInteger() },
                     suffix = { Text("%") },
-                    textColor = Color.Black
+                    textColor = colors.labelColor,
+                    sliderColors = colors.sliderColors,
+                    textFieldColors = colors.textFieldColors
                 )
             }
         }
@@ -1623,7 +1722,7 @@ private fun HsvTab(state: ColorPickerState) {
 }
 
 @Composable
-private fun HslTab(state: ColorPickerState) {
+private fun HslTab(state: ColorPickerState, colors: ColorPickerColors) {
     var selectedValueFormatIndex by remember { mutableIntStateOf(0) }
     fun is0To1Format() = selectedValueFormatIndex == 0
     val valueFormats = listOf("0..1", "0%..100%")
@@ -1642,7 +1741,8 @@ private fun HslTab(state: ColorPickerState) {
                     ),
                     onClick = { selectedValueFormatIndex = index },
                     selected = index == selectedValueFormatIndex,
-                    label = { Text(label) }
+                    label = { Text(label) },
+                    colors = colors.segmentedButtonColors
                 )
             }
         }
@@ -1654,7 +1754,9 @@ private fun HslTab(state: ColorPickerState) {
                 onValueChange = { state.hsl = state.hsl.copy(hue = it) },
                 format = { it.formatToInteger() },
                 suffix = { Text("°") },
-                textColor = Color.Black
+                textColor = colors.labelColor,
+                sliderColors = colors.sliderColors,
+                textFieldColors = colors.textFieldColors
             )
         }
         if (is0To1Format()) {
@@ -1665,7 +1767,9 @@ private fun HslTab(state: ColorPickerState) {
                     valueRange = 0f..1f,
                     onValueChange = { state.hsl = state.hsl.copy(saturation = it) },
                     format = { it.formatUpToTwoDecimalPlaces() },
-                    textColor = Color.Black
+                    textColor = colors.labelColor,
+                    sliderColors = colors.sliderColors,
+                    textFieldColors = colors.textFieldColors
                 )
             }
         } else {
@@ -1677,7 +1781,9 @@ private fun HslTab(state: ColorPickerState) {
                     onValueChange = { state.hsl = state.hsl.copy(saturation = it * 0.01f) },
                     format = { it.formatToInteger() },
                     suffix = { Text("%") },
-                    textColor = Color.Black
+                    textColor = colors.labelColor,
+                    sliderColors = colors.sliderColors,
+                    textFieldColors = colors.textFieldColors
                 )
             }
         }
@@ -1689,7 +1795,9 @@ private fun HslTab(state: ColorPickerState) {
                     valueRange = 0f..1f,
                     onValueChange = { state.hsl = state.hsl.copy(lightness = it) },
                     format = { it.formatUpToTwoDecimalPlaces() },
-                    textColor = Color.Black
+                    textColor = colors.labelColor,
+                    sliderColors = colors.sliderColors,
+                    textFieldColors = colors.textFieldColors
                 )
             }
         } else {
@@ -1701,7 +1809,9 @@ private fun HslTab(state: ColorPickerState) {
                     onValueChange = { state.hsl = state.hsl.copy(lightness = it * 0.01f) },
                     format = { it.formatToInteger() },
                     suffix = { Text("%") },
-                    textColor = Color.Black
+                    textColor = colors.labelColor,
+                    sliderColors = colors.sliderColors,
+                    textFieldColors = colors.textFieldColors
                 )
             }
         }
