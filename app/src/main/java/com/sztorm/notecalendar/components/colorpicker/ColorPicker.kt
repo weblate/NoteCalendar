@@ -1,4 +1,4 @@
-package com.sztorm.notecalendar.components
+package com.sztorm.notecalendar.components.colorpicker
 
 import android.content.ClipData
 import androidx.compose.foundation.BorderStroke
@@ -22,31 +22,23 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults.outlinedIconButtonColors
 import androidx.compose.material3.LocalTextStyle
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedIconButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonColors
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderColors
-import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldColors
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableFloatState
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -103,8 +95,6 @@ import com.sztorm.notecalendar.moveTo
 import com.sztorm.notecalendar.toCanvasSpace
 import com.sztorm.notecalendar.toColor
 import com.sztorm.notecalendar.toColorRGBA32
-import com.sztorm.notecalendar.toHsl
-import com.sztorm.notecalendar.toHsv
 import com.sztorm.notecalendar.toOffset
 import com.sztorm.notecalendar.toVector2F
 import kotlinx.coroutines.launch
@@ -113,174 +103,6 @@ import kotlin.math.abs
 import kotlin.math.min
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
-
-data class HslColor(val hue: Float, val saturation: Float, val lightness: Float) {
-    init {
-        require(hue in 0f..360f) { "hue should be in [0, 360] range." }
-        require(saturation in 0f..1f) { "saturation should be in [0, 1] range." }
-        require(lightness in 0f..1f) { "lightness should be in [0, 1] range." }
-    }
-
-    @Suppress("unused")
-    fun toColor() = Color.hsl(hue, saturation, lightness)
-
-    fun toHsv(): HsvColor {
-        val value = (lightness + saturation * min(lightness, 1f - lightness))
-            .coerceIn(0f, 1f)
-        val saturation = when (value) {
-            0f -> 0f
-            else -> 2f * (1f - lightness / value)
-        }.coerceIn(0f, 1f)
-
-        return HsvColor(hue, saturation, value)
-    }
-
-    fun toRgb(): RgbColor {
-        val (r, g, b) = Color.hsl(hue, saturation, lightness)
-
-        return RgbColor(r, g, b)
-    }
-
-    companion object {
-        private val hslCodeRegex = Regex(
-            """[hH][sS][lL]\(\s*([+-]?[0-9]*\.*[0-9]+)\s*,\s*([+-]?[0-9]*\.*[0-9]+)%?\s*,\s*([+-]?[0-9]*\.*[0-9]+)%?\s*\)"""
-        )
-
-        fun parseHslCodeOrNull(hslCode: CharSequence): HslColor? {
-            hslCodeRegex
-                .matchEntire(hslCode.trim())
-                ?.let { matchResult ->
-                    val groupValues = matchResult.groupValues
-                    val h = groupValues.getOrNull(1)?.toFloatOrNull()
-                    val s = groupValues.getOrNull(2)?.toFloatOrNull()
-                    val l = groupValues.getOrNull(3)?.toFloatOrNull()
-
-                    if (h != null && s != null && l != null) {
-                        return HslColor(
-                            hue = AngleF.fromDegrees(h).getMinimalPositiveCoterminal().degrees,
-                            saturation = (s * 0.01f).coerceIn(0f, 1f),
-                            lightness = (l * 0.01f).coerceIn(0f, 1f),
-                        )
-                    }
-                }
-            return null
-        }
-    }
-}
-
-data class HsvColor(val hue: Float, val saturation: Float, val value: Float) {
-    init {
-        require(hue in 0f..360f) { "hue should be in [0, 360] range." }
-        require(saturation in 0f..1f) { "saturation should be in [0, 1] range." }
-        require(value in 0f..1f) { "value should be in [0, 1] range." }
-    }
-
-    fun toColor() = Color.hsv(hue, saturation, value)
-
-    fun toHsl(): HslColor {
-        val lightness = (value * (1f - saturation * 0.5f)).coerceIn(0f, 1f)
-        val saturation = when (lightness) {
-            0f, 1f -> 0f
-            else -> (value - lightness) / min(lightness, 1f - lightness)
-        }.coerceIn(0f, 1f)
-
-        return HslColor(hue, saturation, lightness)
-    }
-
-    fun toRgb(): RgbColor {
-        val (r, g, b) = Color.hsv(hue, saturation, value)
-
-        return RgbColor(r, g, b)
-    }
-
-    companion object {
-        private val hsvCodeRegex = Regex(
-            """[hH][sS][vV]\(\s*([+-]?[0-9]*\.*[0-9]+)\s*,\s*([+-]?[0-9]*\.*[0-9]+)%?\s*,\s*([+-]?[0-9]*\.*[0-9]+)%?\s*\)"""
-        )
-
-        fun parseHsvCodeOrNull(hsvCode: CharSequence): HsvColor? {
-            hsvCodeRegex
-                .matchEntire(hsvCode.trim())
-                ?.let { matchResult ->
-                    val groupValues = matchResult.groupValues
-                    val h = groupValues.getOrNull(1)?.toFloatOrNull()
-                    val s = groupValues.getOrNull(2)?.toFloatOrNull()
-                    val v = groupValues.getOrNull(3)?.toFloatOrNull()
-
-                    if (h != null && s != null && v != null) {
-                        return HsvColor(
-                            hue = AngleF.fromDegrees(h).getMinimalPositiveCoterminal().degrees,
-                            saturation = (s * 0.01f).coerceIn(0f, 1f),
-                            value = (v * 0.01f).coerceIn(0f, 1f),
-                        )
-                    }
-                }
-            return null
-        }
-    }
-}
-
-data class RgbColor(val red: Float, val green: Float, val blue: Float) {
-    init {
-        require(red in 0f..360f) { "red should be in [0, 360] range." }
-        require(green in 0f..1f) { "green should be in [0, 1] range." }
-        require(blue in 0f..1f) { "blue should be in [0, 1] range." }
-    }
-
-    fun toColor() = Color(red, green, blue)
-
-    fun toHsl() = toColor().toHslColor()
-
-    fun toHsv() = toColor().toHsvColor()
-
-    companion object {
-        private val rgbCodeRegexInt =
-            Regex("""[rR][gG][bB]\(\s*([+-]?[0-9]+)\s*,\s*([+-]?[0-9]+)\s*,\s*([+-]?[0-9]+)\s*\)""")
-        private val rgbCodeRegexFloat = Regex(
-            """[rR][gG][bB]\(\s*([+-]?[0-9]*\.[0-9]+)\s*,\s*([+-]?[0-9]*\.[0-9]+)\s*,\s*([+-]?[0-9]*\.[0-9]+)\s*\)"""
-        )
-
-        fun parseRgbCodeOrNull(rgbCode: CharSequence): RgbColor? {
-            val trimmed = rgbCode.trim()
-
-            rgbCodeRegexInt
-                .matchEntire(trimmed)
-                ?.let { matchResult ->
-                    val groupValues = matchResult.groupValues
-                    val r = groupValues.getOrNull(1)?.toIntOrNull()
-                    val g = groupValues.getOrNull(2)?.toIntOrNull()
-                    val b = groupValues.getOrNull(3)?.toIntOrNull()
-
-                    if (r != null && g != null && b != null) {
-                        return ColorRGBA32(
-                            r = r.coerceIn(0, 255).toUByte(),
-                            g = g.coerceIn(0, 255).toUByte(),
-                            b = b.coerceIn(0, 255).toUByte(),
-                            a = 255u
-                        ).toColor()
-                            .toRgbColor()
-                    }
-                }
-            rgbCodeRegexFloat
-                .matchEntire(trimmed)
-                ?.let { matchResult ->
-                    val groupValues = matchResult.groupValues
-                    val red = groupValues.getOrNull(1)?.toFloatOrNull()
-                    val green = groupValues.getOrNull(2)?.toFloatOrNull()
-                    val blue = groupValues.getOrNull(3)?.toFloatOrNull()
-
-                    if (red != null && green != null && blue != null) {
-                        return RgbColor(
-                            red.coerceIn(0f, 1f),
-                            green.coerceIn(0f, 1f),
-                            blue.coerceIn(0f, 1f),
-                        )
-                    }
-                }
-            return null
-        }
-    }
-}
 
 fun ColorRGBA32.Companion.parseHexCodeOrNull(hexCode: CharSequence): ColorRGBA32? {
     if (hexCode.length != 7 ||
@@ -302,168 +124,6 @@ fun ColorRGBA32.Companion.parseHexCodeOrNull(hexCode: CharSequence): ColorRGBA32
     return ColorRGBA32(r, g, b, 0xffu)
 }
 
-private fun Color.toHslColor(): HslColor {
-    val (h, s, l) = toHsl()
-
-    return HslColor(h, s, l)
-}
-
-private fun Color.toHsvColor(): HsvColor {
-    val (h, s, v) = toHsv()
-
-    return HsvColor(h, s, v)
-}
-
-private fun Color.toRgbColor() = RgbColor(red, green, blue)
-
-interface ColorPickerState {
-    var alpha: Float
-    var hsl: HslColor
-    var hsv: HsvColor
-    var rgb: RgbColor
-}
-
-private class ColorPickerStateImpl : ColorPickerState {
-    val alphaState: MutableFloatState
-    val hslState: MutableState<HslColor>
-    val hsvState: MutableState<HsvColor>
-    val rgbState: MutableState<RgbColor>
-
-    constructor(color: Color) {
-        alphaState = mutableFloatStateOf(color.alpha)
-        hslState = mutableStateOf(color.toHslColor())
-        hsvState = mutableStateOf(color.toHsvColor())
-        rgbState = mutableStateOf(color.toRgbColor())
-    }
-
-    @Suppress("unused")
-    constructor(hsl: HslColor, alpha: Float = 1f) {
-        require(alpha in 0f..1f) { "alpha should be in [0, 1] range." }
-
-        alphaState = mutableFloatStateOf(alpha)
-        hslState = mutableStateOf(hsl)
-        hsvState = mutableStateOf(hsl.toHsv())
-        rgbState = mutableStateOf(hsl.toRgb())
-    }
-
-    @Suppress("unused")
-    constructor(hsv: HsvColor, alpha: Float = 1f) {
-        require(alpha in 0f..1f) { "alpha should be in [0, 1] range." }
-
-        alphaState = mutableFloatStateOf(alpha)
-        hslState = mutableStateOf(hsv.toHsl())
-        hsvState = mutableStateOf(hsv)
-        rgbState = mutableStateOf(hsv.toRgb())
-    }
-
-    @Suppress("unused")
-    constructor(rgb: RgbColor, alpha: Float = 1f) {
-        require(alpha in 0f..1f) { "alpha should be in [0, 1] range." }
-
-        alphaState = mutableFloatStateOf(alpha)
-        hslState = mutableStateOf(rgb.toHsl())
-        hsvState = mutableStateOf(rgb.toHsv())
-        rgbState = mutableStateOf(rgb)
-    }
-
-    private constructor(alpha: Float, hsl: HslColor, hsv: HsvColor, rgb: RgbColor) {
-        alphaState = mutableFloatStateOf(alpha)
-        hslState = mutableStateOf(hsl)
-        hsvState = mutableStateOf(hsv)
-        rgbState = mutableStateOf(rgb)
-    }
-
-    override var alpha: Float
-        get() = alphaState.floatValue
-        set(value) {
-            alphaState.floatValue = value
-        }
-
-    override var hsl: HslColor
-        get() = hslState.value
-        set(value) {
-            hslState.value = value
-            hsvState.value = value.toHsv()
-            rgbState.value = value.toRgb()
-        }
-
-    override var hsv: HsvColor
-        get() = hsvState.value
-        set(value) {
-            hslState.value = value.toHsl()
-            hsvState.value = value
-            rgbState.value = value.toRgb()
-        }
-
-    override var rgb: RgbColor
-        get() = rgbState.value
-        set(value) {
-            hslState.value = value.toHsl()
-            hsvState.value = value.toHsv()
-            rgbState.value = value
-        }
-
-    companion object {
-        fun Saver(): Saver<ColorPickerStateImpl, out Any> =
-            Saver(
-                save = {
-                    listOf(
-                        it.alpha,
-                        it.hsl.hue, it.hsl.saturation, it.hsl.lightness,
-                        it.hsv.hue, it.hsv.saturation, it.hsv.value,
-                        it.rgb.red, it.rgb.green, it.rgb.blue,
-                    )
-                },
-                restore = {
-                    ColorPickerStateImpl(
-                        alpha = it[0],
-                        hsl = HslColor(it[1], it[2], it[3]),
-                        hsv = HsvColor(it[4], it[5], it[6]),
-                        rgb = RgbColor(it[7], it[8], it[9]),
-                    )
-                }
-            )
-    }
-}
-
-object ColorPickerDefaults {
-    private var defaultColorsCached: ColorPickerColors? = null
-    private val defaultColors: ColorPickerColors
-        @Composable
-        get() {
-            val cached = defaultColorsCached
-
-            if (cached != null) return cached
-            else {
-                val result = ColorPickerColors(
-                    backgroundColor = MaterialTheme.colorScheme.background,
-                    labelColor = MaterialTheme.colorScheme.onBackground,
-                    tabButtonColor = MaterialTheme.colorScheme.primary,
-                    iconButtonColor = MaterialTheme.colorScheme.onBackground,
-                    textFieldColors = OutlinedTextFieldDefaults.colors(),
-                    sliderColors = SliderDefaults.colors(),
-                    segmentedButtonColors = SegmentedButtonDefaults.colors()
-                )
-                defaultColorsCached = result
-
-                return result
-            }
-        }
-
-    @Composable
-    fun colors() = defaultColors
-}
-
-data class ColorPickerColors(
-    val backgroundColor: Color,
-    val labelColor: Color,
-    val tabButtonColor: Color,
-    val iconButtonColor: Color,
-    val textFieldColors: TextFieldColors,
-    val sliderColors: SliderColors,
-    val segmentedButtonColors: SegmentedButtonColors
-)
-
 private enum class CurrentAction {
     None,
     ChangingHue,
@@ -472,15 +132,6 @@ private enum class CurrentAction {
     ChangingColor,
     ChangingValue,
 }
-
-@Suppress("unused")
-fun ColorPickerState(color: Color): ColorPickerState = ColorPickerStateImpl(color)
-
-@Composable
-fun rememberColorPickerState(color: Color): ColorPickerState =
-    rememberSaveable(saver = ColorPickerStateImpl.Saver()) {
-        ColorPickerStateImpl(color)
-    }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

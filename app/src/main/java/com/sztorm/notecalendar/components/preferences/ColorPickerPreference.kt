@@ -34,12 +34,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogProperties
 import com.sztorm.notecalendar.R
-import com.sztorm.notecalendar.components.ColorPicker
-import com.sztorm.notecalendar.components.ColorPickerColors
-import com.sztorm.notecalendar.components.ColorPickerDefaults
+import com.sztorm.notecalendar.components.colorpicker.ColorPicker
+import com.sztorm.notecalendar.components.colorpicker.ColorPickerColors
+import com.sztorm.notecalendar.components.colorpicker.ColorPickerDefaults
 import com.sztorm.notecalendar.components.ConfirmationDialog
-import com.sztorm.notecalendar.components.RgbColor
-import com.sztorm.notecalendar.components.rememberColorPickerState
+import com.sztorm.notecalendar.components.colorpicker.RgbColor
+import com.sztorm.notecalendar.components.colorpicker.rememberColorPickerState
 
 @Composable
 fun ColorPickerPreference(
