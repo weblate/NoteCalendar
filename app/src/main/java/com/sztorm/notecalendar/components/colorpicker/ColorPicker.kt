@@ -1,6 +1,7 @@
 package com.sztorm.notecalendar.components.colorpicker
 
 import android.content.ClipData
+import android.os.Build
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -124,6 +125,28 @@ fun ColorRGBA32.Companion.parseHexCodeOrNull(hexCode: CharSequence): ColorRGBA32
         .toUByte()
 
     return ColorRGBA32(r, g, b, 0xffu)
+}
+
+private fun brushCompat(
+    vararg brushBlendModePairs: Pair<Brush, BlendMode>,
+    drawFunction: (Pair<Brush, BlendMode>) -> Unit
+) = when {
+    brushBlendModePairs.isEmpty() -> {}
+
+    Build.VERSION.SDK_INT >= 29 -> {
+        var (finalBrush, initialBlendMode) = brushBlendModePairs.first()
+
+        for (i in 1 until brushBlendModePairs.size) {
+            val (brush, blendMode) = brushBlendModePairs[i]
+            finalBrush = finalBrush
+                .let { Brush.composite(it, brush, blendMode) }
+        }
+        drawFunction(Pair(finalBrush, initialBlendMode))
+    }
+
+    else -> brushBlendModePairs.forEach {
+        drawFunction(it)
+    }
 }
 
 private val ColorPickerTab.route
@@ -380,11 +403,17 @@ private fun DrawScope.drawHsvTriangle(triangle: RegularTriangle, hue: Float) {
         lineTo(pointC)
         close()
     }
-    val brush = SolidColor(Color.White)
-        .let { Brush.composite(it, hueToTransparentGradient, BlendMode.SrcOver) }
-        .let { Brush.composite(it, blackToTransparentGradient, BlendMode.SrcOver) }
-
-    drawPath(trianglePath, brush)
+    brushCompat(
+        SolidColor(Color.White) to BlendMode.SrcOver,
+        hueToTransparentGradient to BlendMode.SrcOver,
+        blackToTransparentGradient to BlendMode.SrcOver,
+    ) { (brush, blendMode) ->
+        drawPath(
+            path = trianglePath,
+            brush = brush,
+            blendMode = blendMode
+        )
+    }
 }
 
 private fun DrawScope.drawHslSquare(square: Square, hue: Float) {
@@ -411,10 +440,16 @@ private fun DrawScope.drawHslSquare(square: Square, hue: Float) {
         lineTo(pointC)
         close()
     }
-    val brush = hueToGrayGradient
-        .let { Brush.composite(it, whiteToBlackGradient, BlendMode.SrcOver) }
-
-    drawPath(squarePath, brush)
+    brushCompat(
+        hueToGrayGradient to BlendMode.SrcOver,
+        whiteToBlackGradient to BlendMode.SrcOver,
+    ) { (brush, blendMode) ->
+        drawPath(
+            path = squarePath,
+            brush = brush,
+            blendMode = blendMode
+        )
+    }
 }
 
 private fun DrawScope.drawRgbCircle(circle: Circle) {
@@ -435,13 +470,17 @@ private fun DrawScope.drawRgbCircle(circle: Circle) {
         colors = listOf(Color.White, Color.Transparent),
         center = circle.center.toCanvasSpace(canvasSize).toOffset()
     )
-    val brush = hueGradient
-        .let { Brush.composite(it, whiteGradient, BlendMode.SrcOver) }
-    drawCircle(
-        brush = brush,
-        radius = circle.radius,
-        center = circle.center.toCanvasSpace(canvasSize).toOffset()
-    )
+    brushCompat(
+        hueGradient to BlendMode.SrcOver,
+        whiteGradient to BlendMode.SrcOver,
+    ) { (brush, blendMode) ->
+        drawCircle(
+            brush = brush,
+            radius = circle.radius,
+            center = circle.center.toCanvasSpace(canvasSize).toOffset(),
+            blendMode = blendMode
+        )
+    }
 }
 
 private fun DrawScope.drawColorValueRectangle(
