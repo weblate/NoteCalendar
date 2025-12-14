@@ -38,6 +38,7 @@ import com.sztorm.notecalendar.components.colorpicker.ColorPicker
 import com.sztorm.notecalendar.components.colorpicker.ColorPickerColors
 import com.sztorm.notecalendar.components.colorpicker.ColorPickerDefaults
 import com.sztorm.notecalendar.components.ConfirmationDialog
+import com.sztorm.notecalendar.components.colorpicker.ColorPickerProperties
 import com.sztorm.notecalendar.components.colorpicker.RgbColor
 import com.sztorm.notecalendar.components.colorpicker.rememberColorPickerState
 
@@ -57,6 +58,7 @@ fun ColorPickerPreference(
     dialogColors: CardColors = CardDefaults.cardColors(),
     buttonColor: Color = Color.Unspecified,
     colorPickerColors: ColorPickerColors = ColorPickerDefaults.colors(),
+    colorPickerProperties: ColorPickerProperties = ColorPickerProperties(),
     icon: Painter? = null,
     iconColorFilter: ColorFilter? = null,
     enabled: Boolean = true
@@ -178,7 +180,11 @@ fun ColorPickerPreference(
                 )
             }
             Row(modifier = Modifier.fillMaxWidth()) {
-                ColorPicker(state = colorPickerState, colors = colorPickerColors)
+                ColorPicker(
+                    state = colorPickerState,
+                    colors = colorPickerColors,
+                    properties = colorPickerProperties
+                )
             }
         }
     }

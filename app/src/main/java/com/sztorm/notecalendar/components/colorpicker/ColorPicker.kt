@@ -124,6 +124,14 @@ fun ColorRGBA32.Companion.parseHexCodeOrNull(hexCode: CharSequence): ColorRGBA32
     return ColorRGBA32(r, g, b, 0xffu)
 }
 
+private val ColorPickerTab.route
+    get() = when (this) {
+        is ColorPickerTab.ColorCodes -> "colorcodes"
+        is ColorPickerTab.Hsl -> "hsl"
+        is ColorPickerTab.Hsv -> "hsv"
+        is ColorPickerTab.Rgb -> "rgb"
+    }
+
 private enum class CurrentAction {
     None,
     ChangingHue,
@@ -138,30 +146,35 @@ private enum class CurrentAction {
 fun ColorPicker(
     state: ColorPickerState,
     modifier: Modifier = Modifier,
-    colors: ColorPickerColors = ColorPickerDefaults.colors()
-    // TODO: colorPickerValues or smth like that for labels like Red, Blue, Green, Hue, ..
+    colors: ColorPickerColors = ColorPickerDefaults.colors(),
+    properties: ColorPickerProperties = ColorPickerProperties()
 ) {
     val navController = rememberNavController()
-    val initialTab = TabType.ColorCodes
-    var selectedTabIndex by rememberSaveable { mutableIntStateOf(initialTab.ordinal) }
+    val initialTab = properties.tabs.first()
+    var selectedTabIndex by rememberSaveable { mutableIntStateOf(0) }
 
     Column(
         modifier = modifier
             .fillMaxWidth()
             .background(color = colors.backgroundColor)
     ) {
-        when (TabType.entries[selectedTabIndex]) {
-            TabType.ColorCodes -> HsvColorPicker(state)
-            TabType.Rgb -> RgbColorPicker(state)
-            TabType.Hsv -> HsvColorPicker(state)
-            TabType.Hsl -> HslColorPicker(state)
+        when (val selectedTab = properties.tabs[selectedTabIndex]) {
+            is ColorPickerTab.ColorCodes -> when (selectedTab.pickerType) {
+                ColorPickerType.HslSquare -> HslColorPicker(state)
+                ColorPickerType.HsvTriangle -> HsvColorPicker(state)
+                ColorPickerType.RgbCircle -> RgbColorPicker(state)
+            }
+
+            is ColorPickerTab.Hsl -> HslColorPicker(state)
+            is ColorPickerTab.Hsv -> HsvColorPicker(state)
+            is ColorPickerTab.Rgb -> RgbColorPicker(state)
         }
         Spacer(modifier = Modifier.height(8.dp))
         PrimaryTabRow(
             selectedTabIndex = selectedTabIndex,
             divider = { HorizontalDivider(color = colors.textFieldColors.unfocusedIndicatorColor) }
         ) {
-            TabType.entries.forEachIndexed { index, tab ->
+            properties.tabs.forEachIndexed { index, tab ->
                 Tab(
                     selected = selectedTabIndex == index,
                     onClick = {
@@ -170,7 +183,7 @@ fun ColorPicker(
                     },
                     text = {
                         Text(
-                            text = tab.label,
+                            text = tab.text,
                             overflow = TextOverflow.Ellipsis,
                             color = colors.tabButtonColor
                         )
@@ -182,10 +195,16 @@ fun ColorPicker(
             navController = navController,
             startDestination = initialTab.route
         ) {
-            composable(TabType.ColorCodes.route) { ColorCodesTab(state, colors) }
-            composable(TabType.Rgb.route) { RgbTab(state, colors) }
-            composable(TabType.Hsv.route) { HsvTab(state, colors) }
-            composable(TabType.Hsl.route) { HslTab(state, colors) }
+            properties.tabs.forEach { tab ->
+                composable(tab.route) {
+                    when (tab) {
+                        is ColorPickerTab.ColorCodes -> ColorCodesTab(state, colors)
+                        is ColorPickerTab.Hsl -> HslTab(state, colors, properties)
+                        is ColorPickerTab.Hsv -> HsvTab(state, colors, properties)
+                        is ColorPickerTab.Rgb -> RgbTab(state, colors, properties)
+                    }
+                }
+            }
         }
     }
 }
@@ -869,13 +888,6 @@ private fun RgbColorPicker(state: ColorPickerState) {
     }
 }
 
-private enum class TabType(val route: String, val label: String) {
-    ColorCodes(route = "colorcodes", label = "#"),
-    Rgb(route = "rgb", label = "RGB"),
-    Hsv(route = "hsv", label = "HSV"),
-    Hsl(route = "hsl", label = "HSL"),
-}
-
 @Composable
 private fun ColorCodeRow(
     value: String,
@@ -1176,7 +1188,9 @@ private inline fun <reified T : Comparable<T>> ColorComponentSlider(
 }
 
 @Composable
-private fun RgbTab(state: ColorPickerState, colors: ColorPickerColors) {
+private fun RgbTab(
+    state: ColorPickerState, colors: ColorPickerColors, properties: ColorPickerProperties
+) {
     var selectedValueFormatIndex by remember { mutableIntStateOf(0) }
     fun is0To1Format() = selectedValueFormatIndex == 0
     val valueFormats = listOf("0..1", "0..255")
@@ -1203,7 +1217,7 @@ private fun RgbTab(state: ColorPickerState, colors: ColorPickerColors) {
         Row {
             if (is0To1Format()) {
                 ColorComponentSlider(
-                    text = "Red", // TODO move to strings.xml
+                    text = properties.texts.red,
                     value = state.rgb.red,
                     valueRange = 0f..1f,
                     onValueChange = { state.rgb = state.rgb.copy(red = it) },
@@ -1214,7 +1228,7 @@ private fun RgbTab(state: ColorPickerState, colors: ColorPickerColors) {
                 )
             } else {
                 ColorComponentSlider(
-                    text = "Red", // TODO move to strings.xml
+                    text = properties.texts.red,
                     value = (state.rgb.red * 255f).roundToInt(),
                     valueRange = 0..255,
                     onValueChange = { state.rgb = state.rgb.copy(red = it.toFloat() / 255f) },
@@ -1227,7 +1241,7 @@ private fun RgbTab(state: ColorPickerState, colors: ColorPickerColors) {
         Row {
             if (is0To1Format()) {
                 ColorComponentSlider(
-                    text = "Green", // TODO move to strings.xml
+                    text = properties.texts.green,
                     value = state.rgb.green,
                     valueRange = 0f..1f,
                     onValueChange = { state.rgb = state.rgb.copy(green = it) },
@@ -1238,7 +1252,7 @@ private fun RgbTab(state: ColorPickerState, colors: ColorPickerColors) {
                 )
             } else {
                 ColorComponentSlider(
-                    text = "Green", // TODO move to strings.xml
+                    text = properties.texts.green,
                     value = (state.rgb.green * 255f).roundToInt(),
                     valueRange = 0..255,
                     onValueChange = { state.rgb = state.rgb.copy(green = it.toFloat() / 255f) },
@@ -1251,7 +1265,7 @@ private fun RgbTab(state: ColorPickerState, colors: ColorPickerColors) {
         Row {
             if (is0To1Format()) {
                 ColorComponentSlider(
-                    text = "Blue", // TODO move to strings.xml
+                    text = properties.texts.blue,
                     value = state.rgb.blue,
                     valueRange = 0f..1f,
                     onValueChange = { state.rgb = state.rgb.copy(blue = it) },
@@ -1262,7 +1276,7 @@ private fun RgbTab(state: ColorPickerState, colors: ColorPickerColors) {
                 )
             } else {
                 ColorComponentSlider(
-                    text = "Blue", // TODO move to strings.xml
+                    text = properties.texts.blue,
                     value = (state.rgb.blue * 255).roundToInt(),
                     valueRange = 0..255,
                     onValueChange = { state.rgb = state.rgb.copy(blue = it.toFloat() / 255f) },
@@ -1276,7 +1290,9 @@ private fun RgbTab(state: ColorPickerState, colors: ColorPickerColors) {
 }
 
 @Composable
-private fun HsvTab(state: ColorPickerState, colors: ColorPickerColors) {
+private fun HsvTab(
+    state: ColorPickerState, colors: ColorPickerColors, properties: ColorPickerProperties
+) {
     var selectedValueFormatIndex by remember { mutableIntStateOf(0) }
     fun is0To1Format() = selectedValueFormatIndex == 0
     val valueFormats = listOf("0..1", "0%..100%")
@@ -1302,7 +1318,7 @@ private fun HsvTab(state: ColorPickerState, colors: ColorPickerColors) {
         }
         Row {
             ColorComponentSlider(
-                text = "Hue", // TODO move to strings.xml
+                text = properties.texts.hsvHue,
                 value = state.hsv.hue,
                 valueRange = 0f..360f,
                 onValueChange = { state.hsv = state.hsv.copy(hue = it) },
@@ -1316,7 +1332,7 @@ private fun HsvTab(state: ColorPickerState, colors: ColorPickerColors) {
         if (is0To1Format()) {
             Row {
                 ColorComponentSlider(
-                    text = "Saturation", // TODO move to strings.xml
+                    text = properties.texts.hsvSaturation,
                     value = state.hsv.saturation,
                     valueRange = 0f..1f,
                     onValueChange = { state.hsv = state.hsv.copy(saturation = it) },
@@ -1329,7 +1345,7 @@ private fun HsvTab(state: ColorPickerState, colors: ColorPickerColors) {
         } else {
             Row {
                 ColorComponentSlider(
-                    text = "Saturation", // TODO move to strings.xml
+                    text = properties.texts.hsvSaturation,
                     value = state.hsv.saturation * 100f,
                     valueRange = 0f..100f,
                     onValueChange = { state.hsv = state.hsv.copy(saturation = it * 0.01f) },
@@ -1344,7 +1360,7 @@ private fun HsvTab(state: ColorPickerState, colors: ColorPickerColors) {
         if (is0To1Format()) {
             Row {
                 ColorComponentSlider(
-                    text = "Value", // TODO move to strings.xml
+                    text = properties.texts.hsvValue,
                     value = state.hsv.value,
                     valueRange = 0f..1f,
                     onValueChange = { state.hsv = state.hsv.copy(value = it) },
@@ -1357,7 +1373,7 @@ private fun HsvTab(state: ColorPickerState, colors: ColorPickerColors) {
         } else {
             Row {
                 ColorComponentSlider(
-                    text = "Value", // TODO move to strings.xml
+                    text = properties.texts.hsvValue,
                     value = state.hsv.value * 100f,
                     valueRange = 0f..100f,
                     onValueChange = { state.hsv = state.hsv.copy(value = it * 0.01f) },
@@ -1373,7 +1389,9 @@ private fun HsvTab(state: ColorPickerState, colors: ColorPickerColors) {
 }
 
 @Composable
-private fun HslTab(state: ColorPickerState, colors: ColorPickerColors) {
+private fun HslTab(
+    state: ColorPickerState, colors: ColorPickerColors, properties: ColorPickerProperties
+) {
     var selectedValueFormatIndex by remember { mutableIntStateOf(0) }
     fun is0To1Format() = selectedValueFormatIndex == 0
     val valueFormats = listOf("0..1", "0%..100%")
@@ -1399,7 +1417,7 @@ private fun HslTab(state: ColorPickerState, colors: ColorPickerColors) {
         }
         Row {
             ColorComponentSlider(
-                text = "Hue", // TODO move to strings.xml
+                text = properties.texts.hslHue,
                 value = state.hsl.hue,
                 valueRange = 0f..360f,
                 onValueChange = { state.hsl = state.hsl.copy(hue = it) },
@@ -1413,7 +1431,7 @@ private fun HslTab(state: ColorPickerState, colors: ColorPickerColors) {
         if (is0To1Format()) {
             Row {
                 ColorComponentSlider(
-                    text = "Saturation", // TODO move to strings.xml
+                    text = properties.texts.hslSaturation,
                     value = state.hsl.saturation,
                     valueRange = 0f..1f,
                     onValueChange = { state.hsl = state.hsl.copy(saturation = it) },
@@ -1426,7 +1444,7 @@ private fun HslTab(state: ColorPickerState, colors: ColorPickerColors) {
         } else {
             Row {
                 ColorComponentSlider(
-                    text = "Saturation", // TODO move to strings.xml
+                    text = properties.texts.hslSaturation,
                     value = state.hsl.saturation * 100f,
                     valueRange = 0f..100f,
                     onValueChange = { state.hsl = state.hsl.copy(saturation = it * 0.01f) },
@@ -1441,7 +1459,7 @@ private fun HslTab(state: ColorPickerState, colors: ColorPickerColors) {
         if (is0To1Format()) {
             Row {
                 ColorComponentSlider(
-                    text = "Lightness", // TODO move to strings.xml
+                    text = properties.texts.hslLightness,
                     value = state.hsl.lightness,
                     valueRange = 0f..1f,
                     onValueChange = { state.hsl = state.hsl.copy(lightness = it) },
@@ -1454,7 +1472,7 @@ private fun HslTab(state: ColorPickerState, colors: ColorPickerColors) {
         } else {
             Row {
                 ColorComponentSlider(
-                    text = "Lightness", // TODO move to strings.xml
+                    text = properties.texts.hslLightness,
                     value = state.hsl.lightness * 100f,
                     valueRange = 0f..100f,
                     onValueChange = { state.hsl = state.hsl.copy(lightness = it * 0.01f) },

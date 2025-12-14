@@ -27,6 +27,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.mikepenz.aboutlibraries.LibsBuilder
 import com.sztorm.notecalendar.components.colorpicker.ColorPickerDefaults
+import com.sztorm.notecalendar.components.colorpicker.ColorPickerProperties
+import com.sztorm.notecalendar.components.colorpicker.ColorPickerTexts
 import com.sztorm.notecalendar.components.preferences.CategoryPreference
 import com.sztorm.notecalendar.components.preferences.ColorPickerPreference
 import com.sztorm.notecalendar.components.preferences.ConfirmationPreference
@@ -347,7 +349,15 @@ fun CustomThemeSettingsLayout(
 ) {
     val themeColors = viewModel.state.themeColors
     val defaultThemeColors = getDefaultThemeColors(isSystemInDarkTheme())
-
+    val colorPickerColors = ColorPickerDefaults.colors().copy(
+        backgroundColor = themeColors.backgroundColor,
+        labelColor = themeColors.textColor,
+        tabButtonColor = themeColors.primaryColor,
+        iconButtonColor = themeColors.textColor,
+    )
+    val colorPickerProperties = ColorPickerProperties(
+        texts = ColorPickerTexts.english(), // TODO add required strings to strings.xml
+    )
     SubpreferenceScreen(
         title = stringResource(R.string.Settings_Header_CustomTheme),
         titleColor = themeColors.textColor,
@@ -366,12 +376,8 @@ fun CustomThemeSettingsLayout(
                 containerColor = themeColors.backgroundColor,
                 contentColor = themeColors.backgroundColor,
             ),
-            colorPickerColors = ColorPickerDefaults.colors().copy(
-                backgroundColor = themeColors.backgroundColor,
-                labelColor = themeColors.textColor,
-                tabButtonColor = themeColors.primaryColor,
-                iconButtonColor = themeColors.textColor,
-            ),
+            colorPickerColors = colorPickerColors,
+            colorPickerProperties = colorPickerProperties,
             onConfirm = { color ->
                 mainActivity.lifecycleScope.launch {
                     mainActivity.settings.setPrimaryColor(color)
@@ -394,6 +400,8 @@ fun CustomThemeSettingsLayout(
                 containerColor = themeColors.backgroundColor,
                 contentColor = themeColors.backgroundColor,
             ),
+            colorPickerColors = colorPickerColors,
+            colorPickerProperties = colorPickerProperties,
             onConfirm = { color ->
                 mainActivity.lifecycleScope.launch {
                     mainActivity.settings.setSecondaryColor(color)
@@ -416,6 +424,8 @@ fun CustomThemeSettingsLayout(
                 containerColor = themeColors.backgroundColor,
                 contentColor = themeColors.backgroundColor,
             ),
+            colorPickerColors = colorPickerColors,
+            colorPickerProperties = colorPickerProperties,
             onConfirm = { color ->
                 mainActivity.lifecycleScope.launch {
                     mainActivity.settings.setInactiveElementColor(color)
@@ -438,6 +448,8 @@ fun CustomThemeSettingsLayout(
                 containerColor = themeColors.backgroundColor,
                 contentColor = themeColors.backgroundColor,
             ),
+            colorPickerColors = colorPickerColors,
+            colorPickerProperties = colorPickerProperties,
             onConfirm = { color ->
                 mainActivity.lifecycleScope.launch {
                     mainActivity.settings.setNoteColor(color)
@@ -460,6 +472,8 @@ fun CustomThemeSettingsLayout(
                 containerColor = themeColors.backgroundColor,
                 contentColor = themeColors.backgroundColor,
             ),
+            colorPickerColors = colorPickerColors,
+            colorPickerProperties = colorPickerProperties,
             onConfirm = { color ->
                 mainActivity.lifecycleScope.launch {
                     mainActivity.settings.setNoteColorVariant(color)
@@ -482,6 +496,8 @@ fun CustomThemeSettingsLayout(
                 containerColor = themeColors.backgroundColor,
                 contentColor = themeColors.backgroundColor,
             ),
+            colorPickerColors = colorPickerColors,
+            colorPickerProperties = colorPickerProperties,
             onConfirm = { color ->
                 mainActivity.lifecycleScope.launch {
                     mainActivity.settings.setTextColor(color)
@@ -504,6 +520,8 @@ fun CustomThemeSettingsLayout(
                 containerColor = themeColors.backgroundColor,
                 contentColor = themeColors.backgroundColor,
             ),
+            colorPickerColors = colorPickerColors,
+            colorPickerProperties = colorPickerProperties,
             onConfirm = { color ->
                 mainActivity.lifecycleScope.launch {
                     mainActivity.settings.setButtonTextColor(color)
@@ -526,6 +544,8 @@ fun CustomThemeSettingsLayout(
                 containerColor = themeColors.backgroundColor,
                 contentColor = themeColors.backgroundColor,
             ),
+            colorPickerColors = colorPickerColors,
+            colorPickerProperties = colorPickerProperties,
             onConfirm = { color ->
                 mainActivity.lifecycleScope.launch {
                     mainActivity.settings.setNoteTextColor(color)
@@ -548,6 +568,8 @@ fun CustomThemeSettingsLayout(
                 containerColor = themeColors.backgroundColor,
                 contentColor = themeColors.backgroundColor,
             ),
+            colorPickerColors = colorPickerColors,
+            colorPickerProperties = colorPickerProperties,
             onConfirm = { color ->
                 mainActivity.lifecycleScope.launch {
                     mainActivity.settings.setBackgroundColor(color)
@@ -570,6 +592,8 @@ fun CustomThemeSettingsLayout(
                 containerColor = themeColors.backgroundColor,
                 contentColor = themeColors.backgroundColor,
             ),
+            colorPickerColors = colorPickerColors,
+            colorPickerProperties = colorPickerProperties,
             onConfirm = { color ->
                 mainActivity.lifecycleScope.launch {
                     mainActivity.settings.setBackgroundColorVariant(color)
