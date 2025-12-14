@@ -63,8 +63,10 @@ import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -1122,9 +1124,12 @@ private inline fun <reified T : Comparable<T>> ColorComponentSlider(
     textFieldColors: TextFieldColors,
     sliderColors: SliderColors
 ) {
-    // TODO: allow to select text
     var textState by remember(value) {
-        mutableStateOf(toString(value))
+        mutableStateOf(
+            TextFieldValue(
+                annotatedString = AnnotatedString(text = toString(value))
+            )
+        )
     }
     Column(
         modifier = Modifier.fillMaxWidth()
@@ -1158,12 +1163,22 @@ private inline fun <reified T : Comparable<T>> ColorComponentSlider(
 
                 OutlinedTextField(
                     value = textState,
-                    onValueChange = { textState = it.substring(0, min(6, it.length)) },
+                    onValueChange = {
+                        textState = it.copy(
+                            annotatedString = AnnotatedString(
+                                text = it.text.substring(0, min(6, it.text.length))
+                            )
+                        )
+
+                    },
                     keyboardActions = KeyboardActions(
                         onDone = {
-                            stringToT(textState).let {
+                            stringToT(textState.text).let {
                                 when (it) {
-                                    null -> textState = toString(value)
+                                    null -> textState = TextFieldValue(
+                                        annotatedString = AnnotatedString(text = toString(value))
+                                    )
+
                                     else -> onValueChange(it.coerceIn(valueRange))
                                 }
                             }
@@ -1179,7 +1194,9 @@ private inline fun <reified T : Comparable<T>> ColorComponentSlider(
                     prefix = prefix,
                     suffix = suffix,
                     modifier = Modifier.onFocusChanged {
-                        textState = toString(value)
+                        textState = TextFieldValue(
+                            annotatedString = AnnotatedString(text = toString(value))
+                        )
                     }
                 )
             }
@@ -1215,8 +1232,8 @@ private fun RgbTab(
             }
         }
         Row {
-            if (is0To1Format()) {
-                ColorComponentSlider(
+            when {
+                is0To1Format() -> ColorComponentSlider(
                     text = properties.texts.red,
                     value = state.rgb.red,
                     valueRange = 0f..1f,
@@ -1226,8 +1243,8 @@ private fun RgbTab(
                     sliderColors = colors.sliderColors,
                     textFieldColors = colors.textFieldColors
                 )
-            } else {
-                ColorComponentSlider(
+
+                else -> ColorComponentSlider(
                     text = properties.texts.red,
                     value = (state.rgb.red * 255f).roundToInt(),
                     valueRange = 0..255,
@@ -1239,8 +1256,8 @@ private fun RgbTab(
             }
         }
         Row {
-            if (is0To1Format()) {
-                ColorComponentSlider(
+            when {
+                is0To1Format() -> ColorComponentSlider(
                     text = properties.texts.green,
                     value = state.rgb.green,
                     valueRange = 0f..1f,
@@ -1250,8 +1267,8 @@ private fun RgbTab(
                     sliderColors = colors.sliderColors,
                     textFieldColors = colors.textFieldColors
                 )
-            } else {
-                ColorComponentSlider(
+
+                else -> ColorComponentSlider(
                     text = properties.texts.green,
                     value = (state.rgb.green * 255f).roundToInt(),
                     valueRange = 0..255,
@@ -1263,8 +1280,8 @@ private fun RgbTab(
             }
         }
         Row {
-            if (is0To1Format()) {
-                ColorComponentSlider(
+            when {
+                is0To1Format() -> ColorComponentSlider(
                     text = properties.texts.blue,
                     value = state.rgb.blue,
                     valueRange = 0f..1f,
@@ -1274,8 +1291,8 @@ private fun RgbTab(
                     sliderColors = colors.sliderColors,
                     textFieldColors = colors.textFieldColors
                 )
-            } else {
-                ColorComponentSlider(
+
+                else -> ColorComponentSlider(
                     text = properties.texts.blue,
                     value = (state.rgb.blue * 255).roundToInt(),
                     valueRange = 0..255,
@@ -1329,9 +1346,9 @@ private fun HsvTab(
                 textFieldColors = colors.textFieldColors
             )
         }
-        if (is0To1Format()) {
-            Row {
-                ColorComponentSlider(
+        Row {
+            when {
+                is0To1Format() -> ColorComponentSlider(
                     text = properties.texts.hsvSaturation,
                     value = state.hsv.saturation,
                     valueRange = 0f..1f,
@@ -1341,10 +1358,8 @@ private fun HsvTab(
                     sliderColors = colors.sliderColors,
                     textFieldColors = colors.textFieldColors
                 )
-            }
-        } else {
-            Row {
-                ColorComponentSlider(
+
+                else -> ColorComponentSlider(
                     text = properties.texts.hsvSaturation,
                     value = state.hsv.saturation * 100f,
                     valueRange = 0f..100f,
@@ -1357,9 +1372,9 @@ private fun HsvTab(
                 )
             }
         }
-        if (is0To1Format()) {
-            Row {
-                ColorComponentSlider(
+        Row {
+            when {
+                is0To1Format() -> ColorComponentSlider(
                     text = properties.texts.hsvValue,
                     value = state.hsv.value,
                     valueRange = 0f..1f,
@@ -1369,10 +1384,8 @@ private fun HsvTab(
                     sliderColors = colors.sliderColors,
                     textFieldColors = colors.textFieldColors
                 )
-            }
-        } else {
-            Row {
-                ColorComponentSlider(
+
+                else -> ColorComponentSlider(
                     text = properties.texts.hsvValue,
                     value = state.hsv.value * 100f,
                     valueRange = 0f..100f,
@@ -1428,9 +1441,9 @@ private fun HslTab(
                 textFieldColors = colors.textFieldColors
             )
         }
-        if (is0To1Format()) {
-            Row {
-                ColorComponentSlider(
+        Row {
+            when {
+                is0To1Format() -> ColorComponentSlider(
                     text = properties.texts.hslSaturation,
                     value = state.hsl.saturation,
                     valueRange = 0f..1f,
@@ -1440,10 +1453,8 @@ private fun HslTab(
                     sliderColors = colors.sliderColors,
                     textFieldColors = colors.textFieldColors
                 )
-            }
-        } else {
-            Row {
-                ColorComponentSlider(
+
+                else -> ColorComponentSlider(
                     text = properties.texts.hslSaturation,
                     value = state.hsl.saturation * 100f,
                     valueRange = 0f..100f,
@@ -1456,9 +1467,9 @@ private fun HslTab(
                 )
             }
         }
-        if (is0To1Format()) {
-            Row {
-                ColorComponentSlider(
+        Row {
+            when {
+                is0To1Format() -> ColorComponentSlider(
                     text = properties.texts.hslLightness,
                     value = state.hsl.lightness,
                     valueRange = 0f..1f,
@@ -1468,10 +1479,8 @@ private fun HslTab(
                     sliderColors = colors.sliderColors,
                     textFieldColors = colors.textFieldColors
                 )
-            }
-        } else {
-            Row {
-                ColorComponentSlider(
+
+                else -> ColorComponentSlider(
                     text = properties.texts.hslLightness,
                     value = state.hsl.lightness * 100f,
                     valueRange = 0f..100f,
