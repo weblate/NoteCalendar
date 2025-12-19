@@ -34,33 +34,76 @@ data class HslColor(val hue: Float, val saturation: Float, val lightness: Float)
 
         return RgbColor(r, g, b)
     }
+}
 
-    companion object {
-        private val hslCodeRegex = Regex(
-            """[hH][sS][lL]\(\s*([+-]?[0-9]*\.*[0-9]+)\s*,\s*([+-]?[0-9]*\.*[0-9]+)%?\s*,\s*([+-]?[0-9]*\.*[0-9]+)%?\s*\)"""
-        )
-
-        fun parseHslCodeOrNull(hslCode: CharSequence): HslColor? {
-            hslCodeRegex
-                .matchEntire(hslCode.trim())
-                ?.let { matchResult ->
-                    val groupValues = matchResult.groupValues
-                    val h = groupValues.getOrNull(1)?.toFloatOrNull()
-                    val s = groupValues.getOrNull(2)?.toFloatOrNull()
-                    val l = groupValues.getOrNull(3)?.toFloatOrNull()
-
-                    if (h != null && s != null && l != null) {
-                        return HslColor(
-                            hue = AngleF.fromDegrees(h).getMinimalPositiveCoterminal().degrees,
-                            saturation = (s * 0.01f).coerceIn(0f, 1f),
-                            lightness = (l * 0.01f).coerceIn(0f, 1f),
-                        )
-                    }
-                }
-            return null
-        }
+data class HslaColor(val hsl: HslColor, val alpha: Float) {
+    init {
+        require(alpha in 0f..1f) { "alpha should be in [0, 1] range." }
     }
+
+    @Suppress("unused")
+    fun toColor() = hsl.toColor().copy(alpha = alpha)
+
+    @Suppress("unused")
+    fun toHsva() = HsvaColor(hsl.toHsv(), alpha)
+
+    @Suppress("unused")
+    fun toRgba() = RgbaColor(hsl.toRgb(), alpha)
+}
+
+private val hslCodeRegex =
+    Regex("""[hH][sS][lL]\(\s*([+-]?[0-9]*\.*[0-9]+)\s*,\s*([+-]?[0-9]*\.*[0-9]+)%?\s*,\s*([+-]?[0-9]*\.*[0-9]+)%?\s*\)""")
+private val hslaCodeRegex =
+    Regex("""[hH][sS][lL][aA]\(\s*([+-]?[0-9]*\.*[0-9]+)\s*,\s*([+-]?[0-9]*\.*[0-9]+)%?\s*,\s*([+-]?[0-9]*\.*[0-9]+)%?\s*,\s*([+-]?[0-9]*\.*[0-9]+)%?\s*\)""")
+
+fun parseHslCodeOrNull(hslCode: CharSequence): HslaColor? {
+    val trimmed = hslCode.trim()
+
+    hslCodeRegex
+        .matchEntire(trimmed)
+        ?.let { matchResult ->
+            val groupValues = matchResult.groupValues
+            val h = groupValues.getOrNull(1)?.toFloatOrNull()
+            val s = groupValues.getOrNull(2)?.toFloatOrNull()
+            val l = groupValues.getOrNull(3)?.toFloatOrNull()
+
+            if (h != null && s != null && l != null) {
+                return HslaColor(
+                    HslColor(
+                        hue = AngleF.fromDegrees(h).getMinimalPositiveCoterminal().degrees,
+                        saturation = (s * 0.01f).coerceIn(0f, 1f),
+                        lightness = (l * 0.01f).coerceIn(0f, 1f)
+                    ),
+                    alpha = 1f
+                )
+            }
+        }
+    hslaCodeRegex
+        .matchEntire(trimmed)
+        ?.let { matchResult ->
+            val groupValues = matchResult.groupValues
+            val h = groupValues.getOrNull(1)?.toFloatOrNull()
+            val s = groupValues.getOrNull(2)?.toFloatOrNull()
+            val l = groupValues.getOrNull(3)?.toFloatOrNull()
+            val a = groupValues.getOrNull(4)?.toFloatOrNull()
+
+            if (h != null && s != null && l != null && a != null) {
+                return HslaColor(
+                    HslColor(
+                        hue = AngleF.fromDegrees(h).getMinimalPositiveCoterminal().degrees,
+                        saturation = (s * 0.01f).coerceIn(0f, 1f),
+                        lightness = (l * 0.01f).coerceIn(0f, 1f)
+                    ),
+                    alpha = (a * 0.01f).coerceIn(0f, 1f)
+                )
+            }
+        }
+    return null
 }
 
 fun Color.toHslColor() = toHsl()
     .let { (h, s, l) -> HslColor(h, s, l) }
+
+@Suppress("unused")
+fun Color.toHslaColor() = toHsl()
+    .let { (h, s, l) -> HslaColor(HslColor(h, s, l), alpha) }

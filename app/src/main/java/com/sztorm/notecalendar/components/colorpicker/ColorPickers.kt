@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
@@ -42,6 +43,8 @@ import com.sztorm.mathkit.euclidean2d.RoundedRectangle
 import com.sztorm.mathkit.euclidean2d.Square
 import com.sztorm.mathkit.inverseLerp
 import com.sztorm.mathkit.lerp
+import com.sztorm.notecalendar.isEven
+import com.sztorm.notecalendar.isOdd
 import com.sztorm.notecalendar.lineTo
 import com.sztorm.notecalendar.moveTo
 import com.sztorm.notecalendar.toCanvasSpace
@@ -57,9 +60,13 @@ private enum class CurrentAction {
     ChangingSL,
     ChangingColor,
     ChangingValue,
+    ChangingAlpha
 }
 
-private fun brushCompat(
+val LightGray = Color(0.3333333f, 0.3333333f, 0.3333333f)
+val DarkGray = Color(0.666667f, 0.6666667f, 0.6666667f)
+
+private fun drawWithCompositeBrush(
     vararg brushBlendModePairs: Pair<Brush, BlendMode>,
     drawFunction: (Pair<Brush, BlendMode>) -> Unit
 ) = when {
@@ -118,7 +125,7 @@ private fun RegularTriangle.colorSaturationFrom(position: Vector2F): Float {
     }
 }
 
-private fun RegularTriangle.colorValueFrom(position: Vector2F): Float {
+private fun RegularTriangle.valueFrom(position: Vector2F): Float {
     val triangleHeight = circumradius + inradius
     val height = triagleHeightOfBaseAB(pointA, pointC, position)
     val result = (1f - height / triangleHeight).coerceIn(0f, 1f)
@@ -167,13 +174,14 @@ private fun Circle.colorPosition(hue: Float, saturation: Float) = ComplexF.fromP
     phase = AngleF.fromDegrees(hue).radians
 ).toVector2F() + center
 
-private fun RoundedRectangle.colorValueFrom(position: Vector2F) =
+private fun RoundedRectangle.valueFrom(position: Vector2F) =
     inverseLerp(cornerCenterB.x, cornerCenterA.x, position.x).coerceIn(0f, 1f)
 
 private fun RoundedRectangle.valuePosition(value: Float) =
     lerp(cornerCenterB, cornerCenterA, value)
 
 private fun DrawScope.drawHueRing(ring: Annulus) {
+    val canvasSize = size
     val radius = (ring.innerRadius + ring.outerRadius) * 0.5f
     val stroke = Stroke(width = ring.width)
     val hueGradient = Brush.sweepGradient(
@@ -186,18 +194,21 @@ private fun DrawScope.drawHueRing(ring: Annulus) {
             Color.Yellow,
             Color.Red,
         ),
-        ring.center.toOffset()
+        ring.center.toCanvasSpace(canvasSize).toOffset()
     )
     drawCircle(
         brush = hueGradient,
         radius = radius,
         style = stroke,
-        center = ring.center.toOffset(),
+        center = ring.center.toCanvasSpace(canvasSize).toOffset(),
     )
 }
 
 private fun DrawScope.drawHueSelector(
-    selectorTriangle: RegularTriangle, hueRing: Annulus, hue: Float
+    selectorTriangle: RegularTriangle,
+    hueRing: Annulus,
+    strokeWidth: Float,
+    hue: Float
 ) {
     val canvasSize = size
     val pointA = selectorTriangle.pointA.toCanvasSpace(canvasSize)
@@ -205,10 +216,9 @@ private fun DrawScope.drawHueSelector(
     val pointC = selectorTriangle.pointC.toCanvasSpace(canvasSize)
     val heightRatio = ((hueRing.outerRadius - hueRing.innerRadius) / hueRing.outerRadius) * 1.01f
     val path = Path().apply {
-        moveTo(hueRing.center)
         arcTo(
             rect = Rect(
-                center = hueRing.center.toOffset(),
+                center = hueRing.center.toCanvasSpace(canvasSize).toOffset(),
                 radius = hueRing.outerRadius * 0.995f
             ),
             startAngleDegrees = -hue - 30f * heightRatio,
@@ -222,7 +232,7 @@ private fun DrawScope.drawHueSelector(
     drawPath(
         path = path,
         color = Color.White,
-        style = Stroke(width = 2.dp.toPx())
+        style = Stroke(width = strokeWidth)
     )
 }
 
@@ -250,7 +260,7 @@ private fun DrawScope.drawHsvTriangle(triangle: RegularTriangle, hue: Float) {
         lineTo(pointC)
         close()
     }
-    brushCompat(
+    drawWithCompositeBrush(
         SolidColor(Color.White) to BlendMode.SrcOver,
         hueToTransparentGradient to BlendMode.SrcOver,
         blackToTransparentGradient to BlendMode.SrcOver,
@@ -287,7 +297,7 @@ private fun DrawScope.drawHslSquare(square: Square, hue: Float) {
         lineTo(pointC)
         close()
     }
-    brushCompat(
+    drawWithCompositeBrush(
         hueToGrayGradient to BlendMode.SrcOver,
         whiteToBlackGradient to BlendMode.SrcOver,
     ) { (brush, blendMode) ->
@@ -317,7 +327,7 @@ private fun DrawScope.drawRgbCircle(circle: Circle) {
         colors = listOf(Color.White, Color.Transparent),
         center = circle.center.toCanvasSpace(canvasSize).toOffset()
     )
-    brushCompat(
+    drawWithCompositeBrush(
         hueGradient to BlendMode.SrcOver,
         whiteGradient to BlendMode.SrcOver,
     ) { (brush, blendMode) ->
@@ -351,8 +361,113 @@ private fun DrawScope.drawColorValueRectangle(
     )
 }
 
-private fun DrawScope.drawCircleSelector(
-    position: Vector2F, radius: Float, state: ColorPickerState
+private fun DrawScope.drawAlphaRectangle(
+    rectangle: RoundedRectangle, state: ColorPickerState
+) {
+    val canvasSize = size
+    val topLeft = Vector2F(rectangle.pointC.x, rectangle.pointB.y)
+        .toCanvasSpace(canvasSize)
+        .toOffset()
+    val cornerRadius = rectangle.cornerRadius.let { CornerRadius(it, it) }
+    val rectSize = Size(rectangle.width, rectangle.height)
+    val path = Path().apply {
+        moveTo(rectangle.pointH.toCanvasSpace(canvasSize))
+        arcTo(
+            rect = Rect(
+                rectangle.cornerCenterA.toCanvasSpace(canvasSize).toOffset(),
+                radius = rectangle.cornerRadius
+            ),
+            startAngleDegrees = 0f,
+            sweepAngleDegrees = -90f,
+            forceMoveTo = false
+        )
+        lineTo(rectangle.pointA.toCanvasSpace(canvasSize))
+        lineTo(rectangle.pointB.toCanvasSpace(canvasSize))
+        arcTo(
+            rect = Rect(
+                rectangle.cornerCenterB.toCanvasSpace(canvasSize).toOffset(),
+                radius = rectangle.cornerRadius
+            ),
+            startAngleDegrees = -90f,
+            sweepAngleDegrees = -90f,
+            forceMoveTo = false
+        )
+        lineTo(rectangle.pointC.toCanvasSpace(canvasSize))
+        lineTo(rectangle.pointD.toCanvasSpace(canvasSize))
+        arcTo(
+            rect = Rect(
+                rectangle.cornerCenterC.toCanvasSpace(canvasSize).toOffset(),
+                radius = rectangle.cornerRadius
+            ),
+            startAngleDegrees = -180f,
+            sweepAngleDegrees = -90f,
+            forceMoveTo = false
+        )
+        lineTo(rectangle.pointE.toCanvasSpace(canvasSize))
+        lineTo(rectangle.pointF.toCanvasSpace(canvasSize))
+        arcTo(
+            rect = Rect(
+                rectangle.cornerCenterD.toCanvasSpace(canvasSize).toOffset(),
+                radius = rectangle.cornerRadius
+            ),
+            startAngleDegrees = -270f,
+            sweepAngleDegrees = -90f,
+            forceMoveTo = false
+        )
+        lineTo(rectangle.pointG.toCanvasSpace(canvasSize))
+        lineTo(rectangle.pointH.toCanvasSpace(canvasSize))
+        close()
+    }
+    val sameColorFraction = rectangle.cornerRadius / rectangle.width
+    val color = state.rgb.toColor()
+    val alphaGradient = Brush.horizontalGradient(
+        0f to Color.Transparent,
+        sameColorFraction to Color.Transparent,
+        1f - sameColorFraction to color,
+        1f to color
+    )
+    val alphaBoxSize = size.width * 0.03f
+    val rows = (rectangle.height / alphaBoxSize).toInt()
+    val cols = (rectangle.width / alphaBoxSize).toInt()
+    val (initialX, initialY) = rectangle.pointC.toCanvasSpace(canvasSize) -
+        Vector2F(0f, (rows + 1) * 0.5f * alphaBoxSize)
+
+    drawRoundRect(
+        color = LightGray,
+        topLeft = topLeft,
+        size = rectSize,
+        cornerRadius = cornerRadius
+    )
+    clipPath(path) {
+        for (row in 0..rows) {
+            for (col in 0..cols) {
+                val color =
+                    if (row.isEven && col.isEven || row.isOdd && col.isOdd) LightGray
+                    else DarkGray
+
+                drawRect(
+                    color = color,
+                    topLeft = Offset(
+                        initialX + col * alphaBoxSize, initialY + row * alphaBoxSize
+                    ),
+                    size = Size(alphaBoxSize, alphaBoxSize)
+                )
+            }
+        }
+    }
+    drawRoundRect(
+        brush = alphaGradient,
+        topLeft = topLeft,
+        size = rectSize,
+        cornerRadius = cornerRadius
+    )
+}
+
+private fun DrawScope.drawColorCircleSelector(
+    position: Vector2F,
+    radius: Float,
+    strokeWidth: Float,
+    state: ColorPickerState
 ) {
     val canvasSize = size
     val t = (lerp(1f, 0f, state.hsv.value) +
@@ -363,11 +478,37 @@ private fun DrawScope.drawCircleSelector(
         color = Color.hsv(0f, 0f, if (t > 0.5) 1f else 0f),
         radius = radius,
         center = position.toCanvasSpace(canvasSize).toOffset(),
-        style = Stroke(width = 2.dp.toPx())
+        style = Stroke(width = strokeWidth)
     )
 }
 
-private fun DrawScope.drawColorSelector(position: Vector2F, state: ColorPickerState) {
+private fun DrawScope.drawAlphaCircleSelector(
+    position: Vector2F,
+    radius: Float,
+    strokeWidth: Float,
+    state: ColorPickerState
+) {
+    val canvasSize = size
+    val t = when {
+        state.alpha < 0.5f -> 1f
+        else -> (lerp(1f, 0f, state.hsv.value) +
+            lerp(0f, 1f, state.hsv.saturation))
+            .coerceIn(0f, 1f)
+    }
+    drawCircle(
+        color = Color.hsv(0f, 0f, if (t > 0.5) 1f else 0f),
+        radius = radius,
+        center = position.toCanvasSpace(canvasSize).toOffset(),
+        style = Stroke(width = strokeWidth)
+    )
+}
+
+private fun DrawScope.drawColorSelector(
+    position: Vector2F,
+    strokeWidth: Float,
+    state: ColorPickerState,
+    supportsAlphaPicking: Boolean
+) {
     val canvasSize = size
     val radius = size.width * 0.04f
     val path = Path().apply {
@@ -388,19 +529,56 @@ private fun DrawScope.drawColorSelector(position: Vector2F, state: ColorPickerSt
         lerp(0f, 1f, state.hsv.saturation))
         .coerceIn(0f, 1f)
 
-    drawPath(
-        path = path,
-        color = state.rgb.toColor()
-    )
+    if (supportsAlphaPicking) {
+        val (initialX, initialY) =
+            position.toCanvasSpace(canvasSize) - Vector2F(radius * 1.5f, radius * 3f)
+        val alphaBoxSize = size.width * 0.03f
+        val size = Size(radius * 2.5f, radius * 3f)
+        val rows = (size.height / alphaBoxSize).toInt()
+        val cols = (size.width / alphaBoxSize).toInt()
+
+        clipPath(path) {
+            drawRect(
+                color = LightGray,
+                topLeft = Offset(initialX, initialY),
+                size = size
+            )
+            for (row in 0..rows) {
+                for (col in 0..cols) {
+                    val color =
+                        if (row.isEven && col.isEven || row.isOdd && col.isOdd) LightGray
+                        else DarkGray
+
+                    drawRect(
+                        color = color,
+                        topLeft = Offset(
+                            initialX + col * alphaBoxSize, initialY + row * alphaBoxSize
+                        ),
+                        size = Size(alphaBoxSize, alphaBoxSize)
+                    )
+                }
+            }
+            drawPath(
+                path = path,
+                alpha = state.alpha,
+                color = state.rgb.toColor()
+            )
+        }
+    } else {
+        drawPath(
+            path = path,
+            color = state.rgb.toColor()
+        )
+    }
     drawPath(
         path = path,
         color = Color.hsv(0f, 0f, if (t > 0.5) 1f else 0f),
-        style = Stroke(width = 2.dp.toPx())
+        style = Stroke(width = strokeWidth)
     )
 }
 
 @Composable
-fun HsvColorPicker(state: ColorPickerState) {
+fun HsvColorPicker(state: ColorPickerState, supportsAlphaPicking: Boolean) {
     var currentAction by remember { mutableStateOf(CurrentAction.None) }
     val hueRing = remember {
         MutableAnnulus(
@@ -424,24 +602,39 @@ fun HsvColorPicker(state: ColorPickerState) {
             sideLength = 100f
         )
     }
+    val alphaRectangle = remember {
+        MutableRoundedRectangle(
+            center = Vector2F.ZERO,
+            orientation = ComplexF.ONE,
+            width = 1f,
+            height = 1f,
+            cornerRadius = 0f
+        )
+    }
     var canvasSize by remember { mutableStateOf(Size(1f, 1f)) }
+    val aspectRatio = if (supportsAlphaPicking) 0.9f else 1f
     val onInputStart = { startPosition: Offset ->
         val position = startPosition
             .toVector2F()
             .toCanvasSpace(canvasSize)
 
-        when (position) {
-            in hueRing -> {
+        when {
+            position in hueRing -> {
                 currentAction = CurrentAction.ChangingHue
                 state.hsv = state.hsv.copy(hue = hueRing.hueFrom(position))
             }
 
-            in hsvTriangle -> {
+            position in hsvTriangle -> {
                 currentAction = CurrentAction.ChangingSV
                 state.hsv = state.hsv.copy(
                     saturation = hsvTriangle.colorSaturationFrom(position),
-                    value = hsvTriangle.colorValueFrom(position)
+                    value = hsvTriangle.valueFrom(position)
                 )
+            }
+
+            supportsAlphaPicking && position in alphaRectangle -> {
+                currentAction = CurrentAction.ChangingAlpha
+                state.alpha = alphaRectangle.valueFrom(position)
             }
         }
     }
@@ -459,8 +652,13 @@ fun HsvColorPicker(state: ColorPickerState) {
                 val selectorPosition = hsvTriangle.closestPointTo(position)
                 state.hsv = state.hsv.copy(
                     saturation = hsvTriangle.colorSaturationFrom(selectorPosition),
-                    value = hsvTriangle.colorValueFrom(selectorPosition)
+                    value = hsvTriangle.valueFrom(selectorPosition)
                 )
+            }
+
+            CurrentAction.ChangingAlpha -> {
+                val selectorPosition = alphaRectangle.closestPointTo(position)
+                state.alpha = alphaRectangle.valueFrom(selectorPosition)
             }
 
             else -> {}
@@ -474,7 +672,7 @@ fun HsvColorPicker(state: ColorPickerState) {
         Canvas(
             modifier = Modifier
                 .fillMaxWidth()
-                .aspectRatio(1F)
+                .aspectRatio(aspectRatio)
                 .pointerInput(Unit) {
                     detectTapGestures(
                         onTap = { onInputStart(it); },
@@ -490,9 +688,12 @@ fun HsvColorPicker(state: ColorPickerState) {
                     )
                 }
         ) {
+            val strokeWidth = 3.dp.toPx()
+            val height = size.height * aspectRatio
+            val width = size.width
             canvasSize = size
             hueRing.set(
-                center = center.toVector2F().toCanvasSpace(canvasSize),
+                center = Vector2F(width * 0.5f, height * 0.5f).toCanvasSpace(canvasSize),
                 innerRadius = size.width * 0.38f,
                 outerRadius = size.width * 0.48f,
             )
@@ -507,7 +708,7 @@ fun HsvColorPicker(state: ColorPickerState) {
                 sideLength = hueRing.width
             )
             hsvTriangle.set(
-                center = center.toVector2F().toCanvasSpace(canvasSize),
+                center = Vector2F(width * 0.5f, height * 0.5f).toCanvasSpace(canvasSize),
                 orientation = AngleF.fromDegrees(state.hsv.hue - 90f).toComplexF(),
                 sideLength = hueRing.innerRadius * sqrt(3f)
             )
@@ -519,18 +720,40 @@ fun HsvColorPicker(state: ColorPickerState) {
             drawHueSelector(
                 selectorTriangle = hueSelectorTriangle,
                 hueRing = hueRing,
-                hue = state.hsv.hue
+                strokeWidth = strokeWidth,
+                hue = state.hsv.hue,
             )
+            if (supportsAlphaPicking) {
+                alphaRectangle.set(
+                    center = Vector2F(width * 0.5f, height * 1.05f)
+                        .toCanvasSpace(canvasSize),
+                    width = width * 0.9f,
+                    height = height * 0.075f,
+                    cornerRadius = height * 0.075f * 0.499f
+                )
+                drawAlphaRectangle(
+                    rectangle = alphaRectangle,
+                    state = state
+                )
+                drawAlphaCircleSelector(
+                    position = alphaRectangle.valuePosition(state.alpha),
+                    radius = alphaRectangle.cornerRadius,
+                    strokeWidth = strokeWidth,
+                    state = state
+                )
+            }
             drawColorSelector(
                 position = hsvTriangle.colorPosition(state.hsv.saturation, state.hsv.value),
-                state = state
+                state = state,
+                strokeWidth = strokeWidth,
+                supportsAlphaPicking = supportsAlphaPicking
             )
         }
     }
 }
 
 @Composable
-fun HslColorPicker(state: ColorPickerState) {
+fun HslColorPicker(state: ColorPickerState, supportsAlphaPicking: Boolean) {
     var currentAction by remember { mutableStateOf(CurrentAction.None) }
     val hueRing = remember {
         MutableAnnulus(
@@ -554,24 +777,39 @@ fun HslColorPicker(state: ColorPickerState) {
             sideLength = 100f
         )
     }
+    val alphaRectangle = remember {
+        MutableRoundedRectangle(
+            center = Vector2F.ZERO,
+            orientation = ComplexF.ONE,
+            width = 1f,
+            height = 1f,
+            cornerRadius = 0f
+        )
+    }
     var canvasSize by remember { mutableStateOf(Size(1f, 1f)) }
+    val aspectRatio = if (supportsAlphaPicking) 0.9f else 1f
     val onInputStart = { startPosition: Offset ->
         val position = startPosition
             .toVector2F()
             .toCanvasSpace(canvasSize)
 
-        when (position) {
-            in hueRing -> {
+        when {
+            position in hueRing -> {
                 currentAction = CurrentAction.ChangingHue
                 state.hsl = state.hsl.copy(hue = hueRing.hueFrom(position))
             }
 
-            in hslSquare -> {
+            position in hslSquare -> {
                 currentAction = CurrentAction.ChangingSL
                 state.hsl = state.hsl.copy(
                     saturation = hslSquare.colorSaturationFrom(position),
                     lightness = hslSquare.colorLightnessFrom(position)
                 )
+            }
+
+            supportsAlphaPicking && position in alphaRectangle -> {
+                currentAction = CurrentAction.ChangingAlpha
+                state.alpha = alphaRectangle.valueFrom(position)
             }
         }
     }
@@ -593,6 +831,11 @@ fun HslColorPicker(state: ColorPickerState) {
                 )
             }
 
+            CurrentAction.ChangingAlpha -> {
+                val selectorPosition = alphaRectangle.closestPointTo(position)
+                state.alpha = alphaRectangle.valueFrom(selectorPosition)
+            }
+
             else -> {}
         }
     }
@@ -604,7 +847,7 @@ fun HslColorPicker(state: ColorPickerState) {
         Canvas(
             modifier = Modifier
                 .fillMaxWidth()
-                .aspectRatio(1F)
+                .aspectRatio(aspectRatio)
                 .pointerInput(Unit) {
                     detectTapGestures(
                         onTap = { onInputStart(it); },
@@ -620,11 +863,14 @@ fun HslColorPicker(state: ColorPickerState) {
                     )
                 }
         ) {
+            val strokeWidth = 3.dp.toPx()
+            val height = size.height * aspectRatio
+            val width = size.width
             canvasSize = size
             hueRing.set(
-                center = center.toVector2F().toCanvasSpace(canvasSize),
-                innerRadius = size.width * 0.38f,
-                outerRadius = size.width * 0.48f,
+                center = Vector2F(width * 0.5f, height * 0.5f).toCanvasSpace(canvasSize),
+                innerRadius = width * 0.38f,
+                outerRadius = width * 0.48f,
             )
             hueSelectorTriangle.set(
                 center = (ComplexF.fromPolar(
@@ -637,7 +883,7 @@ fun HslColorPicker(state: ColorPickerState) {
                 sideLength = hueRing.width
             )
             hslSquare.set(
-                center = center.toVector2F().toCanvasSpace(canvasSize),
+                center = Vector2F(width * 0.5f, height * 0.5f).toCanvasSpace(canvasSize),
                 orientation = AngleF.fromDegrees(state.hsl.hue - 90f).toComplexF(),
                 sideLength = hueRing.innerRadius * sqrt(2f)
             )
@@ -649,18 +895,40 @@ fun HslColorPicker(state: ColorPickerState) {
             drawHueSelector(
                 selectorTriangle = hueSelectorTriangle,
                 hueRing = hueRing,
+                strokeWidth = strokeWidth,
                 hue = state.hsl.hue
             )
+            if (supportsAlphaPicking) {
+                alphaRectangle.set(
+                    center = Vector2F(width * 0.5f, height * 1.05f)
+                        .toCanvasSpace(canvasSize),
+                    width = width * 0.9f,
+                    height = height * 0.075f,
+                    cornerRadius = height * 0.075f * 0.499f
+                )
+                drawAlphaRectangle(
+                    rectangle = alphaRectangle,
+                    state = state
+                )
+                drawAlphaCircleSelector(
+                    position = alphaRectangle.valuePosition(state.alpha),
+                    radius = alphaRectangle.cornerRadius,
+                    strokeWidth = strokeWidth,
+                    state = state
+                )
+            }
             drawColorSelector(
                 position = hslSquare.colorPosition(state.hsl.saturation, state.hsl.lightness),
-                state = state
+                strokeWidth = strokeWidth,
+                state = state,
+                supportsAlphaPicking = supportsAlphaPicking
             )
         }
     }
 }
 
 @Composable
-fun RgbColorPicker(state: ColorPickerState) {
+fun RgbColorPicker(state: ColorPickerState, supportsAlphaPicking: Boolean) {
     var currentAction by remember { mutableStateOf(CurrentAction.None) }
     val rgbCircle = remember {
         MutableCircle(
@@ -678,14 +946,24 @@ fun RgbColorPicker(state: ColorPickerState) {
             cornerRadius = 0f
         )
     }
+    val alphaRectangle = remember {
+        MutableRoundedRectangle(
+            center = Vector2F.ZERO,
+            orientation = ComplexF.ONE,
+            width = 1f,
+            height = 1f,
+            cornerRadius = 0f
+        )
+    }
     var canvasSize by remember { mutableStateOf(Size(1f, 1f)) }
+    val aspectRatio = if (supportsAlphaPicking) 0.9f else 1f
     val onInputStart = { startPosition: Offset ->
         val position = startPosition
             .toVector2F()
             .toCanvasSpace(canvasSize)
 
-        when (position) {
-            in rgbCircle -> {
+        when {
+            position in rgbCircle -> {
                 currentAction = CurrentAction.ChangingColor
                 state.hsv = state.hsv.copy(
                     hue = rgbCircle.hueFrom(position),
@@ -693,9 +971,14 @@ fun RgbColorPicker(state: ColorPickerState) {
                 )
             }
 
-            in valueRectangle -> {
+            position in valueRectangle -> {
                 currentAction = CurrentAction.ChangingValue
-                state.hsv = state.hsv.copy(value = valueRectangle.colorValueFrom(position))
+                state.hsv = state.hsv.copy(value = valueRectangle.valueFrom(position))
+            }
+
+            supportsAlphaPicking && position in alphaRectangle -> {
+                currentAction = CurrentAction.ChangingAlpha
+                state.alpha = alphaRectangle.valueFrom(position)
             }
         }
     }
@@ -715,7 +998,12 @@ fun RgbColorPicker(state: ColorPickerState) {
 
             CurrentAction.ChangingValue -> {
                 val selectorPosition = valueRectangle.closestPointTo(position)
-                state.hsv = state.hsv.copy(value = valueRectangle.colorValueFrom(selectorPosition))
+                state.hsv = state.hsv.copy(value = valueRectangle.valueFrom(selectorPosition))
+            }
+
+            CurrentAction.ChangingAlpha -> {
+                val selectorPosition = alphaRectangle.closestPointTo(position)
+                state.alpha = alphaRectangle.valueFrom(selectorPosition)
             }
 
             else -> {}
@@ -729,7 +1017,7 @@ fun RgbColorPicker(state: ColorPickerState) {
         Canvas(
             modifier = Modifier
                 .fillMaxWidth()
-                .aspectRatio(1F)
+                .aspectRatio(aspectRatio)
                 .pointerInput(Unit) {
                     detectTapGestures(
                         onTap = { onInputStart(it); },
@@ -745,32 +1033,55 @@ fun RgbColorPicker(state: ColorPickerState) {
                     )
                 }
         ) {
+            val strokeWidth = 3.dp.toPx()
+            val height = size.height * aspectRatio
+            val width = size.width
             canvasSize = size
             rgbCircle.set(
-                center = Vector2F(size.width * 0.5f, size.height * 0.45f)
-                    .toCanvasSpace(canvasSize),
-                radius = size.width * 0.43f,
+                center = Vector2F(width * 0.5f, height * 0.45f).toCanvasSpace(canvasSize),
+                radius = width * 0.43f,
             )
             valueRectangle.set(
-                center = Vector2F(size.width * 0.5f, size.height * 0.95f)
-                    .toCanvasSpace(canvasSize),
-                width = size.width * 0.9f,
-                height = size.height * 0.075f,
-                cornerRadius = size.height * 0.075f * 0.499f
+                center = Vector2F(width * 0.5f, height * 0.95f).toCanvasSpace(canvasSize),
+                width = width * 0.9f,
+                height = height * 0.075f,
+                cornerRadius = height * 0.075f * 0.499f
             )
             drawRgbCircle(circle = rgbCircle)
             drawColorValueRectangle(
                 rectangle = valueRectangle,
                 state = state
             )
-            drawCircleSelector(
+            drawColorCircleSelector(
                 position = valueRectangle.valuePosition(state.hsv.value),
                 radius = valueRectangle.cornerRadius,
+                strokeWidth = strokeWidth,
                 state = state
             )
+            if (supportsAlphaPicking) {
+                alphaRectangle.set(
+                    center = Vector2F(width * 0.5f, height * 1.05f)
+                        .toCanvasSpace(canvasSize),
+                    width = width * 0.9f,
+                    height = height * 0.075f,
+                    cornerRadius = height * 0.075f * 0.499f
+                )
+                drawAlphaRectangle(
+                    rectangle = alphaRectangle,
+                    state = state
+                )
+                drawAlphaCircleSelector(
+                    position = alphaRectangle.valuePosition(state.alpha),
+                    radius = alphaRectangle.cornerRadius,
+                    strokeWidth = strokeWidth,
+                    state = state
+                )
+            }
             drawColorSelector(
                 position = rgbCircle.colorPosition(state.hsv.hue, state.hsv.saturation),
-                state = state
+                strokeWidth = strokeWidth,
+                state = state,
+                supportsAlphaPicking = supportsAlphaPicking
             )
         }
     }
