@@ -26,6 +26,7 @@ interface ColorCodeType {
             }
     }
 
+    @Suppress("unused")
     object HexAlpha : ColorCodeType {
         override fun toString(state: ColorPickerState) = state.toHexCodeFormat(true)
         override fun parseOrNull(code: CharSequence) = parseHexCodeOrNull(code)
@@ -47,6 +48,7 @@ interface ColorCodeType {
             }
     }
 
+    @Suppress("unused")
     object Hsla : ColorCodeType {
         override fun toString(state: ColorPickerState) = state.toHslFormat(true)
         override fun parseOrNull(code: CharSequence) = parseHslCodeOrNull(code)
@@ -67,6 +69,7 @@ interface ColorCodeType {
             }
     }
 
+    @Suppress("unused")
     object Hsva : ColorCodeType {
         override fun toString(state: ColorPickerState) = state.toHsvFormat(true)
         override fun parseOrNull(code: CharSequence) = parseHsvCodeOrNull(code)
@@ -87,6 +90,7 @@ interface ColorCodeType {
             }
     }
 
+    @Suppress("unused")
     object Rgba : ColorCodeType {
         override fun toString(state: ColorPickerState) = state.toRgbFormat(true)
         override fun parseOrNull(code: CharSequence) = parseRgbCodeOrNull(code)
@@ -96,6 +100,30 @@ interface ColorCodeType {
                 state.alpha = it.alpha
             }
     }
+}
+
+enum class HslValuesFormat(val label: String) {
+    /** [Standard] hsl(i°, i%, i%) */
+    Standard("0%..100%"),
+
+    /** [FloatingPoint] hsl(i, f, f) */
+    FloatingPoint("0..1")
+}
+
+enum class HsvValuesFormat(val label: String) {
+    /** [Standard] hsv(i°, i%, i%) */
+    Standard("0%..100%"),
+
+    /** [FloatingPoint] hsv(i, f, f) */
+    FloatingPoint("0..1")
+}
+
+enum class RgbValuesFormat(val label: String) {
+    /** [Integer] rgb(i, i, i) */
+    Integer("0..255"),
+
+    /** [FloatingPoint] rgb(f, f, f)) */
+    FloatingPoint("0..1")
 }
 
 sealed class ColorPickerTab(
@@ -115,39 +143,32 @@ sealed class ColorPickerTab(
 
     class Hsl(
         pickerType: ColorPickerType = ColorPickerType.HslSquare,
-        supportsAlphaPicking: Boolean = false
+        supportsAlphaPicking: Boolean = false,
+        val defaultValuesFormat: HslValuesFormat = HslValuesFormat.Standard,
+        val supportsFormatPicking: Boolean = true,
     ) : ColorPickerTab(pickerType, supportsAlphaPicking)
 
     class Hsv(
         pickerType: ColorPickerType = ColorPickerType.HsvTriangle,
-        supportsAlphaPicking: Boolean = false
+        supportsAlphaPicking: Boolean = false,
+        val defaultValuesFormat: HsvValuesFormat = HsvValuesFormat.Standard,
+        val supportsFormatPicking: Boolean = true,
     ) : ColorPickerTab(pickerType, supportsAlphaPicking)
 
     class Rgb(
         pickerType: ColorPickerType = ColorPickerType.RgbCircle,
-        supportsAlphaPicking: Boolean = false
+        supportsAlphaPicking: Boolean = false,
+        val defaultValuesFormat: RgbValuesFormat = RgbValuesFormat.Integer,
+        val supportsFormatPicking: Boolean = true,
     ) : ColorPickerTab(pickerType, supportsAlphaPicking)
 }
 
 data class ColorPickerProperties(
     val tabs: List<ColorPickerTab> = listOf(
-        ColorPickerTab.ColorCodes(
-            supportsAlphaPicking = true,
-            pickerType = ColorPickerType.HsvTriangle,
-            codes = listOf(
-                ColorCodeType.Hex,
-                ColorCodeType.Rgb,
-                ColorCodeType.Hsl,
-                ColorCodeType.Hsv,
-                ColorCodeType.HexAlpha,
-                ColorCodeType.Rgba,
-                ColorCodeType.Hsla,
-                ColorCodeType.Hsva,
-            )
-        ),
-        ColorPickerTab.Rgb(supportsAlphaPicking = true),
-        ColorPickerTab.Hsv(supportsAlphaPicking = true),
-        ColorPickerTab.Hsl(supportsAlphaPicking = true),
+        ColorPickerTab.ColorCodes(),
+        ColorPickerTab.Rgb(),
+        ColorPickerTab.Hsv(),
+        ColorPickerTab.Hsl(),
     ),
     val texts: ColorPickerTexts = ColorPickerTexts.english()
 )

@@ -28,7 +28,9 @@ import androidx.navigation.compose.rememberNavController
 import com.mikepenz.aboutlibraries.LibsBuilder
 import com.sztorm.notecalendar.components.colorpicker.ColorPickerDefaults
 import com.sztorm.notecalendar.components.colorpicker.ColorPickerProperties
+import com.sztorm.notecalendar.components.colorpicker.ColorPickerTab
 import com.sztorm.notecalendar.components.colorpicker.ColorPickerTexts
+import com.sztorm.notecalendar.components.colorpicker.ColorPickerType
 import com.sztorm.notecalendar.components.preferences.CategoryPreference
 import com.sztorm.notecalendar.components.preferences.ColorPickerPreference
 import com.sztorm.notecalendar.components.preferences.ConfirmationPreference
@@ -356,6 +358,14 @@ fun CustomThemeSettingsLayout(
         iconButtonColor = themeColors.textColor,
     )
     val colorPickerProperties = ColorPickerProperties(
+        tabs = listOf(
+            ColorPickerTab.ColorCodes(
+                pickerType = ColorPickerType.HsvTriangle
+            ),
+            ColorPickerTab.Rgb(),
+            ColorPickerTab.Hsv(),
+            ColorPickerTab.Hsl(),
+        ),
         texts = ColorPickerTexts.english(), // TODO add required strings to strings.xml
     )
     SubpreferenceScreen(

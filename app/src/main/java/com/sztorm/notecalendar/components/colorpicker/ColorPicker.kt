@@ -182,7 +182,6 @@ fun ColorPicker(
 @Composable
 private fun ColorCodeRow(
     value: String,
-    onValueChange: (String) -> Unit,
     onPaste: (ClipData) -> Unit,
     colors: ColorPickerColors,
     modifier: Modifier = Modifier,
@@ -197,7 +196,7 @@ private fun ColorCodeRow(
     ) {
         OutlinedTextField(
             value = value,
-            onValueChange = onValueChange,
+            onValueChange = {},
             readOnly = true,
             singleLine = true,
             textStyle = LocalTextStyle.current.copy(textAlign = TextAlign.Center),
@@ -257,7 +256,6 @@ private fun ColorCodesTab(
         tab.codes.forEach { code ->
             ColorCodeRow(
                 value = code.toString(state),
-                onValueChange = { },
                 onPaste = { clipData ->
                     clipData
                         .itemsSequence()
@@ -340,7 +338,12 @@ private fun ColorComponentSlider(
     suffix = suffix,
     textColor = textColor,
     textFieldColors = textFieldColors,
-    sliderColors = sliderColors
+    sliderColors = sliderColors.copy(
+        activeTickColor = Color.Transparent,
+        disabledActiveTickColor = Color.Transparent,
+        disabledInactiveTickColor = Color.Transparent,
+        inactiveTickColor = Color.Transparent,
+    )
 )
 
 @Composable
@@ -447,124 +450,132 @@ private fun RgbTab(
     properties: ColorPickerProperties,
     tab: ColorPickerTab.Rgb
 ) {
-    var selectedValueFormatIndex by remember { mutableIntStateOf(0) }
-    fun is0To1Format() = selectedValueFormatIndex == 0
-    val valueFormats = listOf("0..1", "0..255")
-
+    var selectedFormatIndex by remember {
+        mutableIntStateOf(tab.defaultValuesFormat.ordinal)
+    }
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp)
     ) {
-        SingleChoiceSegmentedButtonRow(modifier = Modifier.align(Alignment.CenterHorizontally)) {
-            valueFormats.forEachIndexed { index, label ->
-                SegmentedButton(
-                    shape = SegmentedButtonDefaults.itemShape(
-                        index = index,
-                        count = valueFormats.size
-                    ),
-                    onClick = { selectedValueFormatIndex = index },
-                    selected = index == selectedValueFormatIndex,
-                    label = { Text(label) },
-                    colors = colors.segmentedButtonColors
-                )
+        if (tab.supportsFormatPicking) {
+            SingleChoiceSegmentedButtonRow(
+                modifier = Modifier.align(Alignment.CenterHorizontally)
+            ) {
+                RgbValuesFormat.entries.forEachIndexed { index, format ->
+                    SegmentedButton(
+                        shape = SegmentedButtonDefaults.itemShape(
+                            index = index,
+                            count = RgbValuesFormat.entries.size
+                        ),
+                        onClick = { selectedFormatIndex = index },
+                        selected = index == selectedFormatIndex,
+                        label = { Text(format.label) },
+                        colors = colors.segmentedButtonColors
+                    )
+                }
             }
         }
-        Row {
-            when {
-                is0To1Format() -> ColorComponentSlider(
-                    text = properties.texts.red,
-                    value = state.rgb.red,
-                    valueRange = 0f..1f,
-                    onValueChange = { state.rgb = state.rgb.copy(red = it) },
-                    format = { it.formatUpToTwoDecimalPlaces() },
-                    textColor = colors.labelColor,
-                    sliderColors = colors.sliderColors,
-                    textFieldColors = colors.textFieldColors
-                )
+        when (RgbValuesFormat.entries[selectedFormatIndex]) {
+            RgbValuesFormat.Integer -> {
+                Row {
+                    ColorComponentSlider(
+                        text = properties.texts.red,
+                        value = (state.rgb.red * 255f).roundToInt(),
+                        valueRange = 0..255,
+                        onValueChange = { state.rgb = state.rgb.copy(red = it.toFloat() / 255f) },
+                        textColor = colors.labelColor,
+                        sliderColors = colors.sliderColors,
+                        textFieldColors = colors.textFieldColors
+                    )
+                }
+                Row {
+                    ColorComponentSlider(
+                        text = properties.texts.green,
+                        value = (state.rgb.green * 255f).roundToInt(),
+                        valueRange = 0..255,
+                        onValueChange = { state.rgb = state.rgb.copy(green = it.toFloat() / 255f) },
+                        textColor = colors.labelColor,
+                        sliderColors = colors.sliderColors,
+                        textFieldColors = colors.textFieldColors
+                    )
+                }
+                Row {
+                    ColorComponentSlider(
+                        text = properties.texts.blue,
+                        value = (state.rgb.blue * 255).roundToInt(),
+                        valueRange = 0..255,
+                        onValueChange = { state.rgb = state.rgb.copy(blue = it.toFloat() / 255f) },
+                        textColor = colors.labelColor,
+                        sliderColors = colors.sliderColors,
+                        textFieldColors = colors.textFieldColors
+                    )
+                }
+                if (tab.supportsAlphaPicking) {
+                    Row {
+                        ColorComponentSlider(
+                            text = properties.texts.alpha,
+                            value = (state.alpha * 255).roundToInt(),
+                            valueRange = 0..255,
+                            onValueChange = { state.alpha = it.toFloat() / 255f },
+                            textColor = colors.labelColor,
+                            sliderColors = colors.sliderColors,
+                            textFieldColors = colors.textFieldColors
+                        )
+                    }
+                }
+            }
 
-                else -> ColorComponentSlider(
-                    text = properties.texts.red,
-                    value = (state.rgb.red * 255f).roundToInt(),
-                    valueRange = 0..255,
-                    onValueChange = { state.rgb = state.rgb.copy(red = it.toFloat() / 255f) },
-                    textColor = colors.labelColor,
-                    sliderColors = colors.sliderColors,
-                    textFieldColors = colors.textFieldColors
-                )
-            }
-        }
-        Row {
-            when {
-                is0To1Format() -> ColorComponentSlider(
-                    text = properties.texts.green,
-                    value = state.rgb.green,
-                    valueRange = 0f..1f,
-                    onValueChange = { state.rgb = state.rgb.copy(green = it) },
-                    format = { it.formatUpToTwoDecimalPlaces() },
-                    textColor = colors.labelColor,
-                    sliderColors = colors.sliderColors,
-                    textFieldColors = colors.textFieldColors
-                )
-
-                else -> ColorComponentSlider(
-                    text = properties.texts.green,
-                    value = (state.rgb.green * 255f).roundToInt(),
-                    valueRange = 0..255,
-                    onValueChange = { state.rgb = state.rgb.copy(green = it.toFloat() / 255f) },
-                    textColor = colors.labelColor,
-                    sliderColors = colors.sliderColors,
-                    textFieldColors = colors.textFieldColors
-                )
-            }
-        }
-        Row {
-            when {
-                is0To1Format() -> ColorComponentSlider(
-                    text = properties.texts.blue,
-                    value = state.rgb.blue,
-                    valueRange = 0f..1f,
-                    onValueChange = { state.rgb = state.rgb.copy(blue = it) },
-                    format = { it.formatUpToTwoDecimalPlaces() },
-                    textColor = colors.labelColor,
-                    sliderColors = colors.sliderColors,
-                    textFieldColors = colors.textFieldColors
-                )
-
-                else -> ColorComponentSlider(
-                    text = properties.texts.blue,
-                    value = (state.rgb.blue * 255).roundToInt(),
-                    valueRange = 0..255,
-                    onValueChange = { state.rgb = state.rgb.copy(blue = it.toFloat() / 255f) },
-                    textColor = colors.labelColor,
-                    sliderColors = colors.sliderColors,
-                    textFieldColors = colors.textFieldColors
-                )
-            }
-        }
-        if (tab.supportsAlphaPicking) {
-            Row {
-                when {
-                    is0To1Format() -> ColorComponentSlider(
-                        text = properties.texts.alpha,
-                        value = state.alpha,
+            RgbValuesFormat.FloatingPoint -> {
+                Row {
+                    ColorComponentSlider(
+                        text = properties.texts.red,
+                        value = state.rgb.red,
                         valueRange = 0f..1f,
-                        onValueChange = { state.alpha = it },
+                        onValueChange = { state.rgb = state.rgb.copy(red = it) },
                         format = { it.formatUpToTwoDecimalPlaces() },
                         textColor = colors.labelColor,
                         sliderColors = colors.sliderColors,
                         textFieldColors = colors.textFieldColors
                     )
-
-                    else -> ColorComponentSlider(
-                        text = properties.texts.alpha,
-                        value = (state.alpha * 255).roundToInt(),
-                        valueRange = 0..255,
-                        onValueChange = { state.alpha = it.toFloat() / 255f },
+                }
+                Row {
+                    ColorComponentSlider(
+                        text = properties.texts.green,
+                        value = state.rgb.green,
+                        valueRange = 0f..1f,
+                        onValueChange = { state.rgb = state.rgb.copy(green = it) },
+                        format = { it.formatUpToTwoDecimalPlaces() },
                         textColor = colors.labelColor,
                         sliderColors = colors.sliderColors,
                         textFieldColors = colors.textFieldColors
                     )
+                }
+                Row {
+                    ColorComponentSlider(
+                        text = properties.texts.blue,
+                        value = state.rgb.blue,
+                        valueRange = 0f..1f,
+                        onValueChange = { state.rgb = state.rgb.copy(blue = it) },
+                        format = { it.formatUpToTwoDecimalPlaces() },
+                        textColor = colors.labelColor,
+                        sliderColors = colors.sliderColors,
+                        textFieldColors = colors.textFieldColors
+                    )
+                }
+                if (tab.supportsAlphaPicking) {
+                    Row {
+                        ColorComponentSlider(
+                            text = properties.texts.alpha,
+                            value = state.alpha,
+                            valueRange = 0f..1f,
+                            onValueChange = { state.alpha = it },
+                            format = { it.formatUpToTwoDecimalPlaces() },
+                            textColor = colors.labelColor,
+                            sliderColors = colors.sliderColors,
+                            textFieldColors = colors.textFieldColors
+                        )
+                    }
                 }
             }
         }
@@ -578,119 +589,140 @@ private fun HsvTab(
     properties: ColorPickerProperties,
     tab: ColorPickerTab.Hsv
 ) {
-    var selectedValueFormatIndex by remember { mutableIntStateOf(0) }
-    fun is0To1Format() = selectedValueFormatIndex == 0
-    val valueFormats = listOf("0..1", "0%..100%")
-
+    var selectedFormatIndex by remember {
+        mutableIntStateOf(tab.defaultValuesFormat.ordinal)
+    }
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp)
     ) {
-        SingleChoiceSegmentedButtonRow(modifier = Modifier.align(Alignment.CenterHorizontally)) {
-            valueFormats.forEachIndexed { index, label ->
-                SegmentedButton(
-                    shape = SegmentedButtonDefaults.itemShape(
-                        index = index,
-                        count = valueFormats.size
-                    ),
-                    onClick = { selectedValueFormatIndex = index },
-                    selected = index == selectedValueFormatIndex,
-                    label = { Text(label) },
-                    colors = colors.segmentedButtonColors
-                )
+        if (tab.supportsFormatPicking) {
+            SingleChoiceSegmentedButtonRow(
+                modifier = Modifier.align(Alignment.CenterHorizontally)
+            ) {
+                HsvValuesFormat.entries.forEachIndexed { index, format ->
+                    SegmentedButton(
+                        shape = SegmentedButtonDefaults.itemShape(
+                            index = index,
+                            count = HsvValuesFormat.entries.size
+                        ),
+                        onClick = { selectedFormatIndex = index },
+                        selected = index == selectedFormatIndex,
+                        label = { Text(format.label) },
+                        colors = colors.segmentedButtonColors
+                    )
+                }
             }
         }
-        Row {
-            ColorComponentSlider(
-                text = properties.texts.hsvHue,
-                value = state.hsv.hue,
-                valueRange = 0f..360f,
-                onValueChange = { state.hsv = state.hsv.copy(hue = it) },
-                format = { it.formatToInteger() },
-                suffix = { Text("°") },
-                textColor = colors.labelColor,
-                sliderColors = colors.sliderColors,
-                textFieldColors = colors.textFieldColors
-            )
-        }
-        Row {
-            when {
-                is0To1Format() -> ColorComponentSlider(
-                    text = properties.texts.hsvSaturation,
-                    value = state.hsv.saturation,
-                    valueRange = 0f..1f,
-                    onValueChange = { state.hsv = state.hsv.copy(saturation = it) },
-                    format = { it.formatUpToTwoDecimalPlaces() },
-                    textColor = colors.labelColor,
-                    sliderColors = colors.sliderColors,
-                    textFieldColors = colors.textFieldColors
-                )
-
-                else -> ColorComponentSlider(
-                    text = properties.texts.hsvSaturation,
-                    value = state.hsv.saturation * 100f,
-                    valueRange = 0f..100f,
-                    onValueChange = { state.hsv = state.hsv.copy(saturation = it * 0.01f) },
-                    format = { it.formatToInteger() },
-                    suffix = { Text("%") },
-                    textColor = colors.labelColor,
-                    sliderColors = colors.sliderColors,
-                    textFieldColors = colors.textFieldColors
-                )
-            }
-        }
-        Row {
-            when {
-                is0To1Format() -> ColorComponentSlider(
-                    text = properties.texts.hsvValue,
-                    value = state.hsv.value,
-                    valueRange = 0f..1f,
-                    onValueChange = { state.hsv = state.hsv.copy(value = it) },
-                    format = { it.formatUpToTwoDecimalPlaces() },
-                    textColor = colors.labelColor,
-                    sliderColors = colors.sliderColors,
-                    textFieldColors = colors.textFieldColors
-                )
-
-                else -> ColorComponentSlider(
-                    text = properties.texts.hsvValue,
-                    value = state.hsv.value * 100f,
-                    valueRange = 0f..100f,
-                    onValueChange = { state.hsv = state.hsv.copy(value = it * 0.01f) },
-                    format = { it.formatToInteger() },
-                    suffix = { Text("%") },
-                    textColor = colors.labelColor,
-                    sliderColors = colors.sliderColors,
-                    textFieldColors = colors.textFieldColors
-                )
-            }
-        }
-        if (tab.supportsAlphaPicking) {
-            Row {
-                when {
-                    is0To1Format() -> ColorComponentSlider(
-                        text = properties.texts.alpha,
-                        value = state.alpha,
-                        valueRange = 0f..1f,
-                        onValueChange = { state.alpha = it },
-                        format = { it.formatUpToTwoDecimalPlaces() },
+        when (HsvValuesFormat.entries[selectedFormatIndex]) {
+            HsvValuesFormat.Standard -> {
+                Row {
+                    ColorComponentSlider(
+                        text = properties.texts.hsvHue,
+                        value = state.hsv.hue,
+                        valueRange = 0f..360f,
+                        onValueChange = { state.hsv = state.hsv.copy(hue = it) },
+                        format = { it.formatToInteger() },
+                        suffix = { Text("°") },
                         textColor = colors.labelColor,
                         sliderColors = colors.sliderColors,
                         textFieldColors = colors.textFieldColors
                     )
-
-                    else -> ColorComponentSlider(
-                        text = properties.texts.alpha,
-                        value = state.alpha * 100f,
+                }
+                Row {
+                    ColorComponentSlider(
+                        text = properties.texts.hsvSaturation,
+                        value = state.hsv.saturation * 100f,
                         valueRange = 0f..100f,
-                        onValueChange = { state.alpha = it * 0.01f },
+                        onValueChange = { state.hsv = state.hsv.copy(saturation = it * 0.01f) },
                         format = { it.formatToInteger() },
                         suffix = { Text("%") },
                         textColor = colors.labelColor,
                         sliderColors = colors.sliderColors,
                         textFieldColors = colors.textFieldColors
                     )
+                }
+                Row {
+                    ColorComponentSlider(
+                        text = properties.texts.hsvValue,
+                        value = state.hsv.value * 100f,
+                        valueRange = 0f..100f,
+                        onValueChange = { state.hsv = state.hsv.copy(value = it * 0.01f) },
+                        format = { it.formatToInteger() },
+                        suffix = { Text("%") },
+                        textColor = colors.labelColor,
+                        sliderColors = colors.sliderColors,
+                        textFieldColors = colors.textFieldColors
+                    )
+                }
+                if (tab.supportsAlphaPicking) {
+                    Row {
+                        ColorComponentSlider(
+                            text = properties.texts.alpha,
+                            value = state.alpha * 100f,
+                            valueRange = 0f..100f,
+                            onValueChange = { state.alpha = it * 0.01f },
+                            format = { it.formatToInteger() },
+                            suffix = { Text("%") },
+                            textColor = colors.labelColor,
+                            sliderColors = colors.sliderColors,
+                            textFieldColors = colors.textFieldColors
+                        )
+                    }
+                }
+            }
+
+            HsvValuesFormat.FloatingPoint -> {
+                Row {
+                    ColorComponentSlider(
+                        text = properties.texts.hsvHue,
+                        value = state.hsv.hue,
+                        valueRange = 0f..360f,
+                        onValueChange = { state.hsv = state.hsv.copy(hue = it) },
+                        format = { it.formatToInteger() },
+                        textColor = colors.labelColor,
+                        sliderColors = colors.sliderColors,
+                        textFieldColors = colors.textFieldColors
+                    )
+                }
+                Row {
+                    ColorComponentSlider(
+                        text = properties.texts.hsvSaturation,
+                        value = state.hsv.saturation,
+                        valueRange = 0f..1f,
+                        onValueChange = { state.hsv = state.hsv.copy(saturation = it) },
+                        format = { it.formatUpToTwoDecimalPlaces() },
+                        textColor = colors.labelColor,
+                        sliderColors = colors.sliderColors,
+                        textFieldColors = colors.textFieldColors
+                    )
+                }
+                Row {
+                    ColorComponentSlider(
+                        text = properties.texts.hsvValue,
+                        value = state.hsv.value,
+                        valueRange = 0f..1f,
+                        onValueChange = { state.hsv = state.hsv.copy(value = it) },
+                        format = { it.formatUpToTwoDecimalPlaces() },
+                        textColor = colors.labelColor,
+                        sliderColors = colors.sliderColors,
+                        textFieldColors = colors.textFieldColors
+                    )
+                }
+                if (tab.supportsAlphaPicking) {
+                    Row {
+                        ColorComponentSlider(
+                            text = properties.texts.alpha,
+                            value = state.alpha,
+                            valueRange = 0f..1f,
+                            onValueChange = { state.alpha = it },
+                            format = { it.formatUpToTwoDecimalPlaces() },
+                            textColor = colors.labelColor,
+                            sliderColors = colors.sliderColors,
+                            textFieldColors = colors.textFieldColors
+                        )
+                    }
                 }
             }
         }
@@ -704,119 +736,140 @@ private fun HslTab(
     properties: ColorPickerProperties,
     tab: ColorPickerTab.Hsl
 ) {
-    var selectedValueFormatIndex by remember { mutableIntStateOf(0) }
-    fun is0To1Format() = selectedValueFormatIndex == 0
-    val valueFormats = listOf("0..1", "0%..100%")
-
+    var selectedFormatIndex by remember {
+        mutableIntStateOf(tab.defaultValuesFormat.ordinal)
+    }
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp)
     ) {
-        SingleChoiceSegmentedButtonRow(modifier = Modifier.align(Alignment.CenterHorizontally)) {
-            valueFormats.forEachIndexed { index, label ->
-                SegmentedButton(
-                    shape = SegmentedButtonDefaults.itemShape(
-                        index = index,
-                        count = valueFormats.size
-                    ),
-                    onClick = { selectedValueFormatIndex = index },
-                    selected = index == selectedValueFormatIndex,
-                    label = { Text(label) },
-                    colors = colors.segmentedButtonColors
-                )
+        if (tab.supportsFormatPicking) {
+            SingleChoiceSegmentedButtonRow(
+                modifier = Modifier.align(Alignment.CenterHorizontally)
+            ) {
+                HslValuesFormat.entries.forEachIndexed { index, format ->
+                    SegmentedButton(
+                        shape = SegmentedButtonDefaults.itemShape(
+                            index = index,
+                            count = HslValuesFormat.entries.size
+                        ),
+                        onClick = { selectedFormatIndex = index },
+                        selected = index == selectedFormatIndex,
+                        label = { Text(format.label) },
+                        colors = colors.segmentedButtonColors
+                    )
+                }
             }
         }
-        Row {
-            ColorComponentSlider(
-                text = properties.texts.hslHue,
-                value = state.hsl.hue,
-                valueRange = 0f..360f,
-                onValueChange = { state.hsl = state.hsl.copy(hue = it) },
-                format = { it.formatToInteger() },
-                suffix = { Text("°") },
-                textColor = colors.labelColor,
-                sliderColors = colors.sliderColors,
-                textFieldColors = colors.textFieldColors
-            )
-        }
-        Row {
-            when {
-                is0To1Format() -> ColorComponentSlider(
-                    text = properties.texts.hslSaturation,
-                    value = state.hsl.saturation,
-                    valueRange = 0f..1f,
-                    onValueChange = { state.hsl = state.hsl.copy(saturation = it) },
-                    format = { it.formatUpToTwoDecimalPlaces() },
-                    textColor = colors.labelColor,
-                    sliderColors = colors.sliderColors,
-                    textFieldColors = colors.textFieldColors
-                )
-
-                else -> ColorComponentSlider(
-                    text = properties.texts.hslSaturation,
-                    value = state.hsl.saturation * 100f,
-                    valueRange = 0f..100f,
-                    onValueChange = { state.hsl = state.hsl.copy(saturation = it * 0.01f) },
-                    format = { it.formatToInteger() },
-                    suffix = { Text("%") },
-                    textColor = colors.labelColor,
-                    sliderColors = colors.sliderColors,
-                    textFieldColors = colors.textFieldColors
-                )
-            }
-        }
-        Row {
-            when {
-                is0To1Format() -> ColorComponentSlider(
-                    text = properties.texts.hslLightness,
-                    value = state.hsl.lightness,
-                    valueRange = 0f..1f,
-                    onValueChange = { state.hsl = state.hsl.copy(lightness = it) },
-                    format = { it.formatUpToTwoDecimalPlaces() },
-                    textColor = colors.labelColor,
-                    sliderColors = colors.sliderColors,
-                    textFieldColors = colors.textFieldColors
-                )
-
-                else -> ColorComponentSlider(
-                    text = properties.texts.hslLightness,
-                    value = state.hsl.lightness * 100f,
-                    valueRange = 0f..100f,
-                    onValueChange = { state.hsl = state.hsl.copy(lightness = it * 0.01f) },
-                    format = { it.formatToInteger() },
-                    suffix = { Text("%") },
-                    textColor = colors.labelColor,
-                    sliderColors = colors.sliderColors,
-                    textFieldColors = colors.textFieldColors
-                )
-            }
-        }
-        if (tab.supportsAlphaPicking) {
-            Row {
-                when {
-                    is0To1Format() -> ColorComponentSlider(
-                        text = properties.texts.alpha,
-                        value = state.alpha,
-                        valueRange = 0f..1f,
-                        onValueChange = { state.alpha = it },
-                        format = { it.formatUpToTwoDecimalPlaces() },
+        when (HslValuesFormat.entries[selectedFormatIndex]) {
+            HslValuesFormat.Standard -> {
+                Row {
+                    ColorComponentSlider(
+                        text = properties.texts.hslHue,
+                        value = state.hsl.hue,
+                        valueRange = 0f..360f,
+                        onValueChange = { state.hsl = state.hsl.copy(hue = it) },
+                        format = { it.formatToInteger() },
+                        suffix = { Text("°") },
                         textColor = colors.labelColor,
                         sliderColors = colors.sliderColors,
                         textFieldColors = colors.textFieldColors
                     )
-
-                    else -> ColorComponentSlider(
-                        text = properties.texts.alpha,
-                        value = state.alpha * 100f,
+                }
+                Row {
+                    ColorComponentSlider(
+                        text = properties.texts.hslSaturation,
+                        value = state.hsl.saturation * 100f,
                         valueRange = 0f..100f,
-                        onValueChange = { state.alpha = it * 0.01f },
+                        onValueChange = { state.hsl = state.hsl.copy(saturation = it * 0.01f) },
                         format = { it.formatToInteger() },
                         suffix = { Text("%") },
                         textColor = colors.labelColor,
                         sliderColors = colors.sliderColors,
                         textFieldColors = colors.textFieldColors
                     )
+                }
+                Row {
+                    ColorComponentSlider(
+                        text = properties.texts.hslLightness,
+                        value = state.hsl.lightness * 100f,
+                        valueRange = 0f..100f,
+                        onValueChange = { state.hsl = state.hsl.copy(lightness = it * 0.01f) },
+                        format = { it.formatToInteger() },
+                        suffix = { Text("%") },
+                        textColor = colors.labelColor,
+                        sliderColors = colors.sliderColors,
+                        textFieldColors = colors.textFieldColors
+                    )
+                }
+                if (tab.supportsAlphaPicking) {
+                    Row {
+                        ColorComponentSlider(
+                            text = properties.texts.alpha,
+                            value = state.alpha * 100f,
+                            valueRange = 0f..100f,
+                            onValueChange = { state.alpha = it * 0.01f },
+                            format = { it.formatToInteger() },
+                            suffix = { Text("%") },
+                            textColor = colors.labelColor,
+                            sliderColors = colors.sliderColors,
+                            textFieldColors = colors.textFieldColors
+                        )
+                    }
+                }
+            }
+
+            HslValuesFormat.FloatingPoint -> {
+                Row {
+                    ColorComponentSlider(
+                        text = properties.texts.hslHue,
+                        value = state.hsl.hue,
+                        valueRange = 0f..360f,
+                        onValueChange = { state.hsl = state.hsl.copy(hue = it) },
+                        format = { it.formatToInteger() },
+                        textColor = colors.labelColor,
+                        sliderColors = colors.sliderColors,
+                        textFieldColors = colors.textFieldColors
+                    )
+                }
+                Row {
+                    ColorComponentSlider(
+                        text = properties.texts.hslSaturation,
+                        value = state.hsl.saturation,
+                        valueRange = 0f..1f,
+                        onValueChange = { state.hsl = state.hsl.copy(saturation = it) },
+                        format = { it.formatUpToTwoDecimalPlaces() },
+                        textColor = colors.labelColor,
+                        sliderColors = colors.sliderColors,
+                        textFieldColors = colors.textFieldColors
+                    )
+                }
+                Row {
+                    ColorComponentSlider(
+                        text = properties.texts.hslLightness,
+                        value = state.hsl.lightness,
+                        valueRange = 0f..1f,
+                        onValueChange = { state.hsl = state.hsl.copy(lightness = it) },
+                        format = { it.formatUpToTwoDecimalPlaces() },
+                        textColor = colors.labelColor,
+                        sliderColors = colors.sliderColors,
+                        textFieldColors = colors.textFieldColors
+                    )
+                }
+                if (tab.supportsAlphaPicking) {
+                    Row {
+                        ColorComponentSlider(
+                            text = properties.texts.alpha,
+                            value = state.alpha,
+                            valueRange = 0f..1f,
+                            onValueChange = { state.alpha = it },
+                            format = { it.formatUpToTwoDecimalPlaces() },
+                            textColor = colors.labelColor,
+                            sliderColors = colors.sliderColors,
+                            textFieldColors = colors.textFieldColors
+                        )
+                    }
                 }
             }
         }
