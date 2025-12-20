@@ -578,7 +578,9 @@ private fun DrawScope.drawColorSelector(
 }
 
 @Composable
-fun HsvColorPicker(state: ColorPickerState, supportsAlphaPicking: Boolean) {
+fun HsvColorPicker(
+    state: ColorPickerState, supportsAlphaPicking: Boolean, modifier: Modifier = Modifier
+) {
     var currentAction by remember { mutableStateOf(CurrentAction.None) }
     val hueRing = remember {
         MutableAnnulus(
@@ -667,7 +669,7 @@ fun HsvColorPicker(state: ColorPickerState, supportsAlphaPicking: Boolean) {
     val onInputEnd = {
         currentAction = CurrentAction.None
     }
-    Row(modifier = Modifier.fillMaxWidth())
+    Row(modifier = modifier.fillMaxWidth())
     {
         Canvas(
             modifier = Modifier
@@ -753,7 +755,9 @@ fun HsvColorPicker(state: ColorPickerState, supportsAlphaPicking: Boolean) {
 }
 
 @Composable
-fun HslColorPicker(state: ColorPickerState, supportsAlphaPicking: Boolean) {
+fun HslColorPicker(
+    state: ColorPickerState, supportsAlphaPicking: Boolean, modifier: Modifier = Modifier
+) {
     var currentAction by remember { mutableStateOf(CurrentAction.None) }
     val hueRing = remember {
         MutableAnnulus(
@@ -842,7 +846,7 @@ fun HslColorPicker(state: ColorPickerState, supportsAlphaPicking: Boolean) {
     val onInputEnd = {
         currentAction = CurrentAction.None
     }
-    Row(modifier = Modifier.fillMaxWidth())
+    Row(modifier = modifier.fillMaxWidth())
     {
         Canvas(
             modifier = Modifier
@@ -928,7 +932,9 @@ fun HslColorPicker(state: ColorPickerState, supportsAlphaPicking: Boolean) {
 }
 
 @Composable
-fun RgbColorPicker(state: ColorPickerState, supportsAlphaPicking: Boolean) {
+fun RgbColorPicker(
+    state: ColorPickerState, supportsAlphaPicking: Boolean, modifier: Modifier = Modifier
+) {
     var currentAction by remember { mutableStateOf(CurrentAction.None) }
     val rgbCircle = remember {
         MutableCircle(
@@ -1012,7 +1018,7 @@ fun RgbColorPicker(state: ColorPickerState, supportsAlphaPicking: Boolean) {
     val onInputEnd = {
         currentAction = CurrentAction.None
     }
-    Row(modifier = Modifier.fillMaxWidth())
+    Row(modifier = modifier.fillMaxWidth())
     {
         Canvas(
             modifier = Modifier

@@ -3,6 +3,7 @@ package com.sztorm.notecalendar.components.colorpicker
 import android.content.ClipData
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -135,9 +136,23 @@ fun ColorPicker(
         val selectedTab = properties.tabs[selectedTabIndex]
 
         when (selectedTab.pickerType) {
-            ColorPickerType.HslSquare -> HslColorPicker(state, selectedTab.supportsAlphaPicking)
-            ColorPickerType.HsvTriangle -> HsvColorPicker(state, selectedTab.supportsAlphaPicking)
-            ColorPickerType.RgbCircle -> RgbColorPicker(state, selectedTab.supportsAlphaPicking)
+            ColorPickerType.HslSquare -> HslColorPicker(
+                state = state,
+                supportsAlphaPicking = selectedTab.supportsAlphaPicking,
+                modifier = Modifier.focusable()
+            )
+
+            ColorPickerType.HsvTriangle -> HsvColorPicker(
+                state = state,
+                supportsAlphaPicking = selectedTab.supportsAlphaPicking,
+                modifier = Modifier.focusable()
+            )
+
+            ColorPickerType.RgbCircle -> RgbColorPicker(
+                state = state,
+                supportsAlphaPicking = selectedTab.supportsAlphaPicking,
+                modifier = Modifier.focusable()
+            )
         }
         Spacer(modifier = Modifier.height(8.dp))
         PrimaryTabRow(
@@ -148,6 +163,7 @@ fun ColorPicker(
                 Tab(
                     selected = selectedTabIndex == index,
                     onClick = {
+                        navController.popBackStack()
                         navController.navigate(tab.route)
                         selectedTabIndex = index
                     },
@@ -408,7 +424,6 @@ private inline fun <reified T : Comparable<T>> ColorComponentSlider(
                                 text = it.text.substring(0, min(6, it.text.length))
                             )
                         )
-
                     },
                     keyboardActions = KeyboardActions(
                         onDone = {
