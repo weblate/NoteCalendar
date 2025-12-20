@@ -54,7 +54,6 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -62,7 +61,6 @@ import androidx.navigation.compose.rememberNavController
 import com.sztorm.mathkit.ColorRGBA32
 import com.sztorm.notecalendar.R
 import com.sztorm.notecalendar.itemsSequence
-import com.sztorm.notecalendar.toColor
 import kotlinx.coroutines.launch
 import java.text.DecimalFormatSymbols
 import kotlin.math.min
@@ -110,6 +108,13 @@ private val ColorPickerTab.route
         is ColorPickerTab.Rgb -> "rgb"
     }
 
+private fun ColorPickerTab.title(texts: ColorPickerTexts) = when (this) {
+    is ColorPickerTab.ColorCodes -> texts.colorCodesTitle
+    is ColorPickerTab.Hsl -> texts.hslTitle
+    is ColorPickerTab.Hsv -> texts.hsvTitle
+    is ColorPickerTab.Rgb -> texts.rgbTitle
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ColorPicker(
@@ -127,21 +132,12 @@ fun ColorPicker(
             .fillMaxWidth()
             .background(color = colors.backgroundColor)
     ) {
-        when (val selectedTab = properties.tabs[selectedTabIndex]) {
-            is ColorPickerTab.ColorCodes -> when (selectedTab.pickerType) {
-                ColorPickerType.HslSquare ->
-                    HslColorPicker(state, selectedTab.supportsAlphaPicking)
+        val selectedTab = properties.tabs[selectedTabIndex]
 
-                ColorPickerType.HsvTriangle ->
-                    HsvColorPicker(state, selectedTab.supportsAlphaPicking)
-
-                ColorPickerType.RgbCircle ->
-                    RgbColorPicker(state, selectedTab.supportsAlphaPicking)
-            }
-
-            is ColorPickerTab.Hsl -> HslColorPicker(state, selectedTab.supportsAlphaPicking)
-            is ColorPickerTab.Hsv -> HsvColorPicker(state, selectedTab.supportsAlphaPicking)
-            is ColorPickerTab.Rgb -> RgbColorPicker(state, selectedTab.supportsAlphaPicking)
+        when (selectedTab.pickerType) {
+            ColorPickerType.HslSquare -> HslColorPicker(state, selectedTab.supportsAlphaPicking)
+            ColorPickerType.HsvTriangle -> HsvColorPicker(state, selectedTab.supportsAlphaPicking)
+            ColorPickerType.RgbCircle -> RgbColorPicker(state, selectedTab.supportsAlphaPicking)
         }
         Spacer(modifier = Modifier.height(8.dp))
         PrimaryTabRow(
@@ -157,7 +153,7 @@ fun ColorPicker(
                     },
                     text = {
                         Text(
-                            text = tab.text,
+                            text = tab.title(properties.texts),
                             overflow = TextOverflow.Ellipsis,
                             color = colors.tabButtonColor
                         )
@@ -188,7 +184,6 @@ private fun ColorCodeRow(
     value: String,
     onValueChange: (String) -> Unit,
     onPaste: (ClipData) -> Unit,
-    textFieldWidth: Dp,
     colors: ColorPickerColors,
     modifier: Modifier = Modifier,
 ) {
@@ -207,7 +202,7 @@ private fun ColorCodeRow(
             singleLine = true,
             textStyle = LocalTextStyle.current.copy(textAlign = TextAlign.Center),
             colors = colors.textFieldColors,
-            modifier = Modifier.width(textFieldWidth)
+            modifier = Modifier.weight(1f)
         )
         OutlinedIconButton(
             onClick = {
@@ -256,96 +251,24 @@ private fun ColorCodeRow(
 
 @Composable
 private fun ColorCodesTab(
-    state: ColorPickerState, colors: ColorPickerColors, tab: ColorPickerTab
+    state: ColorPickerState, colors: ColorPickerColors, tab: ColorPickerTab.ColorCodes
 ) {
-    var hexCodeState by remember(state.rgb, state.alpha) {
-        mutableStateOf(state.toHexCodeFormat(tab.supportsAlphaPicking))
-    }
-    var rgbCodeState by remember(state.rgb, state.alpha) {
-        mutableStateOf(state.toRgbFormat(tab.supportsAlphaPicking))
-    }
-    var hsvCodeState by remember(state.rgb, state.alpha) {
-        mutableStateOf(state.toHsvFormat(tab.supportsAlphaPicking))
-    }
-    var hslCodeState by remember(state.rgb, state.alpha) {
-        mutableStateOf(state.toHslFormat(tab.supportsAlphaPicking))
-    }
-    val textFieldWidth =
-        if (tab.supportsAlphaPicking) 225.dp * LocalDensity.current.fontScale
-        else 205.dp * LocalDensity.current.fontScale
-
-    Column(
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        ColorCodeRow(
-            value = hexCodeState,
-            onValueChange = { hexCodeState = it },
-            onPaste = { clipData ->
-                clipData
-                    .itemsSequence()
-                    .map { parseHexCodeOrNull(it.text) }
-                    .firstOrNull()
-                    ?.let {
-                        val color = it.toColor()
-                        state.rgb = color.toRgbColor()
-                        state.alpha = if (tab.supportsAlphaPicking) color.alpha else 1f
-                    }
-            },
-            textFieldWidth = textFieldWidth,
-            colors = colors,
-            modifier = Modifier.padding(top = 8.dp)
-        )
-        ColorCodeRow(
-            value = rgbCodeState,
-            onValueChange = { rgbCodeState = it },
-            onPaste = { clipData ->
-                clipData
-                    .itemsSequence()
-                    .map { parseRgbCodeOrNull(it.text) }
-                    .firstOrNull()
-                    ?.let {
-                        state.rgb = it.rgb
-                        state.alpha = if (tab.supportsAlphaPicking) it.alpha else 1f
-                    }
-            },
-            textFieldWidth = textFieldWidth,
-            colors = colors,
-            modifier = Modifier.padding(top = 8.dp)
-        )
-        ColorCodeRow(
-            value = hsvCodeState,
-            onValueChange = { hsvCodeState = it },
-            onPaste = { clipData ->
-                clipData
-                    .itemsSequence()
-                    .map { parseHsvCodeOrNull(it.text) }
-                    .firstOrNull()
-                    ?.let {
-                        state.hsv = it.hsv
-                        state.alpha = if (tab.supportsAlphaPicking) it.alpha else 1f
-                    }
-            },
-            textFieldWidth = textFieldWidth,
-            colors = colors,
-            modifier = Modifier.padding(top = 8.dp)
-        )
-        ColorCodeRow(
-            value = hslCodeState,
-            onValueChange = { hslCodeState = it },
-            onPaste = { clipData ->
-                clipData
-                    .itemsSequence()
-                    .map { parseHslCodeOrNull(it.text) }
-                    .firstOrNull()
-                    ?.let {
-                        state.hsl = it.hsl
-                        state.alpha = if (tab.supportsAlphaPicking) it.alpha else 1f
-                    }
-            },
-            textFieldWidth = textFieldWidth,
-            colors = colors,
-            modifier = Modifier.padding(top = 8.dp)
-        )
+    Column(modifier = Modifier.fillMaxWidth()) {
+        tab.codes.forEach { code ->
+            ColorCodeRow(
+                value = code.toString(state),
+                onValueChange = { },
+                onPaste = { clipData ->
+                    clipData
+                        .itemsSequence()
+                        .map { code.parseOrNull(it.text) }
+                        .firstOrNull()
+                        ?.let { code.onPaste(it, state) }
+                },
+                colors = colors,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+        }
     }
 }
 
@@ -522,7 +445,7 @@ private fun RgbTab(
     state: ColorPickerState,
     colors: ColorPickerColors,
     properties: ColorPickerProperties,
-    tab: ColorPickerTab
+    tab: ColorPickerTab.Rgb
 ) {
     var selectedValueFormatIndex by remember { mutableIntStateOf(0) }
     fun is0To1Format() = selectedValueFormatIndex == 0
@@ -653,7 +576,7 @@ private fun HsvTab(
     state: ColorPickerState,
     colors: ColorPickerColors,
     properties: ColorPickerProperties,
-    tab: ColorPickerTab
+    tab: ColorPickerTab.Hsv
 ) {
     var selectedValueFormatIndex by remember { mutableIntStateOf(0) }
     fun is0To1Format() = selectedValueFormatIndex == 0
@@ -779,7 +702,7 @@ private fun HslTab(
     state: ColorPickerState,
     colors: ColorPickerColors,
     properties: ColorPickerProperties,
-    tab: ColorPickerTab
+    tab: ColorPickerTab.Hsl
 ) {
     var selectedValueFormatIndex by remember { mutableIntStateOf(0) }
     fun is0To1Format() = selectedValueFormatIndex == 0
