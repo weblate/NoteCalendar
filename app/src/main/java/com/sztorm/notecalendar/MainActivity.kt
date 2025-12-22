@@ -239,7 +239,12 @@ fun AppScreen(
                 DayScreen(viewModel, mainActivity, noteRepository, day.isCreateOrEditRequested)
             }
             composable<Screen.Settings> {
-                SettingsScreen(viewModel, mainActivity, noteRepository)
+                SettingsScreen(
+                    viewModel = viewModel,
+                    preferencesRepository = mainActivity.settings,
+                    noteRepository = noteRepository,
+                    notificationManager = mainActivity.notificationManager
+                )
             }
         }
     }

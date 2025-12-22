@@ -235,7 +235,7 @@ private fun ColorCodeRow(
         ) {
             Icon(
                 imageVector = ImageVector
-                    .vectorResource(R.drawable.icon_outline_content_copy_24),
+                    .vectorResource(R.drawable.icon_outline_content_copy),
                 contentDescription = "copy",
                 tint = colors.iconButtonColor
             )
@@ -256,7 +256,7 @@ private fun ColorCodeRow(
         ) {
             Icon(
                 imageVector = ImageVector
-                    .vectorResource(R.drawable.icon_outline_content_paste_24),
+                    .vectorResource(R.drawable.icon_outline_content_paste),
                 contentDescription = "paste",
                 tint = colors.iconButtonColor
             )
