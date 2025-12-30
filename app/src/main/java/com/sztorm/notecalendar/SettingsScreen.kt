@@ -111,6 +111,28 @@ fun SettingsScreen(
                 navController = navController
             )
         }
+        composable(
+            route = Screen.Settings.Notes.route,
+            enterTransition = {
+                slideIntoContainer(
+                    towards = SlideDirection.Left,
+                    animationSpec = tween(300)
+                )
+            },
+            exitTransition = {
+                slideOutOfContainer(
+                    towards = SlideDirection.Right,
+                    animationSpec = tween(300)
+                )
+            }
+        ) {
+            NotesSettingsScreen(
+                viewModel = viewModel,
+                noteRepository = noteRepository,
+                notificationManager = notificationManager,
+                navController = navController
+            )
+        }
     }
 }
 
@@ -164,30 +186,13 @@ private fun RootSettingsScreen(
             titleColor = themeColors.textColor,
             onClick = { navController.navigate(Screen.Settings.Theme.route) }
         )
-        CategoryPreference(
+        Preference(
+            icon = painterResource(R.drawable.icon_outline_rounded_note_stack),
+            iconColorFilter = ColorFilter.tint(themeColors.secondaryColor),
             title = stringResource(R.string.Settings_Header_Notes),
-            titleColor = themeColors.secondaryColor
-        ) { enabled ->
-            ConfirmationPreference(
-                title = stringResource(R.string.Settings_DeleteAllNotes),
-                dialogTitle = stringResource(R.string.Settings_DeleteAllNotes_Alert_Title),
-                dialogMessage = stringResource(R.string.Settings_DeleteAllNotes_Alert_Message),
-                onConfirm = {
-                    noteRepository.deleteAll()
-                    notificationManager.cancelScheduledNotification()
-                    Timber.i("${LogTags.NOTIFICATIONS} Canceled notification when \"delete all notes\" was confirmed.")
-                },
-                titleColor = themeColors.textColor,
-                dialogTitleColor = themeColors.textColor,
-                dialogMessageColor = themeColors.textColor,
-                dialogButtonColor = themeColors.primaryColor,
-                dialogColors = CardDefaults.cardColors().copy(
-                    containerColor = themeColors.backgroundColor,
-                    contentColor = themeColors.backgroundColor,
-                ),
-                enabled = enabled,
-            )
-        }
+            titleColor = themeColors.textColor,
+            onClick = { navController.navigate(Screen.Settings.Notes.route) }
+        )
         CategoryPreference(
             title = stringResource(R.string.Settings_Header_Notifications),
             titleColor = themeColors.secondaryColor
@@ -407,6 +412,8 @@ private fun ThemeSettingsScreen(
         Preference(
             title = "Load theme", // TODO: add to strings.xml
             titleColor = themeColors.textColor,
+            icon = painterResource(R.drawable.icon_outline_rounded_folder_open),
+            iconColorFilter = ColorFilter.tint(themeColors.secondaryColor),
             onClick = {
                 fileRepository.loadFile(
                     filetype = "application/json"
@@ -434,6 +441,8 @@ private fun ThemeSettingsScreen(
         Preference(
             title = "Save theme", // TODO: add to strings.xml
             titleColor = themeColors.textColor,
+            icon = painterResource(R.drawable.icon_outline_rounded_save_as),
+            iconColorFilter = ColorFilter.tint(themeColors.secondaryColor),
             onClick = {
                 fileRepository.saveFile(
                     fileName = "theme.json",
@@ -675,5 +684,62 @@ private fun ThemeSettingsScreen(
                 enabled = enabled
             )
         }
+    }
+}
+
+@Composable
+private fun NotesSettingsScreen(
+    viewModel: MainViewModel,
+    noteRepository: NoteRepository,
+    notificationManager: AppNotificationManager,
+    navController: NavController
+) {
+    val themeColors = viewModel.state.themeColors
+
+    SubpreferenceScreen(
+        title = stringResource(R.string.Settings_Header_Notes),
+        titleColor = themeColors.textColor,
+        iconTint = themeColors.textColor,
+        onBackButtonClick = { navController.navigateUp() },
+        modifier = Modifier.verticalScroll(rememberScrollState())
+    ) {
+        ConfirmationPreference(
+            title = stringResource(R.string.Settings_DeleteAllNotes),
+            dialogTitle = stringResource(R.string.Settings_DeleteAllNotes_Alert_Title),
+            dialogMessage = stringResource(R.string.Settings_DeleteAllNotes_Alert_Message),
+            icon = painterResource(R.drawable.icon_outline_rounded_delete_forever),
+            iconColorFilter = ColorFilter.tint(themeColors.secondaryColor),
+            onConfirm = {
+                noteRepository.deleteAll()
+                notificationManager.cancelScheduledNotification()
+                Timber.i("${LogTags.NOTIFICATIONS} Canceled notification when \"delete all notes\" was confirmed.")
+            },
+            titleColor = themeColors.textColor,
+            dialogTitleColor = themeColors.textColor,
+            dialogMessageColor = themeColors.textColor,
+            dialogButtonColor = themeColors.primaryColor,
+            dialogColors = CardDefaults.cardColors().copy(
+                containerColor = themeColors.backgroundColor,
+                contentColor = themeColors.backgroundColor,
+            )
+        )
+        Preference(
+            title = "Load notes backup", // TODO: add to strings.xml
+            titleColor = themeColors.textColor,
+            icon = painterResource(R.drawable.icon_outline_rounded_folder_open),
+            iconColorFilter = ColorFilter.tint(themeColors.secondaryColor),
+            onClick = {
+                // TODO
+            }
+        )
+        Preference(
+            title = "Save notes backup", // TODO: add to strings.xml
+            titleColor = themeColors.textColor,
+            icon = painterResource(R.drawable.icon_outline_rounded_save_as),
+            iconColorFilter = ColorFilter.tint(themeColors.secondaryColor),
+            onClick = {
+                // TODO
+            }
+        )
     }
 }

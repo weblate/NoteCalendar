@@ -17,5 +17,8 @@ sealed class Screen(val route: String) {
     data object Settings : Screen("settings") {
         @Serializable
         data object Theme : Screen("settings/theme")
+
+        @Serializable
+        data object Notes : Screen("settings/notes")
     }
 }
