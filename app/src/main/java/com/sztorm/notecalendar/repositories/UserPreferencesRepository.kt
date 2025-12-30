@@ -33,7 +33,9 @@ private const val HOUR_BITS: Int = 0b00000000_00000000_00000000_00011111
 private const val HOUR_BITS_SIZE: Int = 5
 private const val MINUTE_BITS: Int = 0b00000000_00000000_00000111_11100000
 
-class UserPreferencesRepository(private val context: Context) {
+class UserPreferencesRepository(context: Context) {
+    private val context: Context = context.applicationContext
+
     private suspend inline fun <reified T> getPreference(key: Preferences.Key<T>, default: T): T =
         context.preferences.data
             .catch { exception ->
