@@ -3,8 +3,6 @@ package com.sztorm.notecalendar
 import androidx.compose.animation.AnimatedContentTransitionScope.SlideDirection
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CardDefaults
@@ -37,6 +35,7 @@ import com.sztorm.notecalendar.components.preferences.ColorPickerPreference
 import com.sztorm.notecalendar.components.preferences.ConfirmationPreference
 import com.sztorm.notecalendar.components.preferences.ListPreference
 import com.sztorm.notecalendar.components.preferences.Preference
+import com.sztorm.notecalendar.components.preferences.PreferenceScreen
 import com.sztorm.notecalendar.components.preferences.SubpreferenceScreen
 import com.sztorm.notecalendar.components.preferences.SwitchPreference
 import com.sztorm.notecalendar.components.preferences.TimePickerPreference
@@ -81,35 +80,7 @@ fun SettingsScreen(
                 )
             }
         ) {
-            RootSettingsScreen(
-                viewModel,
-                preferencesRepository,
-                noteRepository,
-                notificationManager,
-                navController
-            )
-        }
-        composable(
-            route = Screen.Settings.Theme.route,
-            enterTransition = {
-                slideIntoContainer(
-                    towards = SlideDirection.Left,
-                    animationSpec = tween(300)
-                )
-            },
-            exitTransition = {
-                slideOutOfContainer(
-                    towards = SlideDirection.Right,
-                    animationSpec = tween(300)
-                )
-            }
-        ) {
-            ThemeSettingsScreen(
-                viewModel = viewModel,
-                preferencesRepository = preferencesRepository,
-                fileRepository = fileRepository,
-                navController = navController
-            )
+            RootSettingsScreen(viewModel, navController)
         }
         composable(
             route = Screen.Settings.Notes.route,
@@ -133,176 +104,119 @@ fun SettingsScreen(
                 navController = navController
             )
         }
+        composable(
+            route = Screen.Settings.Calendar.route,
+            enterTransition = {
+                slideIntoContainer(
+                    towards = SlideDirection.Left,
+                    animationSpec = tween(300)
+                )
+            },
+            exitTransition = {
+                slideOutOfContainer(
+                    towards = SlideDirection.Right,
+                    animationSpec = tween(300)
+                )
+            }
+        ) {
+            CalendarSettingsScreen(
+                viewModel = viewModel,
+                preferencesRepository = preferencesRepository,
+                navController = navController
+            )
+        }
+        composable(
+            route = Screen.Settings.Theme.route,
+            enterTransition = {
+                slideIntoContainer(
+                    towards = SlideDirection.Left,
+                    animationSpec = tween(300)
+                )
+            },
+            exitTransition = {
+                slideOutOfContainer(
+                    towards = SlideDirection.Right,
+                    animationSpec = tween(300)
+                )
+            }
+        ) {
+            ThemeSettingsScreen(
+                viewModel = viewModel,
+                fileRepository = fileRepository,
+                preferencesRepository = preferencesRepository,
+                navController = navController
+            )
+        }
+        composable(
+            route = Screen.Settings.Notifications.route,
+            enterTransition = {
+                slideIntoContainer(
+                    towards = SlideDirection.Left,
+                    animationSpec = tween(300)
+                )
+            },
+            exitTransition = {
+                slideOutOfContainer(
+                    towards = SlideDirection.Right,
+                    animationSpec = tween(300)
+                )
+            }
+        ) {
+            NotificationsSettingsScreen(
+                viewModel = viewModel,
+                noteRepository = noteRepository,
+                preferencesRepository = preferencesRepository,
+                notificationManager = notificationManager,
+                navController = navController
+            )
+        }
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun RootSettingsScreen(
-    viewModel: MainViewModel,
-    preferencesRepository: UserPreferencesRepository,
-    noteRepository: NoteRepository,
-    notificationManager: AppNotificationManager,
-    navController: NavController
-) {
+private fun RootSettingsScreen(viewModel: MainViewModel, navController: NavController) {
     val context = LocalContext.current
-    val coroutineScope = rememberCoroutineScope()
     val themeColors = viewModel.state.themeColors
-    var turnOnNotifications by remember {
-        mutableStateOf(false)
-    }
-    var firstDayOfWeekIndexPair by remember {
-        mutableStateOf(WeekFields.of(Locale.getDefault()).firstDayOfWeek.let {
-            it to it.ordinal
-        })
-    }
-    var startingViewIndexPair by remember {
-        mutableStateOf(Pair(StartingViewType.DAY_VIEW, 0))
-    }
-    var notificationTime by remember {
-        mutableStateOf(LocalTime.of(8, 0))
-    }
     val licensesTitle = stringResource(R.string.Settings_Licenses)
 
-    LaunchedEffect(Unit) {
-        turnOnNotifications = preferencesRepository.getTurnOnNotifications()
-        firstDayOfWeekIndexPair = preferencesRepository
-            .getFirstDayOfWeek()
-            .let { it to it.ordinal }
-        startingViewIndexPair = preferencesRepository
-            .getStartingView()
-            .let { it to it.ordinal }
-        notificationTime = preferencesRepository.getNotificationTime()
-    }
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState()),
+    PreferenceScreen(
+        title = "Settings", // TODO: add to strings.xml
+        modifier = Modifier.verticalScroll(rememberScrollState()),
     ) {
         Preference(
-            icon = painterResource(R.drawable.icon_palette),
+            title = stringResource(R.string.Settings_Header_Notes),
+            titleColor = themeColors.textColor,
+            icon = painterResource(R.drawable.icon_outline_rounded_note_stack),
             iconColorFilter = ColorFilter.tint(themeColors.secondaryColor),
+            onClick = { navController.navigate(Screen.Settings.Notes.route) }
+        )
+        Preference(
+            title = "Calendar", // TODO: add to strings.xml,
+            titleColor = themeColors.textColor,
+            icon = painterResource(R.drawable.icon_outline_rounded_calendar_settings),
+            iconColorFilter = ColorFilter.tint(themeColors.secondaryColor),
+            onClick = { navController.navigate(Screen.Settings.Calendar.route) }
+        )
+        Preference(
             title = stringResource(R.string.Settings_Header_Theme),
             titleColor = themeColors.textColor,
+            icon = painterResource(R.drawable.icon_palette),
+            iconColorFilter = ColorFilter.tint(themeColors.secondaryColor),
             onClick = { navController.navigate(Screen.Settings.Theme.route) }
         )
         Preference(
-            icon = painterResource(R.drawable.icon_outline_rounded_note_stack),
-            iconColorFilter = ColorFilter.tint(themeColors.secondaryColor),
-            title = stringResource(R.string.Settings_Header_Notes),
-            titleColor = themeColors.textColor,
-            onClick = { navController.navigate(Screen.Settings.Notes.route) }
-        )
-        CategoryPreference(
             title = stringResource(R.string.Settings_Header_Notifications),
-            titleColor = themeColors.secondaryColor
-        ) { enabled ->
-            SwitchPreference(
-                title = stringResource(R.string.Settings_EnableNotifications),
-                checked = turnOnNotifications,
-                onCheckedChange = {
-                    turnOnNotifications = it
-                    coroutineScope.launch {
-                        if (it) {
-                            if (notificationManager.tryScheduleNotification(
-                                    args = ScheduleNoteNotificationArguments(
-                                        grantPermissions = true,
-                                        turnOnNotifications = true
-                                    ),
-                                    noteRepository = noteRepository
-                                )
-                            ) {
-                                Timber.i("${LogTags.NOTIFICATIONS} Scheduled notification when \"Turn on notifications\" was set to true.")
-                            }
-                        } else {
-                            notificationManager.cancelScheduledNotification()
-                            Timber.i("${LogTags.NOTIFICATIONS} Canceled notification when \"Turn on notifications\" was set to false.")
-                        }
-                        preferencesRepository.setTurnOnNotifications(it)
-                    }
-                },
-                textColor = themeColors.textColor,
-                enabled = enabled,
-            )
-            TimePickerPreference(
-                title = stringResource(R.string.Settings_NotificationTime),
-                titleColor = themeColors.textColor,
-                initialTime = notificationTime,
-                onConfirm = {
-                    notificationTime = it
-
-                    coroutineScope.launch {
-                        preferencesRepository.setNotificationTime(it)
-
-                        if (notificationManager.tryScheduleNotification(
-                                args = ScheduleNoteNotificationArguments(
-                                    grantPermissions = true,
-                                    turnOnNotifications = true
-                                ),
-                                noteRepository = noteRepository
-                            )
-                        ) {
-                            Timber.i("${LogTags.NOTIFICATIONS} Scheduled notification when \"Notification time\" was changed.")
-                        }
-                    }
-                },
-                buttonColor = themeColors.primaryColor,
-                dialogColors = CardDefaults.cardColors().copy(
-                    containerColor = themeColors.backgroundColor,
-                    contentColor = themeColors.backgroundColor,
-                ),
-                timePickerColors = TimePickerDefaults.colors().copy(
-                    selectorColor = themeColors.primaryColor,
-                ),
-                enabled = enabled && turnOnNotifications,
-            )
-        }
-        CategoryPreference(
-            title = stringResource(R.string.Settings_Header_Other),
-            titleColor = themeColors.secondaryColor
-        ) { enabled ->
-            ListPreference(
-                title = stringResource(R.string.Settings_FirstDayOfWeek),
-                options = DayOfWeek.entries.map { it.getLocalizedName() to it },
-                initialSelectedOptionIndex = firstDayOfWeekIndexPair.second,
-                onConfirm = { index, value ->
-                    firstDayOfWeekIndexPair = Pair(value, index)
-                    coroutineScope.launch {
-                        preferencesRepository.setFirstDayOfWeek(value)
-                    }
-                },
-                titleColor = themeColors.textColor,
-                summaryColor = themeColors.textColor,
-                buttonColor = themeColors.primaryColor,
-                dialogColors = CardDefaults.cardColors().copy(
-                    containerColor = themeColors.backgroundColor,
-                    contentColor = themeColors.backgroundColor,
-                ),
-                enabled = enabled
-            )
-            ListPreference(
-                title = stringResource(R.string.Settings_StartingView),
-                options = StartingViewType.entries.map { it.getLocalizedName() to it },
-                initialSelectedOptionIndex = startingViewIndexPair.second,
-                onConfirm = { index, value ->
-                    startingViewIndexPair = Pair(value, index)
-                    coroutineScope.launch {
-                        preferencesRepository.setStartingView(value)
-                    }
-                },
-                titleColor = themeColors.textColor,
-                summaryColor = themeColors.textColor,
-                buttonColor = themeColors.primaryColor,
-                dialogColors = CardDefaults.cardColors().copy(
-                    containerColor = themeColors.backgroundColor,
-                    contentColor = themeColors.backgroundColor,
-                ),
-                enabled = enabled
-            )
-        }
+            titleColor = themeColors.textColor,
+            icon = painterResource(R.drawable.icon_outline_rounded_notifications),
+            iconColorFilter = ColorFilter.tint(themeColors.secondaryColor),
+            onClick = { navController.navigate(Screen.Settings.Notifications.route) }
+        )
         Preference(
             title = licensesTitle,
             titleColor = themeColors.textColor,
+            icon = painterResource(R.drawable.icon_outline_rounded_license),
+            iconColorFilter = ColorFilter.tint(themeColors.secondaryColor),
             onClick = {
                 context.startActivity(
                     LibsBuilder()
@@ -316,6 +230,8 @@ private fun RootSettingsScreen(
         Preference(
             title = "About", // TODO: add to strings.xml
             titleColor = themeColors.textColor,
+            icon = painterResource(R.drawable.icon_outline_rounded_info),
+            iconColorFilter = ColorFilter.tint(themeColors.secondaryColor),
             onClick = {
                 // TODO
             }
@@ -324,10 +240,143 @@ private fun RootSettingsScreen(
 }
 
 @Composable
-private fun ThemeSettingsScreen(
+private fun NotesSettingsScreen(
+    viewModel: MainViewModel,
+    noteRepository: NoteRepository,
+    notificationManager: AppNotificationManager,
+    navController: NavController
+) {
+    val themeColors = viewModel.state.themeColors
+
+    SubpreferenceScreen(
+        title = stringResource(R.string.Settings_Header_Notes),
+        titleColor = themeColors.textColor,
+        iconTint = themeColors.textColor,
+        onBackButtonClick = { navController.navigateUp() },
+        modifier = Modifier.verticalScroll(rememberScrollState())
+    ) {
+        ConfirmationPreference(
+            title = stringResource(R.string.Settings_DeleteAllNotes),
+            dialogTitle = stringResource(R.string.Settings_DeleteAllNotes_Alert_Title),
+            dialogMessage = stringResource(R.string.Settings_DeleteAllNotes_Alert_Message),
+            icon = painterResource(R.drawable.icon_outline_rounded_delete_forever),
+            iconColorFilter = ColorFilter.tint(themeColors.secondaryColor),
+            onConfirm = {
+                noteRepository.deleteAll()
+                notificationManager.cancelScheduledNotification()
+                Timber.i("${LogTags.NOTIFICATIONS} Canceled notification when \"delete all notes\" was confirmed.")
+            },
+            titleColor = themeColors.textColor,
+            dialogTitleColor = themeColors.textColor,
+            dialogMessageColor = themeColors.textColor,
+            dialogButtonColor = themeColors.primaryColor,
+            dialogColors = CardDefaults.cardColors().copy(
+                containerColor = themeColors.backgroundColor,
+                contentColor = themeColors.backgroundColor,
+            )
+        )
+        Preference(
+            title = "Load notes backup", // TODO: add to strings.xml
+            titleColor = themeColors.textColor,
+            icon = painterResource(R.drawable.icon_outline_rounded_folder_open),
+            iconColorFilter = ColorFilter.tint(themeColors.secondaryColor),
+            onClick = {
+                // TODO
+            }
+        )
+        Preference(
+            title = "Save notes backup", // TODO: add to strings.xml
+            titleColor = themeColors.textColor,
+            icon = painterResource(R.drawable.icon_outline_rounded_save_as),
+            iconColorFilter = ColorFilter.tint(themeColors.secondaryColor),
+            onClick = {
+                // TODO
+            }
+        )
+    }
+}
+
+@Composable
+private fun CalendarSettingsScreen(
     viewModel: MainViewModel,
     preferencesRepository: UserPreferencesRepository,
+    navController: NavController
+) {
+    val coroutineScope = rememberCoroutineScope()
+    val themeColors = viewModel.state.themeColors
+    var firstDayOfWeekIndexPair by remember {
+        mutableStateOf(WeekFields.of(Locale.getDefault()).firstDayOfWeek.let {
+            it to it.ordinal
+        })
+    }
+    var startingViewIndexPair by remember {
+        mutableStateOf(Pair(StartingViewType.DAY_VIEW, 0))
+    }
+    LaunchedEffect(Unit) {
+        firstDayOfWeekIndexPair = preferencesRepository
+            .getFirstDayOfWeek()
+            .let { it to it.ordinal }
+        startingViewIndexPair = preferencesRepository
+            .getStartingView()
+            .let { it to it.ordinal }
+    }
+    SubpreferenceScreen(
+        title = "Calendar", // TODO: add to strings.xml
+        titleColor = themeColors.textColor,
+        iconTint = themeColors.textColor,
+        onBackButtonClick = { navController.navigateUp() },
+        modifier = Modifier.verticalScroll(rememberScrollState())
+    ) {
+        ListPreference(
+            title = stringResource(R.string.Settings_FirstDayOfWeek),
+            options = DayOfWeek.entries.map { it.getLocalizedName() to it },
+            initialSelectedOptionIndex = firstDayOfWeekIndexPair.second,
+            onConfirm = { index, value ->
+                // Without it Compose will not update the UI text.
+                @Suppress("AssignedValueIsNeverRead")
+                firstDayOfWeekIndexPair = Pair(value, index)
+
+                coroutineScope.launch {
+                    preferencesRepository.setFirstDayOfWeek(value)
+                }
+            },
+            titleColor = themeColors.textColor,
+            summaryColor = themeColors.textColor,
+            buttonColor = themeColors.primaryColor,
+            dialogColors = CardDefaults.cardColors().copy(
+                containerColor = themeColors.backgroundColor,
+                contentColor = themeColors.backgroundColor,
+            )
+        )
+        ListPreference(
+            title = stringResource(R.string.Settings_StartingView),
+            options = StartingViewType.entries.map { it.getLocalizedName() to it },
+            initialSelectedOptionIndex = startingViewIndexPair.second,
+            onConfirm = { index, value ->
+                // Without it Compose will not update the UI text.
+                @Suppress("AssignedValueIsNeverRead")
+                startingViewIndexPair = Pair(value, index)
+
+                coroutineScope.launch {
+                    preferencesRepository.setStartingView(value)
+                }
+            },
+            titleColor = themeColors.textColor,
+            summaryColor = themeColors.textColor,
+            buttonColor = themeColors.primaryColor,
+            dialogColors = CardDefaults.cardColors().copy(
+                containerColor = themeColors.backgroundColor,
+                contentColor = themeColors.backgroundColor,
+            )
+        )
+    }
+}
+
+@Composable
+private fun ThemeSettingsScreen(
+    viewModel: MainViewModel,
     fileRepository: FileRepository,
+    preferencesRepository: UserPreferencesRepository,
     navController: NavController
 ) {
     val coroutineScope = rememberCoroutineScope()
@@ -687,59 +736,93 @@ private fun ThemeSettingsScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun NotesSettingsScreen(
+private fun NotificationsSettingsScreen(
     viewModel: MainViewModel,
     noteRepository: NoteRepository,
+    preferencesRepository: UserPreferencesRepository,
     notificationManager: AppNotificationManager,
     navController: NavController
 ) {
+    val coroutineScope = rememberCoroutineScope()
     val themeColors = viewModel.state.themeColors
-
+    var turnOnNotifications by remember {
+        mutableStateOf(false)
+    }
+    var notificationTime by remember {
+        mutableStateOf(LocalTime.of(8, 0))
+    }
+    LaunchedEffect(Unit) {
+        turnOnNotifications = preferencesRepository.getTurnOnNotifications()
+        notificationTime = preferencesRepository.getNotificationTime()
+    }
     SubpreferenceScreen(
-        title = stringResource(R.string.Settings_Header_Notes),
+        title = stringResource(R.string.Settings_Header_Notifications),
         titleColor = themeColors.textColor,
         iconTint = themeColors.textColor,
         onBackButtonClick = { navController.navigateUp() },
         modifier = Modifier.verticalScroll(rememberScrollState())
     ) {
-        ConfirmationPreference(
-            title = stringResource(R.string.Settings_DeleteAllNotes),
-            dialogTitle = stringResource(R.string.Settings_DeleteAllNotes_Alert_Title),
-            dialogMessage = stringResource(R.string.Settings_DeleteAllNotes_Alert_Message),
-            icon = painterResource(R.drawable.icon_outline_rounded_delete_forever),
-            iconColorFilter = ColorFilter.tint(themeColors.secondaryColor),
-            onConfirm = {
-                noteRepository.deleteAll()
-                notificationManager.cancelScheduledNotification()
-                Timber.i("${LogTags.NOTIFICATIONS} Canceled notification when \"delete all notes\" was confirmed.")
+        SwitchPreference(
+            title = stringResource(R.string.Settings_EnableNotifications),
+            checked = turnOnNotifications,
+            onCheckedChange = {
+                turnOnNotifications = it
+                coroutineScope.launch {
+                    if (it) {
+                        if (notificationManager.tryScheduleNotification(
+                                args = ScheduleNoteNotificationArguments(
+                                    grantPermissions = true,
+                                    turnOnNotifications = true
+                                ),
+                                noteRepository = noteRepository
+                            )
+                        ) {
+                            Timber.i("${LogTags.NOTIFICATIONS} Scheduled notification when \"Turn on notifications\" was set to true.")
+                        }
+                    } else {
+                        notificationManager.cancelScheduledNotification()
+                        Timber.i("${LogTags.NOTIFICATIONS} Canceled notification when \"Turn on notifications\" was set to false.")
+                    }
+                    preferencesRepository.setTurnOnNotifications(it)
+                }
             },
+            textColor = themeColors.textColor
+        )
+        TimePickerPreference(
+            title = stringResource(R.string.Settings_NotificationTime),
             titleColor = themeColors.textColor,
-            dialogTitleColor = themeColors.textColor,
-            dialogMessageColor = themeColors.textColor,
-            dialogButtonColor = themeColors.primaryColor,
+            initialTime = notificationTime,
+            onConfirm = {
+                // Without it Compose will not update the UI text.
+                @Suppress("AssignedValueIsNeverRead")
+                notificationTime = it
+
+                coroutineScope.launch {
+                    preferencesRepository.setNotificationTime(it)
+
+                    if (notificationManager.tryScheduleNotification(
+                            args = ScheduleNoteNotificationArguments(
+                                grantPermissions = true,
+                                turnOnNotifications = true
+                            ),
+                            noteRepository = noteRepository
+                        )
+                    ) {
+                        Timber.i("${LogTags.NOTIFICATIONS} Scheduled notification when \"Notification time\" was changed.")
+                    }
+                }
+            },
+            buttonColor = themeColors.primaryColor,
             dialogColors = CardDefaults.cardColors().copy(
                 containerColor = themeColors.backgroundColor,
                 contentColor = themeColors.backgroundColor,
-            )
-        )
-        Preference(
-            title = "Load notes backup", // TODO: add to strings.xml
-            titleColor = themeColors.textColor,
-            icon = painterResource(R.drawable.icon_outline_rounded_folder_open),
-            iconColorFilter = ColorFilter.tint(themeColors.secondaryColor),
-            onClick = {
-                // TODO
-            }
-        )
-        Preference(
-            title = "Save notes backup", // TODO: add to strings.xml
-            titleColor = themeColors.textColor,
-            icon = painterResource(R.drawable.icon_outline_rounded_save_as),
-            iconColorFilter = ColorFilter.tint(themeColors.secondaryColor),
-            onClick = {
-                // TODO
-            }
+            ),
+            timePickerColors = TimePickerDefaults.colors().copy(
+                selectorColor = themeColors.primaryColor,
+            ),
+            enabled = turnOnNotifications,
         )
     }
 }
