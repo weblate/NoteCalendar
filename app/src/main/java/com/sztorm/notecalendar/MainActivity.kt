@@ -38,6 +38,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.sztorm.notecalendar.NoteCalendarApplication.Companion.BUNDLE_KEY_NOTIFICATION_LAUNCH_DAY_SCREEN
+import com.sztorm.notecalendar.repositories.FileRepository
+import com.sztorm.notecalendar.repositories.FileRepositoryImpl
 import com.sztorm.notecalendar.repositories.NoteRepository
 import com.sztorm.notecalendar.repositories.NoteRepositoryImpl
 import com.sztorm.notecalendar.repositories.UserPreferencesRepository
@@ -80,6 +82,8 @@ class MainActivity : ComponentActivity() {
         val bundleResult = readBundle()
         val viewModel: MainViewModel
         val startingView: StartingViewType
+        val noteRepository = NoteRepositoryImpl
+        val fileRepository = FileRepositoryImpl(this)
 
         runBlocking {
             viewModel = MainViewModel(
@@ -97,7 +101,13 @@ class MainActivity : ComponentActivity() {
         setContent {
             AppTheme(viewModel.state.themeColors) {
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    AppScreen(viewModel, startingView, this, NoteRepositoryImpl)
+                    AppScreen(
+                        viewModel = viewModel,
+                        startingView = startingView,
+                        mainActivity = this,
+                        noteRepository = noteRepository,
+                        fileRepository = fileRepository
+                    )
                 }
             }
         }
@@ -124,7 +134,8 @@ fun AppScreen(
     viewModel: MainViewModel,
     startingView: StartingViewType,
     mainActivity: MainActivity,
-    noteRepository: NoteRepository
+    noteRepository: NoteRepository,
+    fileRepository: FileRepository
 ) {
     val navController = rememberNavController()
     var selectedTabIndex by rememberSaveable {
@@ -224,7 +235,7 @@ fun AppScreen(
             },
             exitTransition = {
                 fadeOut(animationSpec = tween(durationMillis = 400)) +
-                slideOutVertically(animationSpec = tween(durationMillis = 400)) { it }
+                    slideOutVertically(animationSpec = tween(durationMillis = 400)) { it }
             }
         ) {
             composable<Screen.Month> {
@@ -243,6 +254,7 @@ fun AppScreen(
                     viewModel = viewModel,
                     preferencesRepository = mainActivity.settings,
                     noteRepository = noteRepository,
+                    fileRepository = fileRepository,
                     notificationManager = mainActivity.notificationManager
                 )
             }

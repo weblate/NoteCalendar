@@ -40,7 +40,10 @@ import com.sztorm.notecalendar.components.preferences.Preference
 import com.sztorm.notecalendar.components.preferences.SubpreferenceScreen
 import com.sztorm.notecalendar.components.preferences.SwitchPreference
 import com.sztorm.notecalendar.components.preferences.TimePickerPreference
+import com.sztorm.notecalendar.repositories.FileRepository
+import com.sztorm.notecalendar.repositories.LoadResult
 import com.sztorm.notecalendar.repositories.NoteRepository
+import com.sztorm.notecalendar.repositories.SaveResult
 import com.sztorm.notecalendar.repositories.UserPreferencesRepository
 import com.sztorm.notecalendar.ui.DarkThemeColors
 import com.sztorm.notecalendar.ui.LightThemeColors
@@ -57,6 +60,7 @@ fun SettingsScreen(
     viewModel: MainViewModel,
     preferencesRepository: UserPreferencesRepository,
     noteRepository: NoteRepository,
+    fileRepository: FileRepository,
     notificationManager: AppNotificationManager
 ) {
     val navController = rememberNavController()
@@ -100,7 +104,12 @@ fun SettingsScreen(
                 )
             }
         ) {
-            ThemeSettingsScreen(viewModel, preferencesRepository, navController)
+            ThemeSettingsScreen(
+                viewModel = viewModel,
+                preferencesRepository = preferencesRepository,
+                fileRepository = fileRepository,
+                navController = navController
+            )
         }
     }
 }
@@ -313,6 +322,7 @@ private fun RootSettingsScreen(
 private fun ThemeSettingsScreen(
     viewModel: MainViewModel,
     preferencesRepository: UserPreferencesRepository,
+    fileRepository: FileRepository,
     navController: NavController
 ) {
     val coroutineScope = rememberCoroutineScope()
@@ -391,6 +401,52 @@ private fun ThemeSettingsScreen(
                     viewModel.onEvent(
                         MainEvent.ThemeChange(defaultThemeColors)
                     )
+                }
+            }
+        )
+        Preference(
+            title = "Load theme", // TODO: add to strings.xml
+            titleColor = themeColors.textColor,
+            onClick = {
+                fileRepository.loadFile(
+                    filetype = "application/json"
+                ) { result ->
+                    when (result) {
+                        is LoadResult.Success -> {
+                            Timber.i("${LogTags.FILE_IO} Theme loaded.")
+
+                            val themeColors = result.file.toThemeColors()
+                            coroutineScope.launch {
+                                preferencesRepository.setThemeColors(themeColors)
+                            }.invokeOnCompletion {
+                                viewModel.onEvent(
+                                    MainEvent.ThemeChange(themeColors)
+                                )
+                            }
+                        }
+
+                        is LoadResult.Failure ->
+                            Timber.e("${LogTags.FILE_IO} ${result.message}")
+                    }
+                }
+            }
+        )
+        Preference(
+            title = "Save theme", // TODO: add to strings.xml
+            titleColor = themeColors.textColor,
+            onClick = {
+                fileRepository.saveFile(
+                    fileName = "theme.json",
+                    filetype = "application/json",
+                    file = ThemeFile.fromThemeColors(themeColors)
+                ) { result ->
+                    when (result) {
+                        is SaveResult.Success ->
+                            Timber.i("${LogTags.FILE_IO} Theme saved.")
+
+                        is SaveResult.Failure ->
+                            Timber.e("${LogTags.FILE_IO} ${result.message}")
+                    }
                 }
             }
         )
