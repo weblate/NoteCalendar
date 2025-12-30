@@ -40,7 +40,7 @@ fun <T : Parcelable> Intent.getParcelableExtraCompat(name: String, clazz: Class<
 
 val Context.isDarkThemeEnabled: Boolean
     get() = (this.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
-    Configuration.UI_MODE_NIGHT_YES
+        Configuration.UI_MODE_NIGHT_YES
 
 val Int.isEven
     get() = (this and 1) == 0
@@ -347,6 +347,17 @@ fun Color.toHsl() = FloatArray(3).apply {
     val b = argb and 255
 
     ColorUtils.RGBToHSL(r, g, b, this)
+}
+
+fun Color.toHexCodeFormat(includeAlpha: Boolean = false): String {
+    val (r, g, b, a) = toColorRGBA32()
+
+    return when {
+        includeAlpha ->
+            "#%02x%02x%02x%02x".format(r.toInt(), g.toInt(), b.toInt(), a.toInt())
+
+        else -> "#%02x%02x%02x".format(r.toInt(), g.toInt(), b.toInt())
+    }
 }
 
 fun Offset.toVector2F() = Vector2F(x, y)
