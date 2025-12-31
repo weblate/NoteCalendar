@@ -251,8 +251,7 @@ private fun NotesSettingsScreen(
     SubpreferenceScreen(
         title = stringResource(R.string.Settings_Header_Notes),
         iconTint = themeColors.textColor,
-        onBackButtonClick = { navController.navigateUp() },
-        modifier = Modifier.verticalScroll(rememberScrollState())
+        onBackButtonClick = { navController.navigateUp() }
     ) {
         ConfirmationPreference(
             title = stringResource(R.string.Settings_DeleteAllNotes),
@@ -322,8 +321,7 @@ private fun CalendarSettingsScreen(
     SubpreferenceScreen(
         title = "Calendar", // TODO: add to strings.xml
         iconTint = themeColors.textColor,
-        onBackButtonClick = { navController.navigateUp() },
-        modifier = Modifier.verticalScroll(rememberScrollState())
+        onBackButtonClick = { navController.navigateUp() }
     ) {
         ListPreference(
             title = stringResource(R.string.Settings_FirstDayOfWeek),
@@ -406,7 +404,6 @@ private fun ThemeSettingsScreen(
         title = stringResource(R.string.Settings_Header_Theme),
         iconTint = themeColors.textColor,
         onBackButtonClick = { navController.navigateUp() },
-        modifier = Modifier.verticalScroll(rememberScrollState())
     ) {
         CategoryPreference(
             title = "Preset theme", // TODO: add to strings.xml
@@ -767,8 +764,7 @@ private fun NotificationsSettingsScreen(
     SubpreferenceScreen(
         title = stringResource(R.string.Settings_Header_Notifications),
         iconTint = themeColors.textColor,
-        onBackButtonClick = { navController.navigateUp() },
-        modifier = Modifier.verticalScroll(rememberScrollState())
+        onBackButtonClick = { navController.navigateUp() }
     ) {
         SwitchPreference(
             title = stringResource(R.string.Settings_EnableNotifications),
