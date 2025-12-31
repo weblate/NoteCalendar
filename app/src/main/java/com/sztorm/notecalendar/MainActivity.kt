@@ -51,21 +51,12 @@ import java.time.LocalDate
 data class BundleResult(val isLaunchedFromNotification: Boolean)
 
 class MainActivity : ComponentActivity() {
-    private var _settings: UserPreferencesRepository? = null
     private var _permissionManager: AppPermissionManager? = null
     private var _notificationManager: AppNotificationManager? = null
-    val settings: UserPreferencesRepository
-        get() = _settings!!
     val permissionManager: AppPermissionManager
         get() = _permissionManager!!
     val notificationManager: AppNotificationManager
         get() = _notificationManager!!
-
-    fun initManagers() {
-        _settings = _settings ?: UserPreferencesRepository(this)
-        _permissionManager = _permissionManager ?: AppPermissionManager(this)
-        _notificationManager = _notificationManager ?: AppNotificationManager(this)
-    }
 
     private fun readBundle(): BundleResult? {
         val bundle: Bundle = intent.extras ?: return null
@@ -78,23 +69,27 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        initManagers()
         val bundleResult = readBundle()
         val viewModel: MainViewModel
         val startingView: StartingViewType
         val noteRepository = NoteRepositoryImpl
         val fileRepository = FileRepositoryImpl(this)
+        val preferencesRepository = UserPreferencesRepository(this)
+        _permissionManager = _permissionManager ?: AppPermissionManager(this)
+        _notificationManager = _notificationManager ?: AppNotificationManager(
+            this, preferencesRepository
+        )
 
         runBlocking {
             viewModel = MainViewModel(
                 initialState = MainState(
-                    themeColors = settings.getThemeColors(),
+                    themeColors = preferencesRepository.getThemeColors(),
                     dayScreenDate = LocalDate.now()
                 )
             )
             startingView = if (bundleResult != null && bundleResult.isLaunchedFromNotification) {
                 StartingViewType.DAY_VIEW
-            } else settings.getStartingView(StartingViewType.DAY_VIEW)
+            } else preferencesRepository.getStartingView(StartingViewType.DAY_VIEW)
         }
         WindowCompat.setDecorFitsSystemWindows(window, false)
         enableEdgeToEdge()
@@ -106,7 +101,8 @@ class MainActivity : ComponentActivity() {
                         startingView = startingView,
                         mainActivity = this,
                         noteRepository = noteRepository,
-                        fileRepository = fileRepository
+                        fileRepository = fileRepository,
+                        preferencesRepository = preferencesRepository
                     )
                 }
             }
@@ -135,7 +131,8 @@ fun AppScreen(
     startingView: StartingViewType,
     mainActivity: MainActivity,
     noteRepository: NoteRepository,
-    fileRepository: FileRepository
+    fileRepository: FileRepository,
+    preferencesRepository: UserPreferencesRepository
 ) {
     val navController = rememberNavController()
     var selectedTabIndex by rememberSaveable {
@@ -239,10 +236,10 @@ fun AppScreen(
             }
         ) {
             composable<Screen.Month> {
-                MonthScreen(viewModel, navController, mainActivity, noteRepository)
+                MonthScreen(viewModel, navController, noteRepository, preferencesRepository)
             }
             composable<Screen.Week> {
-                WeekScreen(viewModel, navController, mainActivity, noteRepository)
+                WeekScreen(viewModel, navController, noteRepository, preferencesRepository)
             }
             composable<Screen.Day> {
                 val day = it.toRoute<Screen.Day>()
@@ -252,9 +249,9 @@ fun AppScreen(
             composable<Screen.Settings> {
                 SettingsScreen(
                     viewModel = viewModel,
-                    preferencesRepository = mainActivity.settings,
-                    noteRepository = noteRepository,
                     fileRepository = fileRepository,
+                    noteRepository = noteRepository,
+                    preferencesRepository = preferencesRepository,
                     notificationManager = mainActivity.notificationManager
                 )
             }

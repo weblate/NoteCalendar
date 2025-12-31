@@ -9,13 +9,17 @@ import androidx.core.app.NotificationCompat
 import androidx.lifecycle.lifecycleScope
 import com.sztorm.notecalendar.NoteCalendarApplication.Companion.BUNDLE_KEY_NOTIFICATION_LAUNCH_DAY_SCREEN
 import com.sztorm.notecalendar.repositories.NoteRepository
+import com.sztorm.notecalendar.repositories.UserPreferencesRepository
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.*
 
-class AppNotificationManager(val mainActivity: MainActivity) {
+class AppNotificationManager(
+    val mainActivity: MainActivity,
+    private val preferencesRepository: UserPreferencesRepository
+) {
     private fun getOrCreateNotificationChannel(name: String, description: String) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val importance = NotificationManager.IMPORTANCE_LOW
@@ -78,9 +82,8 @@ class AppNotificationManager(val mainActivity: MainActivity) {
         args: ScheduleNoteNotificationArguments,
         noteRepository: NoteRepository
     ): Boolean {
-        val settings = mainActivity.settings
         val enabledNotifications: Boolean =
-            args.turnOnNotifications ?: settings.getTurnOnNotifications()
+            args.turnOnNotifications ?: preferencesRepository.getTurnOnNotifications()
 
         if (!enabledNotifications) {
             Timber.i("${LogTags.NOTIFICATIONS} Scheduling failed beacuse notifications are disabled.")
@@ -99,20 +102,20 @@ class AppNotificationManager(val mainActivity: MainActivity) {
                                 args.copy(grantPermissions = false), noteRepository
                             )
                         } else {
-                            mainActivity.settings.setTurnOnNotifications(false)
+                            preferencesRepository.setTurnOnNotifications(false)
                             Timber.i("${LogTags.NOTIFICATIONS} Scheduling failed beacuse notifications permissions are denied (request permission callback).")
                         }
                     }
                 }
                 return true
             } else {
-                mainActivity.settings.setTurnOnNotifications(false)
+                preferencesRepository.setTurnOnNotifications(false)
                 Timber.i("${LogTags.NOTIFICATIONS} Scheduling failed beacuse notifications permissions are denied.")
                 return false
             }
         }
         val notificationTime =
-            args.notificationTime ?: settings.getNotificationTime()
+            args.notificationTime ?: preferencesRepository.getNotificationTime()
         val currentDateTime = LocalDateTime.now()
         val notificationDateTime =
             if ((notificationTime <= currentDateTime.toLocalTime())) {
@@ -148,8 +151,7 @@ class AppNotificationManager(val mainActivity: MainActivity) {
     }
 
     suspend fun tryCancelScheduledNotification(noteDate: LocalDate): Boolean {
-        val notificationTime =
-            mainActivity.settings.getNotificationTime()
+        val notificationTime = preferencesRepository.getNotificationTime()
         val currentDateTime = LocalDateTime.now()
         var notificationDateTime = LocalDateTime.of(
             currentDateTime.toLocalDate(), notificationTime

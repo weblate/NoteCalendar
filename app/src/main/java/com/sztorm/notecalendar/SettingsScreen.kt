@@ -57,9 +57,9 @@ import java.util.Locale
 @Composable
 fun SettingsScreen(
     viewModel: MainViewModel,
-    preferencesRepository: UserPreferencesRepository,
-    noteRepository: NoteRepository,
     fileRepository: FileRepository,
+    noteRepository: NoteRepository,
+    preferencesRepository: UserPreferencesRepository,
     notificationManager: AppNotificationManager
 ) {
     val navController = rememberNavController()

@@ -28,6 +28,7 @@ import com.sztorm.notecalendar.components.DayOfWeekBar
 import com.sztorm.notecalendar.components.InfiniteHorizontalPager
 import com.sztorm.notecalendar.components.MonthPage
 import com.sztorm.notecalendar.repositories.NoteRepository
+import com.sztorm.notecalendar.repositories.UserPreferencesRepository
 import java.time.LocalDate
 import java.time.temporal.WeekFields
 import java.util.Locale
@@ -44,8 +45,8 @@ data class MonthViewDay(
 fun MonthScreen(
     viewModel: MainViewModel,
     navController: NavController,
-    mainActivity: MainActivity,
-    noteRepository: NoteRepository
+    noteRepository: NoteRepository,
+    preferencesRepository: UserPreferencesRepository
 ) {
     val themeColors = viewModel.state.themeColors
     val selectedDateYearMonth = viewModel.state.dayScreenDate.yearMonth
@@ -60,7 +61,7 @@ fun MonthScreen(
         mutableStateOf(MonthNotesCache(noteRepository, selectedDateYearMonth))
     }
     LaunchedEffect(Unit) {
-        firstDayOfWeek = mainActivity.settings.getFirstDayOfWeek()
+        firstDayOfWeek = preferencesRepository.getFirstDayOfWeek()
     }
     Column(
         modifier = Modifier

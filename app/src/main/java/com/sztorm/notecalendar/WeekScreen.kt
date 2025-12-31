@@ -29,6 +29,7 @@ import com.sztorm.notecalendar.WeekViewItem.WeekViewDay
 import com.sztorm.notecalendar.WeekViewItem.WeekViewMonth
 import com.sztorm.notecalendar.components.InfiniteColumn
 import com.sztorm.notecalendar.repositories.NoteRepository
+import com.sztorm.notecalendar.repositories.UserPreferencesRepository
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.temporal.WeekFields
@@ -160,8 +161,8 @@ tailrec fun MutableList<WeekViewItem>.loadPrevItems(
 fun WeekScreen(
     viewModel: MainViewModel,
     navController: NavController,
-    mainActivity: MainActivity,
-    noteRepository: NoteRepository
+    noteRepository: NoteRepository,
+    preferencesRepository: UserPreferencesRepository
 ) {
     val themeColors = viewModel.state.themeColors
     val dayScreenDate = viewModel.state.dayScreenDate
@@ -195,7 +196,7 @@ fun WeekScreen(
     val dayListState = rememberLazyListState()
 
     LaunchedEffect(Unit) {
-        firstDayOfWeek = mainActivity.settings.getFirstDayOfWeek()
+        firstDayOfWeek = preferencesRepository.getFirstDayOfWeek()
     }
     InfiniteColumn(
         modifier = Modifier.fillMaxSize(),
