@@ -3,6 +3,7 @@ package com.sztorm.notecalendar
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
 import java.time.DayOfWeek
 
 class ThemeColors(
@@ -34,10 +35,16 @@ class ThemeColors(
         true -> darkColorScheme(
             primary = primaryColor,
             onPrimary = buttonTextColor,
+            primaryContainer = lerp(primaryColor, backgroundColor, 0.9f),
+            onPrimaryContainer = textColor,
             secondary = secondaryColor,
             onSecondary = buttonTextColor,
+            secondaryContainer = lerp(secondaryColor, backgroundColor, 0.9f),
+            onSecondaryContainer = textColor,
             tertiary = noteColor,
             onTertiary = buttonTextColor,
+            tertiaryContainer = lerp(noteColor, backgroundColor, 0.9f),
+            onTertiaryContainer = textColor,
             background = backgroundColor,
             onBackground = textColor,
             surface = backgroundColor,
@@ -47,10 +54,16 @@ class ThemeColors(
         false -> lightColorScheme(
             primary = primaryColor,
             onPrimary = buttonTextColor,
+            primaryContainer = lerp(primaryColor, backgroundColor, 0.9f),
+            onPrimaryContainer = textColor,
             secondary = secondaryColor,
             onSecondary = buttonTextColor,
+            secondaryContainer = lerp(secondaryColor, backgroundColor, 0.9f),
+            onSecondaryContainer = textColor,
             tertiary = noteColor,
             onTertiary = buttonTextColor,
+            tertiaryContainer = lerp(noteColor, backgroundColor, 0.9f),
+            onTertiaryContainer = textColor,
             background = backgroundColor,
             onBackground = textColor,
             surface = backgroundColor,

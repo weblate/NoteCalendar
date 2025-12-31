@@ -250,7 +250,6 @@ private fun NotesSettingsScreen(
 
     SubpreferenceScreen(
         title = stringResource(R.string.Settings_Header_Notes),
-        titleColor = themeColors.textColor,
         iconTint = themeColors.textColor,
         onBackButtonClick = { navController.navigateUp() },
         modifier = Modifier.verticalScroll(rememberScrollState())
@@ -322,7 +321,6 @@ private fun CalendarSettingsScreen(
     }
     SubpreferenceScreen(
         title = "Calendar", // TODO: add to strings.xml
-        titleColor = themeColors.textColor,
         iconTint = themeColors.textColor,
         onBackButtonClick = { navController.navigateUp() },
         modifier = Modifier.verticalScroll(rememberScrollState())
@@ -406,110 +404,119 @@ private fun ThemeSettingsScreen(
 
     SubpreferenceScreen(
         title = stringResource(R.string.Settings_Header_Theme),
-        titleColor = themeColors.textColor,
         iconTint = themeColors.textColor,
         onBackButtonClick = { navController.navigateUp() },
         modifier = Modifier.verticalScroll(rememberScrollState())
     ) {
-        Preference(
-            title = stringResource(R.string.Settings_SetLightTheme),
-            titleColor = themeColors.textColor,
-            icon = painterResource(R.drawable.icon_outline_rounded_sun),
-            iconColorFilter = ColorFilter.tint(themeColors.secondaryColor),
-            onClick = {
-                coroutineScope.launch {
-                    preferencesRepository.setThemeColors(LightThemeColors)
-                }.invokeOnCompletion {
-                    viewModel.onEvent(
-                        MainEvent.ThemeChange(LightThemeColors)
-                    )
-                }
-            }
-        )
-        Preference(
-            title = stringResource(R.string.Settings_SetDarkTheme),
-            titleColor = themeColors.textColor,
-            icon = painterResource(R.drawable.icon_outline_rounded_moon),
-            iconColorFilter = ColorFilter.tint(themeColors.secondaryColor),
-            onClick = {
-                coroutineScope.launch {
-                    preferencesRepository.setThemeColors(DarkThemeColors)
-                }.invokeOnCompletion {
-                    viewModel.onEvent(
-                        MainEvent.ThemeChange(DarkThemeColors)
-                    )
-                }
-            }
-        )
-        Preference(
-            title = stringResource(R.string.Settings_SetDefaultTheme),
-            titleColor = themeColors.textColor,
-            summary = stringResource(R.string.Settings_Summary_SetDefaultTheme),
-            summaryColor = themeColors.textColor,
-            icon = painterResource(R.drawable.icon_outline_rounded_sun_and_moon),
-            iconColorFilter = ColorFilter.tint(themeColors.secondaryColor),
-            onClick = {
-                coroutineScope.launch {
-                    preferencesRepository.setThemeColors(defaultThemeColors)
-                }.invokeOnCompletion {
-                    viewModel.onEvent(
-                        MainEvent.ThemeChange(defaultThemeColors)
-                    )
-                }
-            }
-        )
-        Preference(
-            title = "Load theme", // TODO: add to strings.xml
-            titleColor = themeColors.textColor,
-            icon = painterResource(R.drawable.icon_outline_rounded_folder_open),
-            iconColorFilter = ColorFilter.tint(themeColors.secondaryColor),
-            onClick = {
-                fileRepository.loadFile(
-                    filetype = "application/json"
-                ) { result ->
-                    when (result) {
-                        is LoadResult.Success -> {
-                            Timber.i("${LogTags.FILE_IO} Theme loaded.")
-
-                            val themeColors = result.file.toThemeColors()
-                            coroutineScope.launch {
-                                preferencesRepository.setThemeColors(themeColors)
-                            }.invokeOnCompletion {
-                                viewModel.onEvent(
-                                    MainEvent.ThemeChange(themeColors)
-                                )
-                            }
-                        }
-
-                        is LoadResult.Failure ->
-                            Timber.e("${LogTags.FILE_IO} ${result.message}")
-                    }
-                }
-            }
-        )
-        Preference(
-            title = "Save theme", // TODO: add to strings.xml
-            titleColor = themeColors.textColor,
-            icon = painterResource(R.drawable.icon_outline_rounded_save_as),
-            iconColorFilter = ColorFilter.tint(themeColors.secondaryColor),
-            onClick = {
-                fileRepository.saveFile(
-                    fileName = "theme.json",
-                    filetype = "application/json",
-                    file = ThemeFile.fromThemeColors(themeColors)
-                ) { result ->
-                    when (result) {
-                        is SaveResult.Success ->
-                            Timber.i("${LogTags.FILE_IO} Theme saved.")
-
-                        is SaveResult.Failure ->
-                            Timber.e("${LogTags.FILE_IO} ${result.message}")
-                    }
-                }
-            }
-        )
         CategoryPreference(
-            title = "Custom theme",
+            title = "Preset theme", // TODO: add to strings.xml
+            titleColor = themeColors.secondaryColor
+        ) { enabled ->
+            Preference(
+                title = stringResource(R.string.Settings_SetLightTheme),
+                titleColor = themeColors.textColor,
+                icon = painterResource(R.drawable.icon_outline_rounded_sun),
+                iconColorFilter = ColorFilter.tint(themeColors.secondaryColor),
+                onClick = {
+                    coroutineScope.launch {
+                        preferencesRepository.setThemeColors(LightThemeColors)
+                    }.invokeOnCompletion {
+                        viewModel.onEvent(
+                            MainEvent.ThemeChange(LightThemeColors)
+                        )
+                    }
+                },
+                enabled = enabled
+            )
+            Preference(
+                title = stringResource(R.string.Settings_SetDarkTheme),
+                titleColor = themeColors.textColor,
+                icon = painterResource(R.drawable.icon_outline_rounded_moon),
+                iconColorFilter = ColorFilter.tint(themeColors.secondaryColor),
+                onClick = {
+                    coroutineScope.launch {
+                        preferencesRepository.setThemeColors(DarkThemeColors)
+                    }.invokeOnCompletion {
+                        viewModel.onEvent(
+                            MainEvent.ThemeChange(DarkThemeColors)
+                        )
+                    }
+                },
+                enabled = enabled
+            )
+            Preference(
+                title = stringResource(R.string.Settings_SetDefaultTheme),
+                titleColor = themeColors.textColor,
+                summary = stringResource(R.string.Settings_Summary_SetDefaultTheme),
+                summaryColor = themeColors.textColor,
+                icon = painterResource(R.drawable.icon_outline_rounded_sun_and_moon),
+                iconColorFilter = ColorFilter.tint(themeColors.secondaryColor),
+                onClick = {
+                    coroutineScope.launch {
+                        preferencesRepository.setThemeColors(defaultThemeColors)
+                    }.invokeOnCompletion {
+                        viewModel.onEvent(
+                            MainEvent.ThemeChange(defaultThemeColors)
+                        )
+                    }
+                },
+                enabled = enabled
+            )
+            Preference(
+                title = "Load theme", // TODO: add to strings.xml
+                titleColor = themeColors.textColor,
+                icon = painterResource(R.drawable.icon_outline_rounded_folder_open),
+                iconColorFilter = ColorFilter.tint(themeColors.secondaryColor),
+                onClick = {
+                    fileRepository.loadFile(
+                        filetype = "application/json"
+                    ) { result ->
+                        when (result) {
+                            is LoadResult.Success -> {
+                                Timber.i("${LogTags.FILE_IO} Theme loaded.")
+
+                                val themeColors = result.file.toThemeColors()
+                                coroutineScope.launch {
+                                    preferencesRepository.setThemeColors(themeColors)
+                                }.invokeOnCompletion {
+                                    viewModel.onEvent(
+                                        MainEvent.ThemeChange(themeColors)
+                                    )
+                                }
+                            }
+
+                            is LoadResult.Failure ->
+                                Timber.e("${LogTags.FILE_IO} ${result.message}")
+                        }
+                    }
+                },
+                enabled = enabled
+            )
+            Preference(
+                title = "Save theme", // TODO: add to strings.xml
+                titleColor = themeColors.textColor,
+                icon = painterResource(R.drawable.icon_outline_rounded_save_as),
+                iconColorFilter = ColorFilter.tint(themeColors.secondaryColor),
+                onClick = {
+                    fileRepository.saveFile(
+                        fileName = "theme.json",
+                        filetype = "application/json",
+                        file = ThemeFile.fromThemeColors(themeColors)
+                    ) { result ->
+                        when (result) {
+                            is SaveResult.Success ->
+                                Timber.i("${LogTags.FILE_IO} Theme saved.")
+
+                            is SaveResult.Failure ->
+                                Timber.e("${LogTags.FILE_IO} ${result.message}")
+                        }
+                    }
+                },
+                enabled = enabled
+            )
+        }
+        CategoryPreference(
+            title = stringResource(R.string.Settings_Header_CustomTheme),
             titleColor = themeColors.secondaryColor
         ) { enabled ->
             ColorPickerPreference(
@@ -759,7 +766,6 @@ private fun NotificationsSettingsScreen(
     }
     SubpreferenceScreen(
         title = stringResource(R.string.Settings_Header_Notifications),
-        titleColor = themeColors.textColor,
         iconTint = themeColors.textColor,
         onBackButtonClick = { navController.navigateUp() },
         modifier = Modifier.verticalScroll(rememberScrollState())
