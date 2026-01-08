@@ -6,6 +6,7 @@ import android.net.Uri
 import androidx.activity.ComponentActivity
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import com.sztorm.notecalendar.NotesBackupFile
 import com.sztorm.notecalendar.ThemeFile
 import java.io.BufferedReader
 import java.io.InputStreamReader
@@ -25,9 +26,22 @@ interface FileRepository {
         fileName: String, filetype: String, file: ThemeFile, onSaveResult: (SaveResult) -> Unit
     )
 
-    fun loadFile(filetype: String, onLoadResult: (LoadResult<ThemeFile>) -> Unit)
+    fun saveNotesBackupFile(
+        fileName: String,
+        filetype: String,
+        file: NotesBackupFile,
+        onSaveResult: (SaveResult) -> Unit
+    )
+
     fun loadThemeFile(filetype: String, onLoadResult: (LoadResult<ThemeFile>) -> Unit)
+
+    fun loadNotesBackupFile(
+        filetype: String,
+        onLoadResult: (LoadResult<NotesBackupFile>) -> Unit
+    )
 }
+
+private const val LOAD_FAILURE_JSON_FORMAT = "Could not load the file. Wrong JSON format."
 
 class FileRepositoryImpl(val activity: ComponentActivity) : FileRepository {
     private val createDocumentLauncher = activity.registerForActivityResult(
@@ -151,6 +165,13 @@ class FileRepositoryImpl(val activity: ComponentActivity) : FileRepository {
         fileName: String, filetype: String, file: ThemeFile, onSaveResult: (SaveResult) -> Unit
     ) = saveFileImpl(fileName, filetype, file.toJson().toByteArray(), onSaveResult)
 
+    override fun saveNotesBackupFile(
+        fileName: String,
+        filetype: String,
+        file: NotesBackupFile,
+        onSaveResult: (SaveResult) -> Unit
+    ) = saveFileImpl(fileName, filetype, file.toJson().toByteArray(), onSaveResult)
+
     override fun loadThemeFile(filetype: String, onLoadResult: (LoadResult<ThemeFile>) -> Unit) =
         loadFileImpl(filetype) { result ->
             when (result) {
@@ -166,5 +187,21 @@ class FileRepositoryImpl(val activity: ComponentActivity) : FileRepository {
             }
         }
 
+    override fun loadNotesBackupFile(
+        filetype: String,
+        onLoadResult: (LoadResult<NotesBackupFile>) -> Unit
+    ) = loadFileImpl(filetype) { result ->
+        when (result) {
+            is LoadResult.Success<String> -> {
+                when (val file = NotesBackupFile.fromJson(result.file)) {
+                    null ->
+                        onLoadResult(LoadResult.Failure(message = LOAD_FAILURE_JSON_FORMAT))
+
+                    else -> onLoadResult(LoadResult.Success(file))
+                }
+            }
+
+            is LoadResult.Failure -> onLoadResult(LoadResult.Failure(result.message))
+        }
     }
 }
