@@ -70,6 +70,7 @@ dependencies {
     implementation "androidx.compose.ui:ui-tooling"
     implementation "androidx.datastore:datastore-preferences:1.1.7"
     implementation "androidx.navigation:navigation-compose:2.9.5"
+    implementation 'com.lambdapioneer.argon2kt:argon2kt:1.6.0'
     implementation 'com.mikepenz:aboutlibraries-core:10.3.0'
     implementation 'com.mikepenz:aboutlibraries:10.3.0'
     implementation 'com.github.satyan:sugar:1.5'
