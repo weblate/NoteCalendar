@@ -465,7 +465,7 @@ private fun ThemeSettingsScreen(
                 icon = painterResource(R.drawable.icon_outline_rounded_folder_open),
                 iconColorFilter = ColorFilter.tint(themeColors.secondaryColor),
                 onClick = {
-                    fileRepository.loadFile(
+                    fileRepository.loadThemeFile(
                         filetype = "application/json"
                     ) { result ->
                         when (result) {
@@ -495,7 +495,7 @@ private fun ThemeSettingsScreen(
                 icon = painterResource(R.drawable.icon_outline_rounded_save_as),
                 iconColorFilter = ColorFilter.tint(themeColors.secondaryColor),
                 onClick = {
-                    fileRepository.saveFile(
+                    fileRepository.saveThemeFile(
                         fileName = "theme.json",
                         filetype = "application/json",
                         file = ThemeFile.fromThemeColors(themeColors)

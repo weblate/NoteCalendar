@@ -21,11 +21,12 @@ sealed class LoadResult<out T> {
 }
 
 interface FileRepository {
-    fun saveFile(
+    fun saveThemeFile(
         fileName: String, filetype: String, file: ThemeFile, onSaveResult: (SaveResult) -> Unit
     )
 
     fun loadFile(filetype: String, onLoadResult: (LoadResult<ThemeFile>) -> Unit)
+    fun loadThemeFile(filetype: String, onLoadResult: (LoadResult<ThemeFile>) -> Unit)
 }
 
 class FileRepositoryImpl(val activity: ComponentActivity) : FileRepository {
@@ -45,7 +46,7 @@ class FileRepositoryImpl(val activity: ComponentActivity) : FileRepository {
     private fun onCreateDocumentSuccess(
         fileUri: Uri, fileContent: ByteArray, onSaveResult: (SaveResult) -> Unit
     ) {
-        activity.contentResolver.openOutputStream(fileUri)?.use { outputStream ->
+        activity.contentResolver.openOutputStream(fileUri, "wt")?.use { outputStream ->
             outputStream.write(fileContent)
         }.let {
             when (it) {
@@ -122,10 +123,6 @@ class FileRepositoryImpl(val activity: ComponentActivity) : FileRepository {
         }
     }
 
-    override fun saveFile(
-        fileName: String, filetype: String, file: ThemeFile, onSaveResult: (SaveResult) -> Unit
-    ) = saveFileImpl(fileName, filetype, file.toJson().toByteArray(), onSaveResult)
-
     private fun saveFileImpl(
         fileName: String,
         filetype: String,
@@ -141,23 +138,6 @@ class FileRepositoryImpl(val activity: ComponentActivity) : FileRepository {
         createDocumentLauncher.launch(intent)
     }
 
-    override fun loadFile(filetype: String, onLoadResult: (LoadResult<ThemeFile>) -> Unit) {
-        loadFileImpl(filetype) { result ->
-            when (result) {
-                is LoadResult.Success<String> ->
-                    when (val file = ThemeFile.fromJson(result.file)) {
-                        null -> onLoadResult(
-                            LoadResult.Failure("Could not load the file. Wrong JSON format.")
-                        )
-
-                        else -> onLoadResult(LoadResult.Success(file))
-                    }
-
-                is LoadResult.Failure -> onLoadResult(LoadResult.Failure(result.message))
-            }
-        }
-    }
-
     private fun loadFileImpl(filetype: String, onLoadResult: (LoadResult<String>) -> Unit) {
         val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
             type = filetype
@@ -165,5 +145,26 @@ class FileRepositoryImpl(val activity: ComponentActivity) : FileRepository {
         }
         loadedFileCallbacksQueue.addFirst(onLoadResult)
         openDocumentLauncher.launch(intent)
+    }
+
+    override fun saveThemeFile(
+        fileName: String, filetype: String, file: ThemeFile, onSaveResult: (SaveResult) -> Unit
+    ) = saveFileImpl(fileName, filetype, file.toJson().toByteArray(), onSaveResult)
+
+    override fun loadThemeFile(filetype: String, onLoadResult: (LoadResult<ThemeFile>) -> Unit) =
+        loadFileImpl(filetype) { result ->
+            when (result) {
+                is LoadResult.Success<String> ->
+                    when (val file = ThemeFile.fromJson(result.file)) {
+                        null ->
+                            onLoadResult(LoadResult.Failure(message = LOAD_FAILURE_JSON_FORMAT))
+
+                        else -> onLoadResult(LoadResult.Success(file))
+                    }
+
+                is LoadResult.Failure -> onLoadResult(LoadResult.Failure(result.message))
+            }
+        }
+
     }
 }
