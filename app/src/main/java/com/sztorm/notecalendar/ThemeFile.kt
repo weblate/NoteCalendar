@@ -9,7 +9,7 @@ sealed class ThemeFile(val version: String) {
     abstract fun toThemeColors(): ThemeColors
     abstract fun toJson(): String
 
-    data class V10(
+    data class V1(
         val primaryColor: Color,
         val secondaryColor: Color,
         val inactiveElementColor: Color,
@@ -62,7 +62,7 @@ sealed class ThemeFile(val version: String) {
     }
 
     companion object {
-        fun fromThemeColors(themeColors: ThemeColors) = V10(
+        fun fromThemeColors(themeColors: ThemeColors) = V1(
             primaryColor = themeColors.primaryColor,
             secondaryColor = themeColors.secondaryColor,
             inactiveElementColor = themeColors.inactiveElementColor,
@@ -122,7 +122,7 @@ sealed class ThemeFile(val version: String) {
                         noteTextColor != null &&
                         backgroundColor != null &&
                         backgroundColorVariant != null
-                    ) V10(
+                    ) V1(
                         primaryColor = primaryColor,
                         secondaryColor = secondaryColor,
                         inactiveElementColor = inactiveElementColor,
