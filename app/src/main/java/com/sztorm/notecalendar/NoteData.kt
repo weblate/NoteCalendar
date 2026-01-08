@@ -6,4 +6,6 @@ import com.orm.dsl.Unique
 data class NoteData(
     @Unique val date: String = "",
     val text: String = ""
-) : SugarRecord()
+) : SugarRecord() {
+    fun toNote() = Note(date, text)
+}

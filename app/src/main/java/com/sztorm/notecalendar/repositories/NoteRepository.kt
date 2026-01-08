@@ -1,5 +1,3 @@
-@file:Suppress("unused")
-
 package com.sztorm.notecalendar.repositories
 
 import com.orm.SugarRecord
@@ -12,6 +10,7 @@ import java.time.YearMonth
 
 interface NoteRepository {
     fun add(note: NoteData)
+    fun addAll(notes: List<NoteData>)
     fun update(note: NoteData)
     fun delete(note: NoteData)
     fun deleteAll(): Int
@@ -26,6 +25,10 @@ interface NoteRepository {
 object NoteRepositoryImpl : NoteRepository {
     override fun add(note: NoteData) {
         note.save()
+    }
+
+    override fun addAll(notes: List<NoteData>) = notes.forEach {
+        it.save()
     }
 
     override fun update(note: NoteData) {

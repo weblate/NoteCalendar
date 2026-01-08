@@ -50,9 +50,11 @@ import com.sztorm.notecalendar.ui.getDefaultThemeColors
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import java.time.DayOfWeek
+import java.time.LocalDate
 import java.time.LocalTime
 import java.time.temporal.WeekFields
 import java.util.Locale
+import javax.crypto.spec.IvParameterSpec
 
 @Composable
 fun SettingsScreen(
@@ -101,6 +103,7 @@ fun SettingsScreen(
                 viewModel = viewModel,
                 noteRepository = noteRepository,
                 notificationManager = notificationManager,
+                fileRepository = fileRepository,
                 navController = navController
             )
         }
@@ -243,6 +246,7 @@ private fun RootSettingsScreen(viewModel: MainViewModel, navController: NavContr
 private fun NotesSettingsScreen(
     viewModel: MainViewModel,
     noteRepository: NoteRepository,
+    fileRepository: FileRepository,
     notificationManager: AppNotificationManager,
     navController: NavController
 ) {
@@ -274,21 +278,79 @@ private fun NotesSettingsScreen(
             )
         )
         Preference(
-            title = "Load notes backup", // TODO: add to strings.xml
+            title = "Import notes backup", // TODO: add to strings.xml
             titleColor = themeColors.textColor,
             icon = painterResource(R.drawable.icon_outline_rounded_folder_open),
             iconColorFilter = ColorFilter.tint(themeColors.secondaryColor),
             onClick = {
-                // TODO
+                fileRepository.loadNotesBackupFile(filetype = "application/json") { result ->
+                    when (result) {
+                        is LoadResult.Success -> {
+                            Timber.i("${LogTags.FILE_IO} Notes backup imported.")
+
+                            when (result.file) {
+                                is NotesBackupFile.V1.Plain -> {
+                                    val notes = result.file.notes.map { it.toNoteData() }
+
+                                    noteRepository.apply {
+                                        deleteAll()
+                                        addAll(notes)
+                                    }
+                                }
+
+                                is NotesBackupFile.V1.Aes256Encrypted -> {
+                                    val password = "temporary password"
+                                    val key = generateAes256Key(password, result.file.salt)
+
+                                    result.file.decrypted(key)?.let { plain ->
+                                        val notes = plain.notes.map { it.toNoteData() }
+
+                                        noteRepository.apply {
+                                            deleteAll()
+                                            addAll(notes)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        is LoadResult.Failure ->
+                            Timber.e("${LogTags.FILE_IO} ${result.message}")
+                    }
+                }
             }
         )
         Preference(
-            title = "Save notes backup", // TODO: add to strings.xml
+            title = "Export notes backup", // TODO: add to strings.xml
             titleColor = themeColors.textColor,
             icon = painterResource(R.drawable.icon_outline_rounded_save_as),
             iconColorFilter = ColorFilter.tint(themeColors.secondaryColor),
             onClick = {
-                // TODO
+                val salt = randomByteArray(32)
+                val iv = IvParameterSpec(randomByteArray(16))
+                val password = "temporary password"
+
+                fileRepository.saveNotesBackupFile(
+                    fileName = "notesBackup_${LocalDate.now()}.json",
+                    filetype = "application/json",
+                    file = NotesBackupFile.V1.Plain(
+                        notes = noteRepository.getAll().map { it.toNote() }
+                    ).encrypted(
+                        EncryptionParameters.Aes(
+                            salt = salt,
+                            iv = iv,
+                            key = generateAes256Key(password, salt)
+                        )
+                    )
+                ) { result ->
+                    when (result) {
+                        is SaveResult.Success ->
+                            Timber.i("${LogTags.FILE_IO} Notes backup exported.")
+
+                        is SaveResult.Failure ->
+                            Timber.e("${LogTags.FILE_IO} ${result.message}")
+                    }
+                }
             }
         )
     }
