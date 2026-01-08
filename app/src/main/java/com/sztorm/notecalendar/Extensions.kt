@@ -23,6 +23,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.core.graphics.ColorUtils
 import com.sztorm.mathkit.ColorRGBA32
 import com.sztorm.mathkit.Vector2F
+import org.json.JSONArray
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.Month
@@ -375,3 +376,5 @@ fun ClipData.itemsSequence() = sequence {
 fun Path.moveTo(position: Vector2F) = moveTo(position.x, position.y)
 
 fun Path.lineTo(position: Vector2F) = lineTo(position.x, position.y)
+
+fun JSONArray.toList() = List(length()) { get(it) }
