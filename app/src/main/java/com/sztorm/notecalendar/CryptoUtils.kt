@@ -10,9 +10,9 @@ import javax.crypto.SecretKey
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
 
-enum class EncryptionType {
-    None,
-    Aes256
+enum class EncryptionType(val label: String) {
+    None("None"),
+    Aes256("AES 256")
 }
 
 sealed class EncryptionParameters {
