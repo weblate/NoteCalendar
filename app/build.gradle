@@ -74,6 +74,7 @@ dependencies {
     implementation 'com.lambdapioneer.argon2kt:argon2kt:1.6.0'
     implementation 'com.mikepenz:aboutlibraries-core:10.3.0'
     implementation 'com.mikepenz:aboutlibraries:10.3.0'
+    implementation 'com.nulab-inc:zxcvbn:1.9.0'
     implementation 'com.github.satyan:sugar:1.5'
     implementation 'com.github.Sztorm.MathKit:MathKit:2.0.0'
     implementation 'com.jakewharton.timber:timber:5.0.1'
