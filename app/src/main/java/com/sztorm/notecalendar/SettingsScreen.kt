@@ -25,6 +25,12 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.mikepenz.aboutlibraries.LibsBuilder
+import com.sztorm.notecalendar.components.ExportNoteBackupPreference
+import com.sztorm.notecalendar.components.ExportNoteBackupPreferenceDefaults
+import com.sztorm.notecalendar.components.ExportNoteBackupPreferenceTexts
+import com.sztorm.notecalendar.components.ImportNoteBackupPreference
+import com.sztorm.notecalendar.components.ImportNoteBackupPreferenceDefaults
+import com.sztorm.notecalendar.components.ImportNoteBackupPreferenceTexts
 import com.sztorm.notecalendar.components.colorpicker.ColorPickerDefaults
 import com.sztorm.notecalendar.components.colorpicker.ColorPickerProperties
 import com.sztorm.notecalendar.components.colorpicker.ColorPickerTab
@@ -50,11 +56,9 @@ import com.sztorm.notecalendar.ui.getDefaultThemeColors
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import java.time.DayOfWeek
-import java.time.LocalDate
 import java.time.LocalTime
 import java.time.temporal.WeekFields
 import java.util.Locale
-import javax.crypto.spec.IvParameterSpec
 
 @Composable
 fun SettingsScreen(
@@ -251,7 +255,10 @@ private fun NotesSettingsScreen(
     navController: NavController
 ) {
     val themeColors = viewModel.state.themeColors
-
+    val dialogColors = CardDefaults.cardColors().copy(
+        containerColor = themeColors.backgroundColor,
+        contentColor = themeColors.backgroundColor,
+    )
     SubpreferenceScreen(
         title = stringResource(R.string.Settings_Header_Notes),
         iconTint = themeColors.textColor,
@@ -272,86 +279,45 @@ private fun NotesSettingsScreen(
             dialogTitleColor = themeColors.textColor,
             dialogMessageColor = themeColors.textColor,
             dialogButtonColor = themeColors.primaryColor,
-            dialogColors = CardDefaults.cardColors().copy(
-                containerColor = themeColors.backgroundColor,
-                contentColor = themeColors.backgroundColor,
-            )
+            dialogColors = dialogColors
         )
-        Preference(
-            title = "Import notes backup", // TODO: add to strings.xml
-            titleColor = themeColors.textColor,
-            icon = painterResource(R.drawable.icon_outline_rounded_folder_open),
-            iconColorFilter = ColorFilter.tint(themeColors.secondaryColor),
-            onClick = {
-                fileRepository.loadNotesBackupFile(filetype = "application/json") { result ->
-                    when (result) {
-                        is LoadResult.Success -> {
-                            Timber.i("${LogTags.FILE_IO} Notes backup imported.")
-
-                            when (result.file) {
-                                is NotesBackupFile.V1.Plain -> {
-                                    val notes = result.file.notes.map { it.toNoteData() }
-
-                                    noteRepository.apply {
-                                        deleteAll()
-                                        addAll(notes)
-                                    }
-                                }
-
-                                is NotesBackupFile.V1.Aes256Encrypted -> {
-                                    val password = "temporary password"
-                                    val key = generateAes256Key(password, result.file.salt)
-
-                                    result.file.decrypted(key)?.let { plain ->
-                                        val notes = plain.notes.map { it.toNoteData() }
-
-                                        noteRepository.apply {
-                                            deleteAll()
-                                            addAll(notes)
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        is LoadResult.Failure ->
-                            Timber.e("${LogTags.FILE_IO} ${result.message}")
-                    }
-                }
-            }
-        )
-        Preference(
-            title = "Export notes backup", // TODO: add to strings.xml
-            titleColor = themeColors.textColor,
-            icon = painterResource(R.drawable.icon_outline_rounded_save_as),
-            iconColorFilter = ColorFilter.tint(themeColors.secondaryColor),
-            onClick = {
-                val salt = randomByteArray(32)
-                val iv = IvParameterSpec(randomByteArray(16))
-                val password = "temporary password"
-
-                fileRepository.saveNotesBackupFile(
-                    fileName = "notesBackup_${LocalDate.now()}.json",
-                    filetype = "application/json",
-                    file = NotesBackupFile.V1.Plain(
-                        notes = noteRepository.getAll().map { it.toNote() }
-                    ).encrypted(
-                        EncryptionParameters.Aes(
-                            salt = salt,
-                            iv = iv,
-                            key = generateAes256Key(password, salt)
-                        )
+        ImportNoteBackupPreference(
+            fileRepository = fileRepository,
+            noteRepository = noteRepository,
+            texts = ImportNoteBackupPreferenceTexts.english(), // TODO: add to strings.xml
+            colors = ImportNoteBackupPreferenceDefaults.colors().let {
+                it.copy(
+                    titleColor = themeColors.textColor,
+                    iconColorFilter = ColorFilter.tint(themeColors.secondaryColor),
+                    dialogColors = it.dialogColors.copy(
+                        titleColor = themeColors.textColor,
+                        textContentColor = themeColors.textColor,
+                        textButtonColor = themeColors.primaryColor,
+                        cardColors = dialogColors
                     )
-                ) { result ->
-                    when (result) {
-                        is SaveResult.Success ->
-                            Timber.i("${LogTags.FILE_IO} Notes backup exported.")
-
-                        is SaveResult.Failure ->
-                            Timber.e("${LogTags.FILE_IO} ${result.message}")
-                    }
-                }
-            }
+                )
+            },
+            icon = painterResource(R.drawable.icon_outline_rounded_folder_open),
+            dialogModifier = Modifier.verticalScroll(rememberScrollState()),
+        )
+        ExportNoteBackupPreference(
+            fileRepository = fileRepository,
+            noteRepository = noteRepository,
+            texts = ExportNoteBackupPreferenceTexts.english(), // TODO: add to strings.xml
+            colors = ExportNoteBackupPreferenceDefaults.colors().let {
+                it.copy(
+                    titleColor = themeColors.textColor,
+                    iconColorFilter = ColorFilter.tint(themeColors.secondaryColor),
+                    dialogColors = it.dialogColors.copy(
+                        titleColor = themeColors.textColor,
+                        textContentColor = themeColors.textColor,
+                        textButtonColor = themeColors.primaryColor,
+                        cardColors = dialogColors
+                    )
+                )
+            },
+            icon = painterResource(R.drawable.icon_outline_rounded_save_as),
+            dialogModifier = Modifier.verticalScroll(rememberScrollState()),
         )
     }
 }
