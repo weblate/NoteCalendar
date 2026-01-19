@@ -57,7 +57,8 @@ object ExportNoteBackupPreferenceDefaults {
                     iconColorFilter = null,
                     dialogColors = ExportNoteBackupPreferenceDialogColors(
                         titleColor = MaterialTheme.colorScheme.onBackground,
-                        buttonColor = MaterialTheme.colorScheme.primary,
+                        textContentColor = MaterialTheme.colorScheme.onBackground,
+                        textButtonColor = MaterialTheme.colorScheme.primary,
                         cardColors = CardDefaults.cardColors()
                     )
                 )
@@ -126,14 +127,20 @@ fun ExportNoteBackupPreference(
                 }
             }
             passwordTextState.clearText()
+            // Without it Compose will not update the UI.
+            @Suppress("AssignedValueIsNeverRead")
+            exportEncryptionType = EncryptionType.None
         },
         onDismiss = {
             passwordTextState.clearText()
+            // Without it Compose will not update the UI.
+            @Suppress("AssignedValueIsNeverRead")
+            exportEncryptionType = EncryptionType.None
         },
         modifier = modifier,
         dialogModifier = dialogModifier,
         dialogTitleColor = colors.dialogColors.titleColor,
-        dialogButtonColor = colors.dialogColors.buttonColor,
+        dialogButtonColor = colors.dialogColors.textButtonColor,
         dialogColors = colors.dialogColors.cardColors,
         enabled = enabled
     ) {
@@ -158,7 +165,7 @@ fun ExportNoteBackupPreference(
             )
             Text(
                 text = texts.dialogTexts.encryptData,
-                color = colors.dialogColors.titleColor
+                color = colors.dialogColors.textContentColor
             )
         }
         if (exportEncryptionType != EncryptionType.None) {
@@ -167,7 +174,7 @@ fun ExportNoteBackupPreference(
                     Text(
                         text = texts.dialogTexts.encryptionAlgorithm,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = colors.dialogColors.titleColor,
+                        color = colors.dialogColors.textContentColor,
                         modifier = Modifier.padding(vertical = 8.dp)
                     )
                     ExposedDropdownMenuBox(
@@ -219,7 +226,7 @@ fun ExportNoteBackupPreference(
                     Text(
                         text = texts.dialogTexts.password,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = colors.dialogColors.titleColor,
+                        color = colors.dialogColors.textContentColor,
                         modifier = Modifier.padding(vertical = 8.dp)
                     )
                     OutlinedSecureTextField(
