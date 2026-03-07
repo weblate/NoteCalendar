@@ -1,12 +1,24 @@
 package com.sztorm.notecalendar
 
+import android.content.ClipData
 import androidx.compose.animation.AnimatedContentTransitionScope.SlideDirection
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButtonDefaults.outlinedIconButtonColors
+import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedIconButton
+import androidx.compose.material3.Text
 import androidx.compose.material3.TimePickerDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -15,11 +27,27 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.ClipEntry
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.text.LinkAnnotation
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLinkStyles
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withLink
+import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -177,15 +205,33 @@ fun SettingsScreen(
                 navController = navController
             )
         }
+        composable(
+            route = Screen.Settings.About.route,
+            enterTransition = {
+                slideIntoContainer(
+                    towards = SlideDirection.Left,
+                    animationSpec = tween(300)
+                )
+            },
+            exitTransition = {
+                slideOutOfContainer(
+                    towards = SlideDirection.Right,
+                    animationSpec = tween(300)
+                )
+            }
+        ) {
+            AboutSettingsScreen(
+                viewModel = viewModel,
+                navController = navController
+            )
+        }
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun RootSettingsScreen(viewModel: MainViewModel, navController: NavController) {
-    val context = LocalContext.current
     val themeColors = viewModel.state.themeColors
-    val licensesTitle = stringResource(R.string.Settings_Licenses)
 
     PreferenceScreen(
         title = "Settings", // TODO: add to strings.xml
@@ -220,28 +266,11 @@ private fun RootSettingsScreen(viewModel: MainViewModel, navController: NavContr
             onClick = { navController.navigate(Screen.Settings.Notifications.route) }
         )
         Preference(
-            title = licensesTitle,
-            titleColor = themeColors.textColor,
-            icon = painterResource(R.drawable.icon_outline_rounded_license),
-            iconColorFilter = ColorFilter.tint(themeColors.secondaryColor),
-            onClick = {
-                context.startActivity(
-                    LibsBuilder()
-                        .withActivityTitle(licensesTitle)
-                        .withEdgeToEdge(true)
-                        .withSearchEnabled(true)
-                        .intent(context)
-                )
-            }
-        )
-        Preference(
             title = "About", // TODO: add to strings.xml
             titleColor = themeColors.textColor,
             icon = painterResource(R.drawable.icon_outline_rounded_info),
             iconColorFilter = ColorFilter.tint(themeColors.secondaryColor),
-            onClick = {
-                // TODO
-            }
+            onClick = { navController.navigate(Screen.Settings.About.route) }
         )
     }
 }
@@ -854,5 +883,272 @@ private fun NotificationsSettingsScreen(
             ),
             enabled = turnOnNotifications,
         )
+    }
+}
+
+@Composable
+private fun AboutLink(
+    text: String,
+    url: String,
+    modifier: Modifier = Modifier,
+    style: TextStyle = LocalTextStyle.current,
+    fontSize: TextUnit = 16.sp,
+    color: Color = MaterialTheme.colorScheme.secondary
+) = Text(
+    text = buildAnnotatedString {
+        withLink(
+            LinkAnnotation.Url(
+                url = url,
+                styles = TextLinkStyles(
+                    style = SpanStyle(
+                        color = color,
+                        textDecoration = TextDecoration.Underline
+                    )
+                )
+            )
+        ) {
+            append(text)
+        }
+    },
+    style = style,
+    fontSize = fontSize,
+    modifier = modifier
+)
+
+@Composable
+private fun AboutCopyButton(
+    iconColor: Color,
+    borderColor: Color,
+    pressedBackgroundColor: Color,
+    onClick: () -> Unit
+) = OutlinedIconButton(
+    onClick = onClick,
+    border = BorderStroke(width = 1.dp, color = borderColor),
+    colors = outlinedIconButtonColors(
+        contentColor = pressedBackgroundColor,
+    ),
+    modifier = Modifier
+        .padding(end = 8.dp)
+        .size(24.dp)
+) {
+    Icon(
+        imageVector = ImageVector
+            .vectorResource(R.drawable.icon_outline_content_copy),
+        contentDescription = "copy",
+        tint = iconColor,
+        modifier = Modifier.size(16.dp)
+    )
+}
+
+@Composable
+private fun AboutSettingsScreen(
+    viewModel: MainViewModel,
+    navController: NavController
+) {
+    val themeColors = viewModel.state.themeColors
+    val context = LocalContext.current
+    val clipboardManager = LocalClipboard.current
+    val coroutineScope = rememberCoroutineScope()
+
+    SubpreferenceScreen(
+        title = "About", // TODO: add to strings.xml
+        iconTint = themeColors.textColor,
+        onBackButtonClick = { navController.navigateUp() }
+    ) {
+        CategoryPreference(
+            title = "Basic", // TODO: add to strings.xml
+            titleColor = themeColors.secondaryColor
+        ) {
+            Column(
+                modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp)
+            ) {
+                Row {
+                    Text(
+                        text = "Version", // TODO: add to strings.xml
+                        fontSize = 20.sp
+                    )
+                }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(top = 8.dp)
+                ) {
+                    AboutCopyButton(
+                        iconColor = themeColors.textColor,
+                        borderColor = themeColors.textColor,
+                        pressedBackgroundColor = themeColors.primaryColor,
+                    ) {
+                        coroutineScope.launch {
+                            clipboardManager.setClipEntry(
+                                ClipEntry(
+                                    ClipData.newPlainText(
+                                        "version", AppInfo.VERSION
+                                    )
+                                )
+                            )
+                        }
+                    }
+                    Text(
+                        text = AppInfo.VERSION,
+                        fontSize = 16.sp
+                    )
+                }
+            }
+            Column(
+                modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp)
+            ) {
+                Row {
+                    Text(
+                        text = "Contact", // TODO: add to strings.xml
+                        fontSize = 20.sp
+                    )
+                }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(top = 8.dp)
+                ) {
+                    AboutCopyButton(
+                        iconColor = themeColors.textColor,
+                        borderColor = themeColors.textColor,
+                        pressedBackgroundColor = themeColors.primaryColor,
+                    ) {
+                        coroutineScope.launch {
+                            clipboardManager.setClipEntry(
+                                ClipEntry(
+                                    ClipData.newPlainText(
+                                        "contact email", AppInfo.CONTACT_EMAIL
+                                    )
+                                )
+                            )
+                        }
+                    }
+                    Text(
+                        text = AppInfo.CONTACT_EMAIL,
+                        fontSize = 16.sp
+                    )
+                }
+            }
+            Column(
+                modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp)
+            ) {
+                Row {
+                    Text(
+                        text = "Source code", // TODO: add to strings.xml
+                        fontSize = 20.sp
+                    )
+                }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(top = 8.dp)
+                ) {
+                    AboutCopyButton(
+                        iconColor = themeColors.textColor,
+                        borderColor = themeColors.textColor,
+                        pressedBackgroundColor = themeColors.primaryColor,
+                    ) {
+                        coroutineScope.launch {
+                            clipboardManager.setClipEntry(
+                                ClipEntry(
+                                    ClipData.newPlainText(
+                                        "source code url", AppInfo.SOURCE_CODE_GITHUB_URL
+                                    )
+                                )
+                            )
+                        }
+                    }
+                    AboutLink(
+                        text = AppInfo.SOURCE_CODE_GITHUB,
+                        url = AppInfo.SOURCE_CODE_GITHUB_URL
+                    )
+                }
+            }
+            Column(
+                modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp)
+            ) {
+                Row {
+                    Text(
+                        text = "License", // TODO: add to strings.xml
+                        fontSize = 20.sp
+                    )
+                }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(top = 8.dp)
+                ) {
+                    AboutCopyButton(
+                        iconColor = themeColors.textColor,
+                        borderColor = themeColors.textColor,
+                        pressedBackgroundColor = themeColors.primaryColor,
+                    ) {
+                        coroutineScope.launch {
+                            clipboardManager.setClipEntry(
+                                ClipEntry(
+                                    ClipData.newPlainText(
+                                        "license url", AppInfo.LICENSE_URL
+                                    )
+                                )
+                            )
+                        }
+                    }
+                    AboutLink(
+                        text = AppInfo.LICENSE,
+                        url = AppInfo.LICENSE_URL
+                    )
+                }
+            }
+            Column(
+                modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp)
+            ) {
+                Row {
+                    Text(
+                        text = "Privacy policy", // TODO: add to strings.xml
+                        fontSize = 20.sp
+                    )
+                }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(top = 8.dp)
+                ) {
+                    AboutCopyButton(
+                        iconColor = themeColors.textColor,
+                        borderColor = themeColors.textColor,
+                        pressedBackgroundColor = themeColors.primaryColor,
+                    ) {
+                        coroutineScope.launch {
+                            clipboardManager.setClipEntry(
+                                ClipEntry(
+                                    ClipData.newPlainText(
+                                        "privacy policy url", AppInfo.PRIVACY_POLICY_URL
+                                    )
+                                )
+                            )
+                        }
+                    }
+                    AboutLink(
+                        text = AppInfo.SOURCE_CODE_GITHUB,
+                        url = AppInfo.PRIVACY_POLICY_URL
+                    )
+                }
+            }
+        }
+        CategoryPreference(
+            title = "Advanced", // TODO: add to strings.xml
+            titleColor = themeColors.secondaryColor
+        ) {
+            Preference(
+                title = "Library licenses", // TODO: add to strings.xml
+                titleColor = themeColors.textColor,
+                icon = painterResource(R.drawable.icon_outline_rounded_license),
+                iconColorFilter = ColorFilter.tint(themeColors.secondaryColor),
+                onClick = {
+                    context.startActivity(
+                        LibsBuilder()
+                            .withActivityTitle("Library licenses") // TODO: add to strings.xml
+                            .withEdgeToEdge(true)
+                            .withSearchEnabled(true)
+                            .intent(context)
+                    )
+                }
+            )
+        }
     }
 }
