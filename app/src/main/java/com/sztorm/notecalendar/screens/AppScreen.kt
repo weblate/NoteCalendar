@@ -1,0 +1,183 @@
+package com.sztorm.notecalendar.screens
+
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.PrimaryTabRow
+import androidx.compose.material3.Tab
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.navigation.NavController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
+import com.sztorm.notecalendar.LogTags
+import com.sztorm.notecalendar.MainActivity
+import com.sztorm.notecalendar.MainViewModel
+import com.sztorm.notecalendar.R
+import com.sztorm.notecalendar.ScheduleNoteNotificationArguments
+import com.sztorm.notecalendar.StartingScreenType
+import com.sztorm.notecalendar.repositories.FileRepository
+import com.sztorm.notecalendar.repositories.NoteRepository
+import com.sztorm.notecalendar.repositories.UserPreferencesRepository
+import timber.log.Timber
+
+private data class MainTab(
+    val screen: Screen,
+    val icon: ImageVector,
+    val description: String,
+)
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AppScreen(
+    viewModel: MainViewModel,
+    startingView: StartingScreenType,
+    mainActivity: MainActivity,
+    noteRepository: NoteRepository,
+    fileRepository: FileRepository,
+    preferencesRepository: UserPreferencesRepository
+) {
+    val navController = rememberNavController()
+    var selectedTabIndex by rememberSaveable {
+        mutableIntStateOf(
+            when (startingView) {
+                StartingScreenType.DayScreen -> 2
+                StartingScreenType.WeekScreen -> 1
+                StartingScreenType.MonthScreen -> 0
+            }
+        )
+    }
+    LaunchedEffect(Unit) {
+        if (mainActivity.notificationManager.tryScheduleNotification(
+                args = ScheduleNoteNotificationArguments(),
+                noteRepository = noteRepository
+            )
+        ) {
+            Timber.i(
+                "${LogTags.NOTIFICATIONS} Scheduled notification upon MainActivity creation"
+            )
+        }
+    }
+    DisposableEffect(Unit) {
+        val listener = NavController.OnDestinationChangedListener { _, destination, _ ->
+            selectedTabIndex = when (destination.route) {
+                Screen.Month.route -> 0
+                Screen.Week.route -> 1
+                Screen.Day().route -> 2
+                Screen.Settings.route -> 3
+                else -> selectedTabIndex
+            }
+        }
+        navController.addOnDestinationChangedListener(listener)
+        onDispose {
+            navController.removeOnDestinationChangedListener(listener)
+        }
+    }
+    Column(
+        modifier = Modifier
+            .windowInsetsPadding(WindowInsets.safeDrawing)
+            .fillMaxWidth()
+    ) {
+        val tabs = listOf(
+            MainTab(
+                screen = Screen.Month,
+                icon = ImageVector.vectorResource(R.drawable.icon_calendar_month),
+                description = "Month" // TODO: Add to strings.xml
+            ),
+            MainTab(
+                screen = Screen.Week,
+                icon = ImageVector.vectorResource(R.drawable.icon_calendar_week),
+                description = "Week" // TODO: Add to strings.xml
+            ),
+            MainTab(
+                screen = Screen.Day(),
+                icon = ImageVector.vectorResource(R.drawable.icon_calendar_day),
+                description = "Day" // TODO: Add to strings.xml
+            ),
+            MainTab(
+                screen = Screen.Settings,
+                icon = ImageVector.vectorResource(R.drawable.icon_settings),
+                description = "Settings" // TODO: Add to strings.xml
+            )
+        )
+        PrimaryTabRow(selectedTabIndex = selectedTabIndex) {
+            tabs.forEachIndexed { i, tab ->
+                Tab(
+                    selected = selectedTabIndex == i,
+                    onClick = {
+                        navController.navigate(tab.screen)
+                        selectedTabIndex = i
+                    },
+                    text = {
+                        Text(
+                            text = tab.description,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    },
+                    icon = {
+                        Icon(
+                            imageVector = tab.icon,
+                            contentDescription = tab.description,
+                        )
+                    }
+                )
+            }
+        }
+        NavHost(
+            navController = navController,
+            startDestination = when (startingView) {
+                StartingScreenType.DayScreen -> Screen.Day()
+                StartingScreenType.WeekScreen -> Screen.Week
+                StartingScreenType.MonthScreen -> Screen.Month
+            },
+            enterTransition = {
+                slideInHorizontally(animationSpec = tween(durationMillis = 400)) { -it }
+            },
+            exitTransition = {
+                fadeOut(animationSpec = tween(durationMillis = 400)) +
+                    slideOutVertically(animationSpec = tween(durationMillis = 400)) { it }
+            }
+        ) {
+            composable<Screen.Month> {
+                MonthScreen(viewModel, navController, noteRepository, preferencesRepository)
+            }
+            composable<Screen.Week> {
+                WeekScreen(viewModel, navController, noteRepository, preferencesRepository)
+            }
+            composable<Screen.Day> {
+                val day = it.toRoute<Screen.Day>()
+
+                DayScreen(viewModel, mainActivity, noteRepository, day.isCreateOrEditRequested)
+            }
+            composable<Screen.Settings> {
+                SettingsScreen(
+                    viewModel = viewModel,
+                    fileRepository = fileRepository,
+                    noteRepository = noteRepository,
+                    preferencesRepository = preferencesRepository,
+                    notificationManager = mainActivity.notificationManager
+                )
+            }
+        }
+    }
+}

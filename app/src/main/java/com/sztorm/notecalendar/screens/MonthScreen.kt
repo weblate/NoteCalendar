@@ -1,4 +1,4 @@
-package com.sztorm.notecalendar
+package com.sztorm.notecalendar.screens
 
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
@@ -24,11 +24,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.sztorm.notecalendar.MainEvent
+import com.sztorm.notecalendar.MainViewModel
+import com.sztorm.notecalendar.MonthNotesCache
 import com.sztorm.notecalendar.components.DayOfWeekBar
 import com.sztorm.notecalendar.components.InfiniteHorizontalPager
 import com.sztorm.notecalendar.components.MonthPage
+import com.sztorm.notecalendar.getLocalizedName
+import com.sztorm.notecalendar.getLocalizedShortName
 import com.sztorm.notecalendar.repositories.NoteRepository
 import com.sztorm.notecalendar.repositories.UserPreferencesRepository
+import com.sztorm.notecalendar.yearMonth
 import java.time.LocalDate
 import java.time.temporal.WeekFields
 import java.util.Locale

@@ -1,4 +1,4 @@
-package com.sztorm.notecalendar
+package com.sztorm.notecalendar.screens
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.EnterTransition
@@ -54,9 +54,18 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.lifecycleScope
+import com.sztorm.notecalendar.LogTags
+import com.sztorm.notecalendar.MainActivity
+import com.sztorm.notecalendar.MainEvent
+import com.sztorm.notecalendar.MainViewModel
+import com.sztorm.notecalendar.NoteData
+import com.sztorm.notecalendar.R
+import com.sztorm.notecalendar.ScheduleNoteNotificationArguments
 import com.sztorm.notecalendar.components.DayNote
 import com.sztorm.notecalendar.components.ThemedButton
 import com.sztorm.notecalendar.components.ThemedIconButton
+import com.sztorm.notecalendar.getLocalizedGenitiveCaseName
+import com.sztorm.notecalendar.getLocalizedName
 import com.sztorm.notecalendar.repositories.NoteRepository
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -242,25 +251,25 @@ fun DayPageLayout(
                                 animationSpec = tween(durationMillis = 500),
                                 initialOffsetX = { -it }
                             ) togetherWith
-                            fadeOut(animationSpec = tween(durationMillis = 400)) +
-                            slideOutVertically(
-                                animationSpec = tween(durationMillis = 500),
-                                targetOffsetY = { (it * 0.1f).toInt() }
-                            )
+                                fadeOut(animationSpec = tween(durationMillis = 400)) +
+                                slideOutVertically(
+                                    animationSpec = tween(durationMillis = 500),
+                                    targetOffsetY = { (it * 0.1f).toInt() }
+                                )
                         }
 
                         DayNoteTransitionState.Adding -> {
                             fadeIn(animationSpec = tween(durationMillis = 400)) togetherWith
-                            ExitTransition.None
+                                ExitTransition.None
                         }
 
                         else -> {
                             EnterTransition.None togetherWith
-                            fadeOut(animationSpec = tween(durationMillis = 400)) +
-                            slideOutVertically(
-                                animationSpec = tween(durationMillis = 500),
-                                targetOffsetY = { it }
-                            )
+                                fadeOut(animationSpec = tween(durationMillis = 400)) +
+                                slideOutVertically(
+                                    animationSpec = tween(durationMillis = 500),
+                                    targetOffsetY = { it }
+                                )
                         }
                     }
                 },

@@ -18,5 +18,5 @@ object PreferenceKeys {
     val TurnOnNotifications = booleanPreferencesKey("PrefKey_EnableNotifications")
     val FirstDayOfWeek = stringPreferencesKey("PrefKey_FirstDayOfWeek")
     val NotificationTime = intPreferencesKey("PrefKey_NotificationTime")
-    val StartingView = stringPreferencesKey("PrefKey_StartingView")
+    val StartingScreen = stringPreferencesKey("PrefKey_StartingScreen")
 }

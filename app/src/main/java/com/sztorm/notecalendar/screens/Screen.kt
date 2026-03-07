@@ -1,4 +1,4 @@
-package com.sztorm.notecalendar
+package com.sztorm.notecalendar.screens
 
 import kotlinx.serialization.Serializable
 

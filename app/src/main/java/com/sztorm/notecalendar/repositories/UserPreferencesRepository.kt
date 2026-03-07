@@ -11,7 +11,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.preferencesDataStore
 import com.sztorm.notecalendar.PreferenceKeys
-import com.sztorm.notecalendar.StartingViewType
+import com.sztorm.notecalendar.StartingScreenType
 import com.sztorm.notecalendar.ThemeColors
 import com.sztorm.notecalendar.isDarkThemeEnabled
 import com.sztorm.notecalendar.ui.getDefaultThemeColors
@@ -131,10 +131,10 @@ class UserPreferencesRepository(context: Context) {
         default: LocalTime = LocalTime.of(8, 0)
     ): LocalTime = getPreference(PreferenceKeys.NotificationTime, default.asInt()).asLocalTime()
 
-    suspend fun getStartingView(
-        default: StartingViewType = StartingViewType.DAY_VIEW
-    ): StartingViewType = getPreference(PreferenceKeys.StartingView, default.ordinal.toString())
-        .let { StartingViewType.entries[it.toInt()] }
+    suspend fun getStartingScreen(
+        default: StartingScreenType = StartingScreenType.DayScreen
+    ): StartingScreenType = getPreference(PreferenceKeys.StartingScreen, default.ordinal.toString())
+        .let { StartingScreenType.entries[it.toInt()] }
 
     suspend fun setBackgroundColor(value: Color) {
         context.preferences.edit {
@@ -228,9 +228,9 @@ class UserPreferencesRepository(context: Context) {
         }
     }
 
-    suspend fun setStartingView(value: StartingViewType) {
+    suspend fun setStartingScreen(value: StartingScreenType) {
         context.preferences.edit {
-            it[PreferenceKeys.StartingView] = value.ordinal.toString()
+            it[PreferenceKeys.StartingScreen] = value.ordinal.toString()
         }
     }
 }

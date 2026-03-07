@@ -23,11 +23,10 @@ That will also allow me to add more features soon, but now the goal is to migrat
 without too much meddling with the current app design.
 
 ### Current Progress:
- * Day view - 90% complete
- * Week view - 80% complete
- * Month view - 90% complete
- * Settings views - 70% complete
- * Activity view - 70% complete
+ * Day screen - 90% complete
+ * Week screen - 80% complete
+ * Month screen - 90% complete
+ * Settings screen - 90% complete
 
 ## Screenshots
 
@@ -39,15 +38,15 @@ without too much meddling with the current app design.
 
 ## Features
 
-* Day view
-  * This view is used to add, edit or delete note
-* Week view
-* Month view
+* Day screen
+  * This screen is used to add, edit or delete note
+* Week screen
+* Month screen
   * Days that constains a note are marked with a ring
   * Day that is currently selected is marked with a solid circle
   * Today's day is marked with a different color of text
   * Long press on a day's number allow to quickly add or edit note for that day
-* Settings view
+* Settings screen
   * Theming
     * Setting custom theme which includes 10 modifiable colors
     * Setting light theme
@@ -57,7 +56,7 @@ without too much meddling with the current app design.
   * Notifications
     * When turned on, a notification will appear at notification time
   * Setting first day of week
-  * Setting starting view
+  * Setting starting screen
 
 ## Translations
 <a href="https://hosted.weblate.org/engage/note-calendar/">
