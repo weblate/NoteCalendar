@@ -66,4 +66,5 @@
     <string name="Wednesday">Mittwoch</string>
     <string name="Wednesday_Short">Mi</string>
     <string name="WeekView">Wochenansicht</string>
+    <string name="App_Name">Note Calendar</string>
 </resources>
