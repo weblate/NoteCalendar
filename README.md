@@ -13,20 +13,13 @@ Minimum Android version: 5.0 (Lollipop, API level 21)
 
 ## Current state
 
-I'm actively migrating xml views to Jetpack Compose, which can be observed on
-[compose-migration](https://github.com/Sztorm/NoteCalendar/tree/compose-migration) branch.
+Compose migration phase is done. Now I'm redesigning day screen part of the app.
 
-Jetpack Compose will help me with app maintenance as it's newer, and it doesn't require that much
-Android compatibility code, and the code itself tends to be shorter and easier to reason about.
+Next will be month and week screens to allow features like copy, cut, delete without
+going to day screen.
 
-That will also allow me to add more features soon, but now the goal is to migrate whole codebase
-without too much meddling with the current app design.
-
-### Current Progress:
- * Day screen - 90% complete
- * Week screen - 80% complete
- * Month screen - 90% complete
- * Settings screen - 90% complete
+Once work on these parts is finished I'll update the strings.xml (translations) to ensure new
+features are properly translated.
 
 ## Screenshots
 
