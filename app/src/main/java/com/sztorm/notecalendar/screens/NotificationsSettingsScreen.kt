@@ -13,6 +13,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavController
 import com.sztorm.notecalendar.AppNotificationManager
+import com.sztorm.notecalendar.AppPermissionManager
 import com.sztorm.notecalendar.LogTags
 import com.sztorm.notecalendar.MainViewModel
 import com.sztorm.notecalendar.R
@@ -30,9 +31,10 @@ import java.time.LocalTime
 @Composable
 fun NotificationsSettingsScreen(
     viewModel: MainViewModel,
+    permissionManager: AppPermissionManager,
+    notificationManager: AppNotificationManager,
     noteRepository: NoteRepository,
     preferencesRepository: UserPreferencesRepository,
-    notificationManager: AppNotificationManager,
     navController: NavController
 ) {
     val coroutineScope = rememberCoroutineScope()
@@ -59,15 +61,18 @@ fun NotificationsSettingsScreen(
                 turnOnNotifications = it
                 coroutineScope.launch {
                     if (it) {
-                        if (notificationManager.tryScheduleNotification(
-                                args = ScheduleNoteNotificationArguments(
-                                    grantPermissions = true,
-                                    turnOnNotifications = true
-                                ),
-                                noteRepository = noteRepository
-                            )
-                        ) {
-                            Timber.i("${LogTags.NOTIFICATIONS} Scheduled notification when \"Turn on notifications\" was set to true.")
+                        notificationManager.tryScheduleNotification(
+                            args = ScheduleNoteNotificationArguments(
+                                grantPermissions = true,
+                                turnOnNotifications = true
+                            ),
+                            permissionManager = permissionManager,
+                            noteRepository = noteRepository,
+                            coroutineScope = coroutineScope
+                        ) { isSuccess ->
+                            if (isSuccess) {
+                                Timber.i("${LogTags.NOTIFICATIONS} Scheduled notification when \"Turn on notifications\" was set to true.")
+                            }
                         }
                     } else {
                         notificationManager.cancelScheduledNotification()
@@ -90,15 +95,18 @@ fun NotificationsSettingsScreen(
                 coroutineScope.launch {
                     preferencesRepository.setNotificationTime(it)
 
-                    if (notificationManager.tryScheduleNotification(
-                            args = ScheduleNoteNotificationArguments(
-                                grantPermissions = true,
-                                turnOnNotifications = true
-                            ),
-                            noteRepository = noteRepository
-                        )
-                    ) {
-                        Timber.i("${LogTags.NOTIFICATIONS} Scheduled notification when \"Notification time\" was changed.")
+                    notificationManager.tryScheduleNotification(
+                        args = ScheduleNoteNotificationArguments(
+                            grantPermissions = true,
+                            turnOnNotifications = true
+                        ),
+                        permissionManager = permissionManager,
+                        noteRepository = noteRepository,
+                        coroutineScope = coroutineScope,
+                    ) { isSuccess ->
+                        if (isSuccess) {
+                            Timber.i("${LogTags.NOTIFICATIONS} Scheduled notification when \"Notification time\" was changed.")
+                        }
                     }
                 }
             },

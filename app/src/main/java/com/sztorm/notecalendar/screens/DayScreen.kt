@@ -38,6 +38,7 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -53,9 +54,9 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.lifecycleScope
+import com.sztorm.notecalendar.AppNotificationManager
+import com.sztorm.notecalendar.AppPermissionManager
 import com.sztorm.notecalendar.LogTags
-import com.sztorm.notecalendar.MainActivity
 import com.sztorm.notecalendar.MainEvent
 import com.sztorm.notecalendar.MainViewModel
 import com.sztorm.notecalendar.NoteData
@@ -89,7 +90,8 @@ enum class DayNoteTransitionState {
 @Composable
 fun DayScreen(
     viewModel: MainViewModel,
-    mainActivity: MainActivity,
+    permissionManager: AppPermissionManager,
+    notificationManager: AppNotificationManager,
     noteRepository: NoteRepository,
     isCreateOrEditRequested: Boolean = false
 ) {
@@ -135,7 +137,8 @@ fun DayScreen(
                 }
             ),
             viewModel = viewModel,
-            mainActivity = mainActivity,
+            permissionManager = permissionManager,
+            notificationManager = notificationManager,
             noteRepository = noteRepository,
             date = targetState,
             isCreateOrEditRequested = isCreateOrEditRequested,
@@ -148,7 +151,8 @@ fun DayPageLayout(
     modifier: Modifier = Modifier,
     draggableModifier: Modifier = Modifier,
     viewModel: MainViewModel,
-    mainActivity: MainActivity,
+    permissionManager: AppPermissionManager,
+    notificationManager: AppNotificationManager,
     noteRepository: NoteRepository,
     date: LocalDate,
     isCreateOrEditRequested: Boolean
@@ -280,7 +284,8 @@ fun DayPageLayout(
                         DayNoteEmptyLayout(
                             draggableModifier = draggableModifier,
                             viewModel = viewModel,
-                            mainActivity = mainActivity,
+                            permissionManager = permissionManager,
+                            notificationManager = notificationManager,
                             noteRepository = noteRepository,
                             dayNoteState = dayNoteState,
                             noteState = noteState,
@@ -292,7 +297,8 @@ fun DayPageLayout(
                         DayNoteLayout(
                             modifier = Modifier.graphicsLayer(scaleY = inScaleY),
                             viewModel = viewModel,
-                            mainActivity = mainActivity,
+                            permissionManager = permissionManager,
+                            notificationManager = notificationManager,
                             noteRepository = noteRepository,
                             focusRequester = focusRequester,
                             dayNoteState = dayNoteState,
@@ -305,7 +311,8 @@ fun DayPageLayout(
                         DayNoteAddLayout(
                             modifier = Modifier.graphicsLayer(scaleY = inScaleY),
                             viewModel = viewModel,
-                            mainActivity = mainActivity,
+                            permissionManager = permissionManager,
+                            notificationManager = notificationManager,
                             noteRepository = noteRepository,
                             focusRequester = focusRequester,
                             dayNoteState = dayNoteState,
@@ -323,14 +330,16 @@ fun DayPageLayout(
 fun DayNoteEmptyLayout(
     modifier: Modifier = Modifier,
     viewModel: MainViewModel,
+    permissionManager: AppPermissionManager,
+    notificationManager: AppNotificationManager,
     draggableModifier: Modifier,
-    mainActivity: MainActivity,
     noteRepository: NoteRepository,
     dayNoteState: MutableState<DayNoteState>,
     noteState: MutableState<NoteData?>,
     undoNoteState: MutableState<NoteData?>,
 ) {
     val themeColors = viewModel.state.themeColors
+    val coroutineScope = rememberCoroutineScope()
 
     Column(modifier = modifier.fillMaxSize()) {
         Row(
@@ -354,12 +363,14 @@ fun DayNoteEmptyLayout(
                         noteState.value = undoNote
                         noteRepository.add(undoNote)
                         dayNoteState.value = DayNoteState.Reading
-                        mainActivity.lifecycleScope.launch {
-                            if (mainActivity.notificationManager.tryScheduleNotification(
-                                    ScheduleNoteNotificationArguments(note = undoNote),
-                                    noteRepository
-                                )
-                            ) {
+                        notificationManager.tryScheduleNotification(
+                            args = ScheduleNoteNotificationArguments(note = undoNote),
+                            permissionManager = permissionManager,
+                            noteRepository = noteRepository,
+                            coroutineScope = coroutineScope
+                        ) { isSuccess ->
+                            if (isSuccess) {
+
                                 Timber.i("${LogTags.NOTIFICATIONS} Scheduled notification after note save")
                             }
                         }
@@ -381,7 +392,8 @@ fun DayNoteEmptyLayout(
 fun DayNoteAddLayout(
     modifier: Modifier = Modifier,
     viewModel: MainViewModel,
-    mainActivity: MainActivity,
+    permissionManager: AppPermissionManager,
+    notificationManager: AppNotificationManager,
     noteRepository: NoteRepository,
     focusRequester: FocusRequester,
     dayNoteState: MutableState<DayNoteState>,
@@ -390,6 +402,7 @@ fun DayNoteAddLayout(
 ) {
     val themeColors = viewModel.state.themeColors
     val focusManager = LocalFocusManager.current
+    val coroutineScope = rememberCoroutineScope()
     var noteTextFieldState by remember { mutableStateOf(TextFieldState()) }
 
     DayNote(
@@ -414,12 +427,13 @@ fun DayNoteAddLayout(
                     noteState.value = noteData
                     undoNoteState.value = null
                     dayNoteState.value = DayNoteState.Reading
-                    mainActivity.lifecycleScope.launch {
-                        if (mainActivity.notificationManager.tryScheduleNotification(
-                                ScheduleNoteNotificationArguments(note = noteData),
-                                noteRepository
-                            )
-                        ) {
+                    notificationManager.tryScheduleNotification(
+                        args = ScheduleNoteNotificationArguments(note = noteData),
+                        permissionManager = permissionManager,
+                        noteRepository = noteRepository,
+                        coroutineScope = coroutineScope
+                    ) { isSuccess ->
+                        if (isSuccess) {
                             Timber.i("${LogTags.NOTIFICATIONS} Scheduled notification after note save")
                         }
                     }
@@ -484,7 +498,8 @@ fun DayNoteAddLayout(
 fun DayNoteLayout(
     modifier: Modifier = Modifier,
     viewModel: MainViewModel,
-    mainActivity: MainActivity,
+    permissionManager: AppPermissionManager,
+    notificationManager: AppNotificationManager,
     noteRepository: NoteRepository,
     focusRequester: FocusRequester,
     dayNoteState: MutableState<DayNoteState>,
@@ -493,6 +508,7 @@ fun DayNoteLayout(
 ) {
     val themeColors = viewModel.state.themeColors
     val focusManager = LocalFocusManager.current
+    val coroutineScope = rememberCoroutineScope()
     var noteTextFieldState by remember {
         mutableStateOf(TextFieldState(noteState.value?.text ?: ""))
     }
@@ -518,12 +534,13 @@ fun DayNoteLayout(
                         noteRepository.update(note)
                         noteState.value = note
                         focusManager.clearFocus()
-                        mainActivity.lifecycleScope.launch {
-                            if (mainActivity.notificationManager.tryScheduleNotification(
-                                    ScheduleNoteNotificationArguments(note = note),
-                                    noteRepository
-                                )
-                            ) {
+                        notificationManager.tryScheduleNotification(
+                            args = ScheduleNoteNotificationArguments(note = note),
+                            permissionManager = permissionManager,
+                            noteRepository = noteRepository,
+                            coroutineScope = coroutineScope,
+                        ) { isSuccess ->
+                            if (isSuccess) {
                                 Timber.i("${LogTags.NOTIFICATIONS} Scheduled notification after note edit")
                             }
                         }
@@ -568,10 +585,12 @@ fun DayNoteLayout(
                         if (note != null) {
                             undoNoteState.value = note
                             noteRepository.delete(note)
-                            mainActivity.lifecycleScope.launch {
-                                if (mainActivity.notificationManager
-                                        .tryCancelScheduledNotification(LocalDate.parse(note.date))
-                                ) {
+                            coroutineScope.launch {
+                                val isCancelled = notificationManager
+                                    .tryCancelScheduledNotification(
+                                        LocalDate.parse(note.date)
+                                    )
+                                if (isCancelled) {
                                     Timber.i("${LogTags.NOTIFICATIONS} Canceled notification after note deletion")
                                 }
                             }

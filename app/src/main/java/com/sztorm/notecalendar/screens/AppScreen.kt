@@ -30,8 +30,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import com.sztorm.notecalendar.AppNotificationManager
+import com.sztorm.notecalendar.AppPermissionManager
 import com.sztorm.notecalendar.LogTags
-import com.sztorm.notecalendar.MainActivity
 import com.sztorm.notecalendar.MainViewModel
 import com.sztorm.notecalendar.R
 import com.sztorm.notecalendar.ScheduleNoteNotificationArguments
@@ -52,7 +53,8 @@ private data class MainTab(
 fun AppScreen(
     viewModel: MainViewModel,
     startingView: StartingScreenType,
-    mainActivity: MainActivity,
+    permissionManager: AppPermissionManager,
+    notificationManager: AppNotificationManager,
     noteRepository: NoteRepository,
     fileRepository: FileRepository,
     preferencesRepository: UserPreferencesRepository
@@ -68,14 +70,17 @@ fun AppScreen(
         )
     }
     LaunchedEffect(Unit) {
-        if (mainActivity.notificationManager.tryScheduleNotification(
-                args = ScheduleNoteNotificationArguments(),
-                noteRepository = noteRepository
-            )
-        ) {
-            Timber.i(
-                "${LogTags.NOTIFICATIONS} Scheduled notification upon MainActivity creation"
-            )
+        notificationManager.tryScheduleNotification(
+            args = ScheduleNoteNotificationArguments(),
+            permissionManager = permissionManager,
+            noteRepository = noteRepository,
+            coroutineScope = this
+        ) { isSuccess ->
+            if (isSuccess) {
+                Timber.i(
+                    "${LogTags.NOTIFICATIONS} Scheduled notification upon MainActivity creation"
+                )
+            }
         }
     }
     DisposableEffect(Unit) {
@@ -159,23 +164,40 @@ fun AppScreen(
             }
         ) {
             composable<Screen.Month> {
-                MonthScreen(viewModel, navController, noteRepository, preferencesRepository)
+                MonthScreen(
+                    viewModel = viewModel,
+                    navController = navController,
+                    noteRepository = noteRepository,
+                    preferencesRepository = preferencesRepository
+                )
             }
             composable<Screen.Week> {
-                WeekScreen(viewModel, navController, noteRepository, preferencesRepository)
+                WeekScreen(
+                    viewModel = viewModel,
+                    navController = navController,
+                    noteRepository = noteRepository,
+                    preferencesRepository = preferencesRepository
+                )
             }
             composable<Screen.Day> {
                 val day = it.toRoute<Screen.Day>()
 
-                DayScreen(viewModel, mainActivity, noteRepository, day.isCreateOrEditRequested)
+                DayScreen(
+                    viewModel = viewModel,
+                    permissionManager = permissionManager,
+                    notificationManager = notificationManager,
+                    noteRepository = noteRepository,
+                    isCreateOrEditRequested = day.isCreateOrEditRequested
+                )
             }
             composable<Screen.Settings> {
                 SettingsScreen(
                     viewModel = viewModel,
+                    permissionManager = permissionManager,
+                    notificationManager = notificationManager,
                     fileRepository = fileRepository,
                     noteRepository = noteRepository,
-                    preferencesRepository = preferencesRepository,
-                    notificationManager = mainActivity.notificationManager
+                    preferencesRepository = preferencesRepository
                 )
             }
         }

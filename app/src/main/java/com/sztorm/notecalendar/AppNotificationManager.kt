@@ -6,10 +6,10 @@ import android.content.Intent
 import android.graphics.Color
 import android.os.Build
 import androidx.core.app.NotificationCompat
-import androidx.lifecycle.lifecycleScope
 import com.sztorm.notecalendar.NoteCalendarApplication.Companion.BUNDLE_KEY_NOTIFICATION_LAUNCH_DAY_SCREEN
 import com.sztorm.notecalendar.repositories.NoteRepository
 import com.sztorm.notecalendar.repositories.UserPreferencesRepository
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import java.time.LocalDate
@@ -44,9 +44,14 @@ class AppNotificationManager(
             .addFlags(Intent.FLAG_RECEIVER_FOREGROUND)
             .putExtra(BUNDLE_KEY_NOTIFICATION_LAUNCH_DAY_SCREEN, true)
         val activity: PendingIntent = PendingIntent.getActivity(
-            mainActivity, NOTIFICATION_ID, intent, getIntentCancelCurrentFlags()
+            mainActivity,
+            NOTIFICATION_ID,
+            intent,
+            getIntentCancelCurrentFlags()
         )
-        val builder = NotificationCompat.Builder(mainActivity, NOTIFICATION_CHANNEL_ID_NAME)
+        val builder = NotificationCompat.Builder(
+            mainActivity, NOTIFICATION_CHANNEL_ID_NAME
+        )
             .setContentTitle(mainActivity.getString(R.string.Notification_Note_Title))
             .setContentText(note.text)
             .setAutoCancel(true)
@@ -60,10 +65,14 @@ class AppNotificationManager(
         val note: NoteData = notificationData.note
         val dateTime: LocalDateTime = notificationData.dateTime
         val notification: Notification = createNotification(note)
-        val notificationIntent = Intent(mainActivity, NoteNotificationReceiver::class.java)
-            .putExtra(NoteNotificationReceiver.NOTIFICATION_EXTRA, notification)
+        val notificationIntent = Intent(
+            mainActivity, NoteNotificationReceiver::class.java
+        ).putExtra(NoteNotificationReceiver.NOTIFICATION_EXTRA, notification)
         val pendingIntent = PendingIntent.getBroadcast(
-            mainActivity, NOTIFICATION_ID, notificationIntent, getIntentCancelCurrentFlags()
+            mainActivity,
+            NOTIFICATION_ID,
+            notificationIntent,
+            getIntentCancelCurrentFlags()
         )
         val calendar = Calendar.getInstance()
         calendar[Calendar.YEAR] = dateTime.year
@@ -78,64 +87,75 @@ class AppNotificationManager(
         )
     }
 
-    suspend fun tryScheduleNotification(
+    fun tryScheduleNotification(
         args: ScheduleNoteNotificationArguments,
-        noteRepository: NoteRepository
-    ): Boolean {
-        val enabledNotifications: Boolean =
-            args.turnOnNotifications ?: preferencesRepository.getTurnOnNotifications()
+        permissionManager: AppPermissionManager,
+        noteRepository: NoteRepository,
+        coroutineScope: CoroutineScope,
+        onCompletion: (Boolean) -> Unit
+    ) {
+        val scheduleCallback = { _: Boolean ->
+            coroutineScope.launch {
+                val enabledNotifications: Boolean =
+                    args.turnOnNotifications ?: preferencesRepository.getTurnOnNotifications()
 
-        if (!enabledNotifications) {
-            Timber.i("${LogTags.NOTIFICATIONS} Scheduling failed beacuse notifications are disabled.")
-            return false
-        }
-        val permissionManager = mainActivity.permissionManager
-
-        if (!permissionManager.isGranted(AppPermissionCode.NOTIFICATIONS)) {
-            if (args.grantPermissions) {
-                mainActivity.permissionManager.requestUngrantedPermissions(
-                    AppPermissionCode.NOTIFICATIONS
-                ) { isSuccess ->
-                    mainActivity.lifecycleScope.launch {
-                        if (isSuccess) {
-                            tryScheduleNotification(
-                                args.copy(grantPermissions = false), noteRepository
-                            )
-                        } else {
-                            preferencesRepository.setTurnOnNotifications(false)
-                            Timber.i("${LogTags.NOTIFICATIONS} Scheduling failed beacuse notifications permissions are denied (request permission callback).")
-                        }
-                    }
+                if (!enabledNotifications) {
+                    Timber.i("${LogTags.NOTIFICATIONS} Scheduling failed beacuse notifications are disabled.")
+                    onCompletion(false)
+                    return@launch
                 }
-                return true
-            } else {
-                preferencesRepository.setTurnOnNotifications(false)
-                Timber.i("${LogTags.NOTIFICATIONS} Scheduling failed beacuse notifications permissions are denied.")
-                return false
+                if (!permissionManager.isGranted(AppPermission.ScheduleExactAlarm) ||
+                    !permissionManager.isGranted(AppPermission.PostNotifications)
+                ) {
+                    Timber.i("${LogTags.NOTIFICATIONS} Scheduling failed beacuse notifications permissions are denied.")
+                    preferencesRepository.setTurnOnNotifications(false)
+                    onCompletion(false)
+                    return@launch
+                }
+                val noteNotification = tryCreateNoteNotification(args, noteRepository)
+
+                if (noteNotification != null) {
+                    scheduleNotification(noteNotification)
+                    onCompletion(true)
+                } else {
+                    onCompletion(false)
+                }
             }
+            Unit
         }
+        if (permissionManager.isGranted(AppPermission.ScheduleExactAlarm) &&
+            permissionManager.isGranted(AppPermission.PostNotifications)
+        ) {
+            scheduleCallback(true)
+        } else {
+            permissionManager.requestPermission(
+                AppPermission.ScheduleExactAlarm, scheduleCallback
+            )
+            permissionManager.requestPermission(
+                AppPermission.PostNotifications, scheduleCallback
+            )
+        }
+    }
+
+    private suspend fun tryCreateNoteNotification(
+        args: ScheduleNoteNotificationArguments,
+        noteRepository: NoteRepository,
+    ): NoteNotificationData? {
         val notificationTime =
             args.notificationTime ?: preferencesRepository.getNotificationTime()
         val currentDateTime = LocalDateTime.now()
-        val notificationDateTime =
-            if ((notificationTime <= currentDateTime.toLocalTime())) {
-                LocalDateTime.of(
-                    currentDateTime.toLocalDate().plusDays(1), notificationTime
-                )
-            } else {
-                LocalDateTime.of(currentDateTime.toLocalDate(), notificationTime)
-            }
+        val notificationDate = if (notificationTime <= currentDateTime.toLocalTime()) {
+            currentDateTime.toLocalDate().plusDays(1)
+        } else currentDateTime.toLocalDate()
+        val notificationDateTime = LocalDateTime.of(notificationDate, notificationTime)
         val note: NoteData? =
             args.note ?: noteRepository.getBy(notificationDateTime.toLocalDate())
 
-        if (note === null || note.date != notificationDateTime.toLocalDate().toString()) {
+        if (note == null || note.date != notificationDateTime.toLocalDate().toString()) {
             Timber.i("${LogTags.NOTIFICATIONS} Scheduling failed beacuse note is invalid.")
-            return false
+            return null
         }
-        val notificationData = NoteNotificationData(note, notificationDateTime)
-
-        scheduleNotification(notificationData)
-        return true
+        return NoteNotificationData(note, notificationDateTime)
     }
 
     fun cancelScheduledNotification() {

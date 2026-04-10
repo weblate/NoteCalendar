@@ -20,13 +20,6 @@ import java.time.LocalDate
 data class BundleResult(val isLaunchedFromNotification: Boolean)
 
 class MainActivity : ComponentActivity() {
-    private var _permissionManager: AppPermissionManager? = null
-    private var _notificationManager: AppNotificationManager? = null
-    val permissionManager: AppPermissionManager
-        get() = _permissionManager!!
-    val notificationManager: AppNotificationManager
-        get() = _notificationManager!!
-
     private fun readBundle(): BundleResult? {
         val bundle: Bundle = intent.extras ?: return null
 
@@ -44,10 +37,8 @@ class MainActivity : ComponentActivity() {
         val noteRepository = NoteRepositoryImpl
         val fileRepository = FileRepositoryImpl(this)
         val preferencesRepository = UserPreferencesRepository(this)
-        _permissionManager = _permissionManager ?: AppPermissionManager(this)
-        _notificationManager = _notificationManager ?: AppNotificationManager(
-            this, preferencesRepository
-        )
+        val permissionManager = AppPermissionManager(this)
+        val notificationManager = AppNotificationManager(this, preferencesRepository)
 
         runBlocking {
             viewModel = MainViewModel(
@@ -68,7 +59,8 @@ class MainActivity : ComponentActivity() {
                     AppScreen(
                         viewModel = viewModel,
                         startingView = startingView,
-                        mainActivity = this,
+                        permissionManager = permissionManager,
+                        notificationManager = notificationManager,
                         noteRepository = noteRepository,
                         fileRepository = fileRepository,
                         preferencesRepository = preferencesRepository
@@ -76,13 +68,5 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-    }
-
-    @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
-    override fun onRequestPermissionsResult(
-        requestCode: Int, permissions: Array<out String>, grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        permissionManager.onRequestPermissionsResult(requestCode, permissions, grantResults)
     }
 }
