@@ -16,11 +16,10 @@ import com.sztorm.notecalendar.StartingScreenType
 import com.sztorm.notecalendar.components.preferences.ListPreference
 import com.sztorm.notecalendar.components.preferences.SubpreferenceScreen
 import com.sztorm.notecalendar.getLocalizedName
+import com.sztorm.notecalendar.getSystemFirstDayOfWeek
 import com.sztorm.notecalendar.repositories.UserPreferencesRepository
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
-import java.time.temporal.WeekFields
-import java.util.Locale
 
 @Composable
 fun CalendarSettingsScreen(
@@ -31,9 +30,7 @@ fun CalendarSettingsScreen(
     val coroutineScope = rememberCoroutineScope()
     val themeColors = viewModel.state.themeColors
     var firstDayOfWeekIndexPair by remember {
-        mutableStateOf(WeekFields.of(Locale.getDefault()).firstDayOfWeek.let {
-            it to it.ordinal
-        })
+        mutableStateOf(getSystemFirstDayOfWeek().let { it to it.ordinal })
     }
     var startingViewIndexPair by remember {
         mutableStateOf(Pair(StartingScreenType.DayScreen, 0))

@@ -13,6 +13,7 @@ import androidx.datastore.preferences.preferencesDataStore
 import com.sztorm.notecalendar.PreferenceKeys
 import com.sztorm.notecalendar.StartingScreenType
 import com.sztorm.notecalendar.ThemeColors
+import com.sztorm.notecalendar.getSystemFirstDayOfWeek
 import com.sztorm.notecalendar.isDarkThemeEnabled
 import com.sztorm.notecalendar.ui.getDefaultThemeColors
 import kotlinx.coroutines.flow.catch
@@ -20,18 +21,16 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import java.time.DayOfWeek
 import java.time.LocalTime
-import java.time.temporal.WeekFields
-import java.util.Locale
 
 private const val PREFERENCES_NAME = "com.sztorm.notecalendar_preferences"
+private const val HOUR_BITS: Int = 0b00000000_00000000_00000000_00011111
+private const val HOUR_BITS_SIZE: Int = 5
+private const val MINUTE_BITS: Int = 0b00000000_00000000_00000111_11100000
+
 private val Context.preferences: DataStore<Preferences> by preferencesDataStore(
     name = PREFERENCES_NAME,
     produceMigrations = { listOf(SharedPreferencesMigration(context = it, PREFERENCES_NAME)) }
 )
-
-private const val HOUR_BITS: Int = 0b00000000_00000000_00000000_00011111
-private const val HOUR_BITS_SIZE: Int = 5
-private const val MINUTE_BITS: Int = 0b00000000_00000000_00000111_11100000
 
 class UserPreferencesRepository(context: Context) {
     private val context: Context = context.applicationContext
@@ -123,7 +122,7 @@ class UserPreferencesRepository(context: Context) {
         getPreference(PreferenceKeys.TurnOnNotifications, default)
 
     suspend fun getFirstDayOfWeek(
-        default: DayOfWeek = WeekFields.of(Locale.getDefault()).firstDayOfWeek
+        default: DayOfWeek = getSystemFirstDayOfWeek()
     ): DayOfWeek = getPreference(PreferenceKeys.FirstDayOfWeek, default.value.toString())
         .let { DayOfWeek.of(it.toInt()) }
 

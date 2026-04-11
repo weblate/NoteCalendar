@@ -29,18 +29,17 @@ import com.sztorm.notecalendar.MainEvent
 import com.sztorm.notecalendar.MainViewModel
 import com.sztorm.notecalendar.addFirstKt
 import com.sztorm.notecalendar.addLastKt
-import com.sztorm.notecalendar.screens.WeekViewItem.WeekViewDay
-import com.sztorm.notecalendar.screens.WeekViewItem.WeekViewMonth
 import com.sztorm.notecalendar.components.InfiniteColumn
 import com.sztorm.notecalendar.getLocalizedName
+import com.sztorm.notecalendar.getSystemFirstDayOfWeek
 import com.sztorm.notecalendar.isEven
 import com.sztorm.notecalendar.repositories.NoteRepository
 import com.sztorm.notecalendar.repositories.UserPreferencesRepository
+import com.sztorm.notecalendar.screens.WeekViewItem.WeekViewDay
+import com.sztorm.notecalendar.screens.WeekViewItem.WeekViewMonth
 import com.sztorm.notecalendar.yearMonth
 import java.time.LocalDate
 import java.time.YearMonth
-import java.time.temporal.WeekFields
-import java.util.Locale
 import kotlin.math.min
 import kotlin.collections.removeFirst as removeFirstKt
 import kotlin.collections.removeLast as removeLastKt
@@ -180,7 +179,7 @@ fun WeekScreen(
     val isToday = { date: LocalDate -> date == today }
     val hasNote = { date: LocalDate -> noteRepository.getBy(date) != null }
     var firstDayOfWeek by remember {
-        mutableStateOf(WeekFields.of(Locale.getDefault()).firstDayOfWeek)
+        mutableStateOf(getSystemFirstDayOfWeek())
     }
     val days = remember {
         val startDate: LocalDate = dayScreenDate.minusDays(cachedItemsCount / 2L)

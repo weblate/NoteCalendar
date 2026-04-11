@@ -21,6 +21,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.res.stringResource
 import androidx.core.graphics.ColorUtils
+import androidx.core.text.util.LocalePreferences
 import com.sztorm.mathkit.ColorRGBA32
 import com.sztorm.mathkit.Vector2F
 import org.json.JSONArray
@@ -29,6 +30,8 @@ import java.time.LocalDate
 import java.time.Month
 import java.time.YearMonth
 import java.time.format.TextStyle
+import java.time.temporal.WeekFields
+import java.util.Locale
 import java.util.Locale as JLocale
 
 fun <T : Parcelable> Intent.getParcelableExtraCompat(name: String, clazz: Class<T>): T? {
@@ -78,6 +81,17 @@ fun stringResourceOrElse(
         valueToReplace -> defaultValue()
         else -> it
     }
+}
+
+fun getSystemFirstDayOfWeek(): DayOfWeek = when (LocalePreferences.getFirstDayOfWeek()) {
+    LocalePreferences.FirstDayOfWeek.MONDAY -> DayOfWeek.MONDAY
+    LocalePreferences.FirstDayOfWeek.TUESDAY -> DayOfWeek.TUESDAY
+    LocalePreferences.FirstDayOfWeek.WEDNESDAY -> DayOfWeek.WEDNESDAY
+    LocalePreferences.FirstDayOfWeek.THURSDAY -> DayOfWeek.THURSDAY
+    LocalePreferences.FirstDayOfWeek.FRIDAY -> DayOfWeek.FRIDAY
+    LocalePreferences.FirstDayOfWeek.SATURDAY -> DayOfWeek.SATURDAY
+    LocalePreferences.FirstDayOfWeek.SUNDAY -> DayOfWeek.SUNDAY
+    else -> WeekFields.of(Locale.getDefault()).firstDayOfWeek
 }
 
 fun DayOfWeek.getDefaultLocalizedName() =

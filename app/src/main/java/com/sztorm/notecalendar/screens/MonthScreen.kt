@@ -32,12 +32,11 @@ import com.sztorm.notecalendar.components.InfiniteHorizontalPager
 import com.sztorm.notecalendar.components.MonthPage
 import com.sztorm.notecalendar.getLocalizedName
 import com.sztorm.notecalendar.getLocalizedShortName
+import com.sztorm.notecalendar.getSystemFirstDayOfWeek
 import com.sztorm.notecalendar.repositories.NoteRepository
 import com.sztorm.notecalendar.repositories.UserPreferencesRepository
 import com.sztorm.notecalendar.yearMonth
 import java.time.LocalDate
-import java.time.temporal.WeekFields
-import java.util.Locale
 
 data class MonthViewDay(
     val date: LocalDate,
@@ -58,7 +57,7 @@ fun MonthScreen(
     val selectedDateYearMonth = viewModel.state.dayScreenDate.yearMonth
     val today = LocalDate.now()
     var firstDayOfWeek by remember {
-        mutableStateOf(WeekFields.of(Locale.getDefault()).firstDayOfWeek)
+        mutableStateOf(getSystemFirstDayOfWeek())
     }
     var currentYearMonth by remember {
         mutableStateOf(selectedDateYearMonth)
