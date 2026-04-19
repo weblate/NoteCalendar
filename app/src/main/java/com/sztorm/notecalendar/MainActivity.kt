@@ -31,10 +31,11 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val logger = TimberLogger
         val bundleResult = readBundle()
         val viewModel: MainViewModel
         val startingView: StartingScreenType
-        val noteRepository = NoteRepositoryImpl
+        val noteRepository = NoteRepositoryImpl(logger)
         val fileRepository = FileRepositoryImpl(this)
         val preferencesRepository = UserPreferencesRepository(this)
         val permissionManager = AppPermissionManager(this)
