@@ -16,7 +16,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.sztorm.notecalendar.AppNotificationManager
 import com.sztorm.notecalendar.AppPermissionManager
-import com.sztorm.notecalendar.MainViewModel
+import com.sztorm.notecalendar.viewmodels.MainViewModel
 import com.sztorm.notecalendar.R
 import com.sztorm.notecalendar.components.preferences.Preference
 import com.sztorm.notecalendar.components.preferences.PreferenceScreen

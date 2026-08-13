@@ -70,6 +70,8 @@ import com.sztorm.notecalendar.getLocalizedName
 import com.sztorm.notecalendar.repositories.NoteRepository
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import com.sztorm.notecalendar.viewmodels.MainEvent
+import com.sztorm.notecalendar.viewmodels.MainViewModel
 import java.time.LocalDate
 import kotlin.math.absoluteValue
 import kotlin.math.sign
@@ -89,7 +91,7 @@ enum class DayNoteTransitionState {
 
 @Composable
 fun DayScreen(
-    viewModel: MainViewModel,
+    mainViewModel: MainViewModel,
     permissionManager: AppPermissionManager,
     notificationManager: AppNotificationManager,
     noteRepository: NoteRepository,

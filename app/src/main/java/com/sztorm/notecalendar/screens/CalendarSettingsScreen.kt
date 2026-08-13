@@ -10,7 +10,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavController
-import com.sztorm.notecalendar.MainViewModel
+import com.sztorm.notecalendar.viewmodels.MainViewModel
 import com.sztorm.notecalendar.R
 import com.sztorm.notecalendar.StartingScreenType
 import com.sztorm.notecalendar.components.preferences.ListPreference

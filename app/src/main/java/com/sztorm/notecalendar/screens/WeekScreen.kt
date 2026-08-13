@@ -25,8 +25,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.sztorm.notecalendar.MainEvent
-import com.sztorm.notecalendar.MainViewModel
+import com.sztorm.notecalendar.viewmodels.MainEvent
+import com.sztorm.notecalendar.viewmodels.MainViewModel
 import com.sztorm.notecalendar.addFirstKt
 import com.sztorm.notecalendar.addLastKt
 import com.sztorm.notecalendar.components.InfiniteColumn

@@ -15,7 +15,7 @@ import androidx.navigation.NavController
 import com.sztorm.notecalendar.AppNotificationManager
 import com.sztorm.notecalendar.AppPermissionManager
 import com.sztorm.notecalendar.LogTags
-import com.sztorm.notecalendar.MainViewModel
+import com.sztorm.notecalendar.viewmodels.MainViewModel
 import com.sztorm.notecalendar.R
 import com.sztorm.notecalendar.ScheduleNoteNotificationArguments
 import com.sztorm.notecalendar.components.preferences.SubpreferenceScreen

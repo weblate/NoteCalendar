@@ -7,9 +7,6 @@ import org.json.JSONObject
 import timber.log.Timber
 import javax.crypto.SecretKey
 import javax.crypto.spec.IvParameterSpec
-import kotlin.collections.joinToString
-import kotlin.collections.toString
-import kotlin.text.toByteArray
 
 data class Note(val date: String, val text: String) {
     fun toNoteData() = NoteData(date, text)

@@ -37,7 +37,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.mikepenz.aboutlibraries.LibsBuilder
 import com.sztorm.notecalendar.AppInfo
-import com.sztorm.notecalendar.MainViewModel
+import com.sztorm.notecalendar.viewmodels.MainViewModel
 import com.sztorm.notecalendar.R
 import com.sztorm.notecalendar.components.preferences.CategoryPreference
 import com.sztorm.notecalendar.components.preferences.Preference

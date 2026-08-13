@@ -14,6 +14,8 @@ import com.sztorm.notecalendar.repositories.NoteRepositoryImpl
 import com.sztorm.notecalendar.repositories.UserPreferencesRepository
 import com.sztorm.notecalendar.screens.AppScreen
 import com.sztorm.notecalendar.ui.AppTheme
+import com.sztorm.notecalendar.viewmodels.MainState
+import com.sztorm.notecalendar.viewmodels.MainViewModel
 import kotlinx.coroutines.runBlocking
 import java.time.LocalDate
 

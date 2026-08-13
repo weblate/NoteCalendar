@@ -24,8 +24,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.sztorm.notecalendar.MainEvent
-import com.sztorm.notecalendar.MainViewModel
+import com.sztorm.notecalendar.viewmodels.MainEvent
+import com.sztorm.notecalendar.viewmodels.MainViewModel
 import com.sztorm.notecalendar.MonthNotesCache
 import com.sztorm.notecalendar.components.DayOfWeekBar
 import com.sztorm.notecalendar.components.InfiniteHorizontalPager

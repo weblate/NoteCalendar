@@ -9,8 +9,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavController
 import com.sztorm.notecalendar.LogTags
-import com.sztorm.notecalendar.MainEvent
-import com.sztorm.notecalendar.MainViewModel
+import com.sztorm.notecalendar.viewmodels.MainEvent
+import com.sztorm.notecalendar.viewmodels.MainViewModel
 import com.sztorm.notecalendar.R
 import com.sztorm.notecalendar.ThemeFile
 import com.sztorm.notecalendar.components.colorpicker.ColorPickerDefaults
