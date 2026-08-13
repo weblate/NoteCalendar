@@ -13,13 +13,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.tooling.preview.Preview
+import kotlin.math.max
 
 @Preview
 @Composable
 fun DayNotePreview() = DayNote(
     color = Color(0.7f, 0.3f, 0f, 1f),
     bendTint = Color.White,
-    bendShadowWidth = 20f,
+    bendWidth = 64f,
+    bendShadowWidth = 3f,
 ) { }
 
 @Composable
@@ -27,10 +29,13 @@ fun DayNote(
     modifier: Modifier = Modifier,
     color: Color,
     bendTint: Color,
-    bendFraction: Float = 0.15f,
-    bendShadowWidth: Float = 5f,
+    bendWidth: Float = 24f,
+    bendShadowWidth: Float = 4f,
     content: @Composable (ColumnScope.() -> Unit)
 ) {
+    val pBendWidth = max(bendWidth, 0f)
+    val pBendShadowWidth = max(bendShadowWidth, 0f)
+
     Column(
         modifier = modifier
             .drawWithCache {
@@ -40,14 +45,14 @@ fun DayNote(
                     moveTo(0f, 0f)
                     lineTo(0f, height)
                     lineTo(width, height)
-                    lineTo(width, height * bendFraction)
-                    lineTo(width - height * bendFraction, 0f)
+                    lineTo(width, pBendWidth)
+                    lineTo(max(width - pBendWidth, 0f), 0f)
                     close()
                 }
                 val bendPath = Path().apply {
-                    moveTo(width, height * bendFraction)
-                    lineTo(width - height * bendFraction, 0f)
-                    lineTo(width - height * bendFraction, height * bendFraction)
+                    moveTo(width, pBendWidth)
+                    lineTo(max(width - pBendWidth, 0f), 0f)
+                    lineTo(max(width - pBendWidth, 0f), pBendWidth)
                     close()
                 }
                 val bendGradient = Brush.linearGradient(
@@ -55,46 +60,45 @@ fun DayNote(
                     0.5f to lerp(color, bendTint, 0.5f),
                     1f to color,
                     start = Offset(width, 0f),
-                    end = Offset(width - height * bendFraction, height * bendFraction)
+                    end = Offset(max(width - pBendWidth, 0f), pBendWidth)
                 )
                 val bendShadowPathA = Path().apply {
-                    moveTo(width - height * bendFraction - bendShadowWidth, 0f)
-                    lineTo(width - height * bendFraction, 0f)
-                    lineTo(width - height * bendFraction, height * bendFraction)
+                    moveTo(max(width - pBendWidth - pBendShadowWidth, 0f), 0f)
+                    lineTo(max(width - pBendWidth, 0f), 0f)
+                    lineTo(max(width - pBendWidth, 0f), pBendWidth)
                     lineTo(
-                        width - height * bendFraction - bendShadowWidth, height * bendFraction
+                        max(width - pBendWidth - pBendShadowWidth, 0f), pBendWidth
                     )
                     close()
                 }
                 val bendShadowGradientA = Brush.linearGradient(
                     0f to lerp(Color.Black, color, 0.7f),
                     1f to color,
-                    start = Offset(width - height * bendFraction, 0f),
-                    end = Offset(width - height * bendFraction - bendShadowWidth, 0f)
+                    start = Offset(max(width - pBendWidth, 0f), 0f),
+                    end = Offset(
+                        max(width - pBendWidth - pBendShadowWidth, 0f), 0f
+                    )
                 )
                 val bendShadowPathB = Path().apply {
-                    moveTo(width - height * bendFraction, height * bendFraction)
+                    moveTo(max(width - pBendWidth, 0f), pBendWidth)
                     lineTo(
-                        width - height * bendFraction, height * bendFraction + bendShadowWidth
+                        max(width - pBendWidth, 0f), pBendWidth + pBendShadowWidth
                     )
-                    lineTo(width, height * bendFraction + bendShadowWidth)
-                    lineTo(width, height * bendFraction)
+                    lineTo(width, pBendWidth + pBendShadowWidth)
+                    lineTo(width, pBendWidth)
                     close()
                 }
                 val bendShadowGradientB = Brush.linearGradient(
                     0f to lerp(Color.Black, color, 0.7f),
                     1f to color,
-                    start = Offset(width, height * bendFraction),
-                    end = Offset(width, height * bendFraction + bendShadowWidth)
+                    start = Offset(width, pBendWidth),
+                    end = Offset(width, pBendWidth + pBendShadowWidth)
                 )
                 val bendShadowGradientC = Brush.radialGradient(
                     0f to lerp(Color.Black, color, 0.7f),
                     1f to color,
-                    center = Offset(
-                        width - height * bendFraction,
-                        height * bendFraction
-                    ),
-                    radius = bendShadowWidth
+                    center = Offset(max(width - pBendWidth, 0f), pBendWidth),
+                    radius = pBendShadowWidth
                 )
                 onDrawBehind {
                     drawPath(
@@ -110,10 +114,10 @@ fun DayNote(
                         startAngle = 90f,
                         sweepAngle = 90f,
                         topLeft = Offset(
-                            width - height * bendFraction - bendShadowWidth,
-                            height * bendFraction - bendShadowWidth
+                            max(width - pBendWidth - pBendShadowWidth, 0f),
+                            max(pBendWidth - pBendShadowWidth, 0f)
                         ),
-                        size = Size(bendShadowWidth * 2f, bendShadowWidth * 2f),
+                        size = Size(pBendShadowWidth * 2f, pBendShadowWidth * 2f),
                         useCenter = true
                     )
                     drawPath(
