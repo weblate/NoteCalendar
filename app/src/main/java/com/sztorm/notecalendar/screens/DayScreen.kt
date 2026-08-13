@@ -1,91 +1,71 @@
 package com.sztorm.notecalendar.screens
 
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.EnterTransition
-import androidx.compose.animation.ExitTransition
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.core.updateTransition
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.animation.slideOutVertically
-import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.gestures.Orientation
-import androidx.compose.foundation.gestures.draggable
-import androidx.compose.foundation.gestures.rememberDraggableState
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandIn
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.shrinkOut
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.text.input.TextFieldLineLimits
-import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.sztorm.notecalendar.AppNotificationManager
 import com.sztorm.notecalendar.AppPermissionManager
-import com.sztorm.notecalendar.LogTags
-import com.sztorm.notecalendar.MainEvent
-import com.sztorm.notecalendar.MainViewModel
 import com.sztorm.notecalendar.NoteData
 import com.sztorm.notecalendar.R
-import com.sztorm.notecalendar.ScheduleNoteNotificationArguments
+import com.sztorm.notecalendar.ThemeColors
 import com.sztorm.notecalendar.components.DayNote
-import com.sztorm.notecalendar.components.ThemedButton
-import com.sztorm.notecalendar.components.ThemedIconButton
+import com.sztorm.notecalendar.components.InfiniteHorizontalPager
 import com.sztorm.notecalendar.getLocalizedGenitiveCaseName
 import com.sztorm.notecalendar.getLocalizedName
 import com.sztorm.notecalendar.repositories.NoteRepository
-import kotlinx.coroutines.launch
-import timber.log.Timber
+import com.sztorm.notecalendar.viewmodels.DayScreenEvent
+import com.sztorm.notecalendar.viewmodels.DayScreenNote
+import com.sztorm.notecalendar.viewmodels.DayScreenState
+import com.sztorm.notecalendar.viewmodels.DayScreenViewModel
+import com.sztorm.notecalendar.viewmodels.DayScreenViewModelFactory
 import com.sztorm.notecalendar.viewmodels.MainEvent
 import com.sztorm.notecalendar.viewmodels.MainViewModel
 import java.time.LocalDate
-import kotlin.math.absoluteValue
-import kotlin.math.sign
 
-enum class DayNoteState {
-    Empty,
+enum class DayNoteMode {
     Reading,
     Editing,
-    Adding
-}
-
-enum class DayNoteTransitionState {
-    Empty,
-    Reading,
     Adding
 }
 
@@ -97,53 +77,361 @@ fun DayScreen(
     noteRepository: NoteRepository,
     isCreateOrEditRequested: Boolean = false
 ) {
-    var prevDate: LocalDate by remember { mutableStateOf(viewModel.state.dayScreenDate) }
-    var startDate: LocalDate by remember { mutableStateOf(prevDate) }
-    var isCreateOrEditRequested by remember { mutableStateOf(isCreateOrEditRequested) }
+    val currentDate = remember { mainViewModel.state.dayScreenDate }
+    val viewModel = viewModel<DayScreenViewModel>(
+        factory = DayScreenViewModelFactory(
+            initialState = DayScreenState(
+                note = noteRepository.getBy(currentDate)?.let {
+                    DayScreenNote(
+                        date = currentDate,
+                        textValue = TextFieldValue(text = it.text)
+                    )
+                },
+                prevNote = noteRepository
+                    .getBy(currentDate.minusDays(1))?.let {
+                        DayScreenNote(
+                            date = currentDate.minusDays(1),
+                            textValue = TextFieldValue(text = it.text)
+                        )
+                    },
+                nextNote = noteRepository
+                    .getBy(currentDate.plusDays(1))?.let {
+                        DayScreenNote(
+                            date = currentDate.plusDays(1),
+                            textValue = TextFieldValue(text = it.text)
+                        )
+                    },
+                noteMode = DayNoteMode.Reading
+            )
+        )
+    )
+    val focusRequester = remember { FocusRequester() }
 
-    AnimatedContent(
-        targetState = startDate,
-        transitionSpec = {
-            when {
-                prevDate > startDate -> slideInHorizontally(
-                    animationSpec = tween(durationMillis = 400),
-                    initialOffsetX = { -it }
-                ) togetherWith slideOutHorizontally(
-                    animationSpec = tween(durationMillis = 400),
-                    targetOffsetX = { it }
+    Box(modifier = Modifier.fillMaxSize()) {
+        InfiniteHorizontalPager(
+            verticalAlignment = Alignment.Top,
+            key = { currentDate.plusDays(it.toLong()) },
+            onPageChange = { page ->
+                val date = currentDate.plusDays(page.toLong())
+                mainViewModel.onEvent(MainEvent.DayScreenDateChange(date))
+                viewModel.onEvent(
+                    DayScreenEvent.DateChange(
+                        note = noteRepository.getBy(date)?.let {
+                            DayScreenNote(
+                                date = currentDate,
+                                textValue = TextFieldValue(text = it.text)
+                            )
+                        },
+                        prevNote = noteRepository
+                            .getBy(date.minusDays(1))?.let {
+                                DayScreenNote(
+                                    date = date.minusDays(1),
+                                    textValue = TextFieldValue(text = it.text)
+                                )
+                            },
+                        nextNote = noteRepository
+                            .getBy(date.plusDays(1))?.let {
+                                DayScreenNote(
+                                    date = date.plusDays(1),
+                                    textValue = TextFieldValue(text = it.text)
+                                )
+                            },
+                    )
                 )
-
-                else -> slideInHorizontally(
-                    animationSpec = tween(durationMillis = 400),
-                    initialOffsetX = { it }
-                ) togetherWith slideOutHorizontally(
-                    animationSpec = tween(durationMillis = 400),
-                    targetOffsetX = { -it }
+                viewModel.onEvent(
+                    DayScreenEvent.NoteModeChange(DayNoteMode.Reading)
                 )
             }
+        ) {
+            val date = currentDate.plusDays(it.toLong())
+
+            DayPageLayout(
+                modifier = Modifier.fillMaxSize(),
+                mainViewModel = mainViewModel,
+                viewModel = viewModel,
+                focusRequester = focusRequester,
+                date = date
+            )
         }
-    ) { targetState ->
-        DayPageLayout(
-            draggableModifier = Modifier.draggable(
-                orientation = Orientation.Horizontal,
-                state = rememberDraggableState { },
-                onDragStopped = { velocity ->
-                    if (velocity.absoluteValue > 0.5) {
-                        isCreateOrEditRequested = false
-                        prevDate = startDate
-                        startDate = startDate.minusDays(velocity.sign.toLong())
-                        viewModel.onEvent(
-                            MainEvent.DayScreenDateChange(startDate)
-                        )
-                    }
-                }
-            ),
+        ActionButtons(
+            mainViewModel = mainViewModel,
             viewModel = viewModel,
+            noteRepository = noteRepository,
             permissionManager = permissionManager,
             notificationManager = notificationManager,
-            noteRepository = noteRepository,
-            date = targetState,
-            isCreateOrEditRequested = isCreateOrEditRequested,
+            focusRequester = focusRequester
+        )
+        LaunchedEffect(Unit) {
+            if (isCreateOrEditRequested) {
+                val note = viewModel.state.note
+
+                if (note == null) {
+                    viewModel.onEvent(
+                        DayScreenEvent.NoteModeChange(DayNoteMode.Adding)
+                    )
+                    viewModel.onEvent(
+                        DayScreenEvent.NoteChange(
+                            DayScreenNote(
+                                date = mainViewModel.state.dayScreenDate,
+                                textValue = TextFieldValue()
+                            )
+                        )
+                    )
+                } else {
+                    viewModel.onEvent(
+                        DayScreenEvent.NoteModeChange(DayNoteMode.Editing)
+                    )
+                    viewModel.onEvent(
+                        DayScreenEvent.NoteChange(
+                            DayScreenNote(
+                                date = note.date,
+                                textValue = note.textValue.copy(
+                                    selection = TextRange(note.textValue.text.length)
+                                )
+                            )
+                        )
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ColumnScope.DayDateText(
+    modifier: Modifier = Modifier,
+    viewModel: MainViewModel,
+    date: LocalDate
+) {
+    val themeColors = viewModel.state.themeColors
+
+    Column(
+        modifier = modifier
+            .verticalScroll(rememberScrollState())
+            .fillMaxWidth()
+            .weight(0.6f)
+    ) {
+        Spacer(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(0.5f)
+        )
+        BasicText(
+            text = date.dayOfMonth.toString(),
+            style = LocalTextStyle.current.copy(
+                color = themeColors.textColor,
+                textAlign = TextAlign.Center,
+                fontSize = 140.sp
+            ),
+            maxLines = 1,
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(4f)
+        )
+        BasicText(
+            text = date.month.getLocalizedGenitiveCaseName(),
+            style = LocalTextStyle.current.copy(
+                color = themeColors.textColor,
+                textAlign = TextAlign.Center,
+                fontSize = 36.sp
+            ),
+            maxLines = 1,
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1.5f)
+        )
+        BasicText(
+            text = date.dayOfWeek.getLocalizedName(),
+            style = LocalTextStyle.current.copy(
+                color = themeColors.textColor,
+                textAlign = TextAlign.Center,
+                fontSize = 24.sp
+            ),
+            maxLines = 1,
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+        )
+    }
+}
+
+@Composable
+private fun ActionButton(
+    modifier: Modifier = Modifier,
+    visible: Boolean = true,
+    onClick: () -> Unit,
+    themeColors: ThemeColors,
+    icon: Painter
+) {
+    AnimatedVisibility(
+        visible = visible,
+        enter = scaleIn() + expandIn(),
+        exit = shrinkOut() + scaleOut()
+    ) {
+        FloatingActionButton(
+            onClick = onClick,
+            containerColor = themeColors.primaryColor,
+            contentColor = themeColors.buttonTextColor,
+            modifier = modifier.padding(8.dp)
+        ) {
+            Icon(painter = icon, contentDescription = "")
+        }
+    }
+}
+
+@Composable
+private fun BoxScope.ActionButtons(
+    mainViewModel: MainViewModel,
+    viewModel: DayScreenViewModel,
+    noteRepository: NoteRepository,
+    permissionManager: AppPermissionManager,
+    notificationManager: AppNotificationManager,
+    focusRequester: FocusRequester
+) {
+    val themeColors = mainViewModel.state.themeColors
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+
+    Row(
+        modifier = Modifier
+            .align(Alignment.BottomEnd)
+            .padding(8.dp)
+    ) {
+        ActionButton(
+            onClick = {
+                // TODO
+            },
+            visible = viewModel.state.noteMode == DayNoteMode.Reading &&
+                viewModel.state.note != null,
+            themeColors = themeColors,
+            icon = painterResource(R.drawable.icon_outline_rounded_notifications)
+        )
+        ActionButton(
+            onClick = {
+                val note = viewModel.state.note
+
+                if (note == null) {
+                    viewModel.onEvent(
+                        DayScreenEvent.NoteModeChange(DayNoteMode.Adding)
+                    )
+                    viewModel.onEvent(
+                        DayScreenEvent.NoteChange(
+                            DayScreenNote(
+                                date = mainViewModel.state.dayScreenDate,
+                                textValue = TextFieldValue()
+                            )
+                        )
+                    )
+                } else {
+                    viewModel.onEvent(
+                        DayScreenEvent.NoteModeChange(DayNoteMode.Editing)
+                    )
+                    viewModel.onEvent(
+                        DayScreenEvent.NoteChange(
+                            DayScreenNote(
+                                date = note.date,
+                                textValue = note.textValue.copy(
+                                    selection = TextRange(note.textValue.text.length)
+                                )
+                            )
+                        )
+                    )
+                }
+            },
+            visible = viewModel.state.noteMode == DayNoteMode.Reading,
+            themeColors = themeColors,
+            icon = painterResource(
+                if (viewModel.state.note == null) R.drawable.icon_rounded_plus
+                else R.drawable.icon_rounded_edit
+            )
+        )
+        ActionButton(
+            onClick = {
+                val note = viewModel.state.note
+                val noteData = note?.let { noteRepository.getBy(it.date) }
+
+                if (noteData != null) {
+                    noteRepository.delete(noteData)
+                }
+                viewModel.onEvent(DayScreenEvent.NoteChange(null))
+                viewModel.onEvent(
+                    DayScreenEvent.NoteModeChange(DayNoteMode.Reading)
+                )
+                focusRequester.freeFocus()
+                keyboardController?.hide()
+                focusManager.clearFocus()
+            },
+            visible = viewModel.state.noteMode == DayNoteMode.Editing,
+            themeColors = themeColors,
+            icon = painterResource(R.drawable.icon_rounded_delete)
+        )
+        ActionButton(
+            onClick = {
+                val note = viewModel.state.note
+                val noteMode = viewModel.state.noteMode
+
+                if (noteMode == DayNoteMode.Editing) {
+                    val noteData = note?.let { noteRepository.getBy(it.date) }
+
+                    if (noteData != null) {
+                        viewModel.onEvent(
+                            DayScreenEvent.NoteChange(
+                                DayScreenNote(
+                                    date = note.date,
+                                    textValue = TextFieldValue(noteData.text)
+                                )
+                            )
+                        )
+                    }
+                } else if (noteMode == DayNoteMode.Adding) {
+                    viewModel.onEvent(DayScreenEvent.NoteChange(null))
+                }
+                viewModel.onEvent(
+                    DayScreenEvent.NoteModeChange(DayNoteMode.Reading)
+                )
+                focusRequester.freeFocus()
+                keyboardController?.hide()
+                focusManager.clearFocus()
+            },
+            visible = viewModel.state.noteMode == DayNoteMode.Editing ||
+                viewModel.state.noteMode == DayNoteMode.Adding,
+            themeColors = themeColors,
+            icon = painterResource(R.drawable.icon_rounded_edit_off)
+        )
+        ActionButton(
+            onClick = {
+                val note = viewModel.state.note
+
+                if (note != null) {
+                    val noteData = note.let { noteRepository.getBy(it.date) }
+
+                    if (noteData == null) {
+                        noteRepository.add(
+                            NoteData(
+                                date = mainViewModel.state.dayScreenDate.toString(),
+                                text = note.textValue.text
+                            )
+                        )
+                    } else {
+                        noteRepository.update(noteData.copy(text = note.textValue.text))
+                    }
+                    viewModel.onEvent(
+                        DayScreenEvent.NoteChange(
+                            DayScreenNote(note.date, note.textValue)
+                        )
+                    )
+                    viewModel.onEvent(
+                        DayScreenEvent.NoteModeChange(DayNoteMode.Reading)
+                    )
+                }
+                focusRequester.freeFocus()
+                keyboardController?.hide()
+                focusManager.clearFocus()
+            },
+            visible = viewModel.state.noteMode == DayNoteMode.Editing ||
+                viewModel.state.noteMode == DayNoteMode.Adding,
+            themeColors = themeColors,
+            icon = painterResource(R.drawable.icon_rounded_check)
         )
     }
 }
@@ -151,489 +439,108 @@ fun DayScreen(
 @Composable
 fun DayPageLayout(
     modifier: Modifier = Modifier,
-    draggableModifier: Modifier = Modifier,
-    viewModel: MainViewModel,
-    permissionManager: AppPermissionManager,
-    notificationManager: AppNotificationManager,
-    noteRepository: NoteRepository,
-    date: LocalDate,
-    isCreateOrEditRequested: Boolean
+    mainViewModel: MainViewModel,
+    viewModel: DayScreenViewModel,
+    focusRequester: FocusRequester,
+    date: LocalDate
 ) {
-    LaunchedEffect(Unit) {
-        viewModel.onEvent(MainEvent.DayScreenDateChange(date))
+    val themeColors = mainViewModel.state.themeColors
+    val dayScreenDate = mainViewModel.state.dayScreenDate
+    val note = when {
+        date > dayScreenDate -> viewModel.state.nextNote
+        date < dayScreenDate -> viewModel.state.prevNote
+        else -> viewModel.state.note
     }
-    val noteState = remember {
-        mutableStateOf(noteRepository.getBy(date))
-    }
-    val undoNoteState: MutableState<NoteData?> = remember { mutableStateOf(null) }
-    val themeColors = viewModel.state.themeColors
-    val dayNoteState = remember {
-        mutableStateOf(
-            when (Pair(noteState.value != null, isCreateOrEditRequested)) {
-                Pair(true, true) -> DayNoteState.Editing
-                Pair(true, false) -> DayNoteState.Reading
-                Pair(false, true) -> DayNoteState.Adding
-                else -> DayNoteState.Empty
-            }
-        )
-    }
-    val noteTransitionState = when (dayNoteState.value) {
-        DayNoteState.Empty -> DayNoteTransitionState.Empty
-        DayNoteState.Adding -> DayNoteTransitionState.Adding
-        else -> DayNoteTransitionState.Reading
-    }
-    val focusRequester = remember { FocusRequester() }
+    val noteMode =
+        if (date == dayScreenDate) viewModel.state.noteMode
+        else DayNoteMode.Reading
+    val keyboardController = LocalSoftwareKeyboardController.current
 
     Column(modifier = modifier) {
+        DayDateText(
+            viewModel = mainViewModel,
+            date = date
+        )
         Column(
-            modifier = draggableModifier
-                .verticalScroll(rememberScrollState())
-                .fillMaxWidth()
-                .weight(0.6f)
-        ) {
-            Spacer(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(0.5f)
-            )
-            BasicText(
-                text = date.dayOfMonth.toString(),
-                style = LocalTextStyle.current.copy(
-                    color = themeColors.textColor,
-                    textAlign = TextAlign.Center,
-                    fontSize = 140.sp
-                ),
-                maxLines = 1,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(4f)
-            )
-            BasicText(
-                text = date.month.getLocalizedGenitiveCaseName(),
-                style = LocalTextStyle.current.copy(
-                    color = themeColors.textColor,
-                    textAlign = TextAlign.Center,
-                    fontSize = 36.sp
-                ),
-                maxLines = 1,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1.5f)
-            )
-            BasicText(
-                text = date.dayOfWeek.getLocalizedName(),
-                style = LocalTextStyle.current.copy(
-                    color = themeColors.textColor,
-                    textAlign = TextAlign.Center,
-                    fontSize = 24.sp
-                ),
-                maxLines = 1,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-            )
-        }
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
-                .padding(10.dp)
-        ) {
-            val inTransition = updateTransition(
-                targetState = noteTransitionState != DayNoteTransitionState.Empty
-            )
-            val inScaleY by inTransition.animateFloat(
-                transitionSpec = { tween(durationMillis = 500) },
-                targetValueByState = { expanded ->
-                    if (expanded) 1f else 0f
-                }
-            )
-            AnimatedContent(
-                targetState = noteTransitionState,
-                transitionSpec = {
-                    when (targetState) {
-                        DayNoteTransitionState.Empty -> {
-                            slideInHorizontally(
-                                animationSpec = tween(durationMillis = 500),
-                                initialOffsetX = { -it }
-                            ) togetherWith
-                                fadeOut(animationSpec = tween(durationMillis = 400)) +
-                                slideOutVertically(
-                                    animationSpec = tween(durationMillis = 500),
-                                    targetOffsetY = { (it * 0.1f).toInt() }
-                                )
-                        }
-
-                        DayNoteTransitionState.Adding -> {
-                            fadeIn(animationSpec = tween(durationMillis = 400)) togetherWith
-                                ExitTransition.None
-                        }
-
-                        else -> {
-                            EnterTransition.None togetherWith
-                                fadeOut(animationSpec = tween(durationMillis = 400)) +
-                                slideOutVertically(
-                                    animationSpec = tween(durationMillis = 500),
-                                    targetOffsetY = { it }
-                                )
-                        }
-                    }
-                },
-                modifier = Modifier.graphicsLayer(scaleX = 1f)
-            ) { targetState ->
-                when (targetState) {
-                    DayNoteTransitionState.Empty -> {
-                        DayNoteEmptyLayout(
-                            draggableModifier = draggableModifier,
-                            viewModel = viewModel,
-                            permissionManager = permissionManager,
-                            notificationManager = notificationManager,
-                            noteRepository = noteRepository,
-                            dayNoteState = dayNoteState,
-                            noteState = noteState,
-                            undoNoteState = undoNoteState
-                        )
-                    }
-
-                    DayNoteTransitionState.Reading -> {
-                        DayNoteLayout(
-                            modifier = Modifier.graphicsLayer(scaleY = inScaleY),
-                            viewModel = viewModel,
-                            permissionManager = permissionManager,
-                            notificationManager = notificationManager,
-                            noteRepository = noteRepository,
-                            focusRequester = focusRequester,
-                            dayNoteState = dayNoteState,
-                            noteState = noteState,
-                            undoNoteState = undoNoteState,
-                        )
-                    }
-
-                    DayNoteTransitionState.Adding -> {
-                        DayNoteAddLayout(
-                            modifier = Modifier.graphicsLayer(scaleY = inScaleY),
-                            viewModel = viewModel,
-                            permissionManager = permissionManager,
-                            notificationManager = notificationManager,
-                            noteRepository = noteRepository,
-                            focusRequester = focusRequester,
-                            dayNoteState = dayNoteState,
-                            noteState = noteState,
-                            undoNoteState = undoNoteState,
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun DayNoteEmptyLayout(
-    modifier: Modifier = Modifier,
-    viewModel: MainViewModel,
-    permissionManager: AppPermissionManager,
-    notificationManager: AppNotificationManager,
-    draggableModifier: Modifier,
-    noteRepository: NoteRepository,
-    dayNoteState: MutableState<DayNoteState>,
-    noteState: MutableState<NoteData?>,
-    undoNoteState: MutableState<NoteData?>,
-) {
-    val themeColors = viewModel.state.themeColors
-    val coroutineScope = rememberCoroutineScope()
-
-    Column(modifier = modifier.fillMaxSize()) {
-        Row(
-            modifier = modifier.fillMaxWidth()
-        ) {
-            ThemedButton(
-                onClick = { dayNoteState.value = DayNoteState.Adding },
-                themeColors = themeColors,
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(start = 10.dp, top = 5.dp, end = 10.dp, bottom = 0.dp),
-                text = stringResource(R.string.AddNote),
-                icon = painterResource(R.drawable.icon_note_add)
-            )
-            val undoNote = undoNoteState.value
-
-            if (undoNote != null) {
-                ThemedButton(
-                    onClick = {
-                        undoNoteState.value = null
-                        noteState.value = undoNote
-                        noteRepository.add(undoNote)
-                        dayNoteState.value = DayNoteState.Reading
-                        notificationManager.tryScheduleNotification(
-                            args = ScheduleNoteNotificationArguments(note = undoNote),
-                            permissionManager = permissionManager,
-                            noteRepository = noteRepository,
-                            coroutineScope = coroutineScope
-                        ) { isSuccess ->
-                            if (isSuccess) {
-
-                                Timber.i("${LogTags.NOTIFICATIONS} Scheduled notification after note save")
-                            }
-                        }
-                    },
-                    themeColors = themeColors,
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(start = 10.dp, top = 5.dp, end = 10.dp, bottom = 0.dp),
-                    text = stringResource(R.string.UndoDeletion),
-                    icon = painterResource(R.drawable.icon_undo)
-                )
-            }
-        }
-        Spacer(modifier = draggableModifier.fillMaxSize())
-    }
-}
-
-@Composable
-fun DayNoteAddLayout(
-    modifier: Modifier = Modifier,
-    viewModel: MainViewModel,
-    permissionManager: AppPermissionManager,
-    notificationManager: AppNotificationManager,
-    noteRepository: NoteRepository,
-    focusRequester: FocusRequester,
-    dayNoteState: MutableState<DayNoteState>,
-    noteState: MutableState<NoteData?>,
-    undoNoteState: MutableState<NoteData?>
-) {
-    val themeColors = viewModel.state.themeColors
-    val focusManager = LocalFocusManager.current
-    val coroutineScope = rememberCoroutineScope()
-    var noteTextFieldState by remember { mutableStateOf(TextFieldState()) }
-
-    DayNote(
-        color = themeColors.noteColor,
-        bendTint = themeColors.noteColorVariant,
-        bendShadowWidth = with(LocalDensity.current) { 2.dp.toPx() },
-        modifier = modifier
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(68.dp)
-        ) {
-            ThemedButton(
-                onClick = {
-                    focusManager.clearFocus()
-                    val noteData = NoteData(
-                        date = viewModel.state.dayScreenDate.toString(),
-                        text = noteTextFieldState.text.toString()
-                    )
-                    noteRepository.add(noteData)
-                    noteState.value = noteData
-                    undoNoteState.value = null
-                    dayNoteState.value = DayNoteState.Reading
-                    notificationManager.tryScheduleNotification(
-                        args = ScheduleNoteNotificationArguments(note = noteData),
-                        permissionManager = permissionManager,
-                        noteRepository = noteRepository,
-                        coroutineScope = coroutineScope
-                    ) { isSuccess ->
-                        if (isSuccess) {
-                            Timber.i("${LogTags.NOTIFICATIONS} Scheduled notification after note save")
-                        }
-                    }
-                },
-                themeColors = themeColors,
-                modifier = Modifier
-                    .wrapContentSize()
-                    .padding(start = 10.dp, top = 10.dp, end = 0.dp, bottom = 10.dp),
-                text = stringResource(R.string.Save),
-                icon = painterResource(R.drawable.icon_add)
-            )
-            ThemedButton(
-                onClick = {
-                    focusManager.clearFocus()
-                    noteTextFieldState = TextFieldState()
-                    dayNoteState.value = DayNoteState.Empty
-                },
-                themeColors = themeColors,
-                modifier = Modifier
-                    .wrapContentSize()
-                    .padding(start = 5.dp, top = 10.dp, end = 0.dp, bottom = 10.dp),
-                text = stringResource(R.string.Cancel),
-                icon = painterResource(R.drawable.icon_cancel)
-            )
-        }
-        Column(
+            verticalArrangement = Arrangement.Bottom,
+            horizontalAlignment = Alignment.End,
             modifier = Modifier
                 .fillMaxSize()
-                .padding(start = 10.dp, top = 0.dp, end = 10.dp, bottom = 10.dp)
+                .weight(1f)
         ) {
-            BasicTextField(
-                state = noteTextFieldState,
-                lineLimits = TextFieldLineLimits.MultiLine(),
-                textStyle = TextStyle(
-                    color = themeColors.noteTextColor,
-                    fontSize = 24.sp,
-                    lineHeight = 26.sp,
-                ),
-                cursorBrush = SolidColor(themeColors.secondaryColor),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .wrapContentHeight()
-                    .then(
-                        when (dayNoteState.value) {
-                            DayNoteState.Empty -> Modifier.focusProperties {
-                                canFocus = false
-                            }
-
-                            else -> Modifier
-                        }
-                    )
-                    .focusRequester(focusRequester)
-            )
-        }
-    }
-    LaunchedEffect(Unit) {
-        focusRequester.requestFocus()
-    }
-}
-
-@Composable
-fun DayNoteLayout(
-    modifier: Modifier = Modifier,
-    viewModel: MainViewModel,
-    permissionManager: AppPermissionManager,
-    notificationManager: AppNotificationManager,
-    noteRepository: NoteRepository,
-    focusRequester: FocusRequester,
-    dayNoteState: MutableState<DayNoteState>,
-    noteState: MutableState<NoteData?>,
-    undoNoteState: MutableState<NoteData?>
-) {
-    val themeColors = viewModel.state.themeColors
-    val focusManager = LocalFocusManager.current
-    val coroutineScope = rememberCoroutineScope()
-    var noteTextFieldState by remember {
-        mutableStateOf(TextFieldState(noteState.value?.text ?: ""))
-    }
-    DayNote(
-        color = themeColors.noteColor,
-        bendTint = themeColors.noteColorVariant,
-        bendShadowWidth = with(LocalDensity.current) { 2.dp.toPx() },
-        modifier = modifier
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(68.dp)
-        ) {
-            if (dayNoteState.value == DayNoteState.Editing) {
-                ThemedButton(
-                    onClick = {
-                        dayNoteState.value = DayNoteState.Reading
-                        val note = NoteData(
-                            date = viewModel.state.dayScreenDate.toString(),
-                            text = noteTextFieldState.text.toString()
-                        )
-                        noteRepository.update(note)
-                        noteState.value = note
-                        focusManager.clearFocus()
-                        notificationManager.tryScheduleNotification(
-                            args = ScheduleNoteNotificationArguments(note = note),
-                            permissionManager = permissionManager,
-                            noteRepository = noteRepository,
-                            coroutineScope = coroutineScope,
-                        ) { isSuccess ->
-                            if (isSuccess) {
-                                Timber.i("${LogTags.NOTIFICATIONS} Scheduled notification after note edit")
-                            }
-                        }
-                    },
-                    themeColors = themeColors,
-                    modifier = Modifier
-                        .wrapContentSize()
-                        .padding(start = 10.dp, top = 10.dp, end = 0.dp, bottom = 10.dp),
-                    text = stringResource(R.string.Save),
-                    icon = painterResource(R.drawable.icon_add)
-                )
-                ThemedButton(
-                    onClick = {
-                        dayNoteState.value = DayNoteState.Reading
-                        noteTextFieldState = TextFieldState(noteState.value?.text ?: "")
-                        focusManager.clearFocus()
-                    },
-                    themeColors = themeColors,
-                    modifier = Modifier
-                        .wrapContentSize()
-                        .padding(start = 5.dp, top = 10.dp, end = 0.dp, bottom = 10.dp),
-                    text = stringResource(R.string.Cancel),
-                    icon = painterResource(R.drawable.icon_cancel)
-                )
-            } else {
-                ThemedIconButton(
-                    onClick = {
-                        dayNoteState.value = DayNoteState.Editing
-                        focusRequester.requestFocus()
-                    },
-                    themeColors = themeColors,
-                    icon = painterResource(R.drawable.icon_edit),
-                    contentDescription = stringResource(R.string.EditNote),
-                    modifier = Modifier
-                        .padding(start = 10.dp, top = 10.dp, end = 5.dp, bottom = 0.dp)
-                        .size(48.dp)
-                )
-                ThemedIconButton(
-                    onClick = {
-                        val note = noteState.value
-
+            AnimatedVisibility(
+                visible = note != null ||
+                    noteMode == DayNoteMode.Editing ||
+                    noteMode == DayNoteMode.Adding,
+                enter = scaleIn() + expandIn(),
+                exit = shrinkOut() + scaleOut()
+            ) {
+                DayNote(
+                    color = themeColors.noteColor,
+                    bendTint = themeColors.noteColorVariant,
+                    bendWidth = with(LocalDensity.current) { 32.dp.toPx() },
+                    bendShadowWidth = with(LocalDensity.current) { 1.dp.toPx() },
+                    modifier = Modifier.padding(8.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .verticalScroll(rememberScrollState())
+                            .padding(8.dp)
+                    ) {
                         if (note != null) {
-                            undoNoteState.value = note
-                            noteRepository.delete(note)
-                            coroutineScope.launch {
-                                val isCancelled = notificationManager
-                                    .tryCancelScheduledNotification(
-                                        LocalDate.parse(note.date)
+                            BasicTextField(
+                                value = note.textValue,
+                                onValueChange = {
+                                    if (viewModel.state.noteMode != DayNoteMode.Reading) {
+                                        viewModel.onEvent(
+                                            DayScreenEvent.NoteChange(
+                                                DayScreenNote(
+                                                    date = date,
+                                                    textValue = it
+                                                )
+                                            )
+                                        )
+                                    }
+                                },
+                                readOnly = noteMode == DayNoteMode.Reading,
+                                minLines = 1,
+                                maxLines = Int.MAX_VALUE,
+                                textStyle = TextStyle(
+                                    color = themeColors.noteTextColor,
+                                    fontSize = 24.sp,
+                                    lineHeight = 26.sp,
+                                ),
+                                cursorBrush = SolidColor(themeColors.secondaryColor),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .wrapContentHeight()
+                                    .padding(end = 24.dp)
+                                    .then(
+                                        when (date == dayScreenDate) {
+                                            true -> Modifier.focusRequester(focusRequester)
+                                            false -> Modifier
+                                        }
                                     )
-                                if (isCancelled) {
-                                    Timber.i("${LogTags.NOTIFICATIONS} Canceled notification after note deletion")
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(72.dp))
+                        LaunchedEffect(noteMode) {
+                            when (noteMode) {
+                                DayNoteMode.Reading -> {
+                                    focusRequester.freeFocus()
+                                    keyboardController?.hide()
+                                }
+
+                                DayNoteMode.Editing, DayNoteMode.Adding -> {
+                                    focusRequester.requestFocus()
+                                    keyboardController?.show()
                                 }
                             }
                         }
-                        dayNoteState.value = DayNoteState.Empty
-                        focusManager.clearFocus()
-                    },
-                    themeColors = themeColors,
-                    icon = painterResource(R.drawable.icon_delete),
-                    contentDescription = stringResource(R.string.DeleteNote),
-                    modifier = Modifier
-                        .padding(start = 5.dp, top = 10.dp, end = 5.dp, bottom = 0.dp)
-                        .size(48.dp)
-                )
+                    }
+                }
             }
-        }
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(start = 10.dp, top = 0.dp, end = 10.dp, bottom = 10.dp)
-        ) {
-            BasicTextField(
-                state = noteTextFieldState,
-                readOnly = dayNoteState.value == DayNoteState.Reading,
-                lineLimits = TextFieldLineLimits.MultiLine(),
-                textStyle = TextStyle(
-                    color = themeColors.noteTextColor,
-                    fontSize = 24.sp,
-                    lineHeight = 26.sp,
-                ),
-                cursorBrush = SolidColor(themeColors.secondaryColor),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .wrapContentHeight()
-                    .focusRequester(focusRequester)
-            )
-        }
-    }
-    LaunchedEffect(dayNoteState.value) {
-        if (dayNoteState.value == DayNoteState.Editing) {
-            focusRequester.requestFocus()
         }
     }
 }
