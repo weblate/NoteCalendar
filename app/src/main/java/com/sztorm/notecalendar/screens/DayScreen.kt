@@ -101,7 +101,8 @@ fun DayScreen(
                             textValue = TextFieldValue(text = it.text)
                         )
                     },
-                noteMode = DayNoteMode.Reading
+                noteMode = DayNoteMode.Reading,
+                noteBackup = null
             )
         )
     )
@@ -305,6 +306,33 @@ private fun BoxScope.ActionButtons(
                 viewModel.state.note != null,
             themeColors = themeColors,
             icon = painterResource(R.drawable.icon_outline_rounded_notifications)
+        )
+        ActionButton(
+            onClick = {
+                val note = viewModel.state.noteBackup
+                val noteData = note?.let { noteRepository.getBy(it.date) }
+
+                if (note != null) {
+                    if (noteData == null) {
+                        noteRepository.add(
+                            NoteData(
+                                date = mainViewModel.state.dayScreenDate.toString(),
+                                text = note.textValue.text
+                            )
+                        )
+                    } else {
+                        noteRepository.update(noteData.copy(text = note.textValue.text))
+                    }
+                }
+                viewModel.onEvent(
+                    DayScreenEvent.NoteChange(note)
+                )
+            },
+            visible = viewModel.state.noteMode == DayNoteMode.Reading &&
+                viewModel.state.note == null &&
+                viewModel.state.noteBackup != null,
+            themeColors = themeColors,
+            icon = painterResource(R.drawable.icon_rounded_undo)
         )
         ActionButton(
             onClick = {

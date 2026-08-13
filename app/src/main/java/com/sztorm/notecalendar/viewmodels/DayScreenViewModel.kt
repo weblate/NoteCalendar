@@ -15,12 +15,13 @@ class DayScreenViewModel(initialState: DayScreenState) : ViewModel() {
 
     fun onEvent(event: DayScreenEvent) {
         state = when (event) {
-            is DayScreenEvent.NoteChange -> state.copy(note = event.note)
+            is DayScreenEvent.NoteChange -> state.copy(note = event.note, noteBackup = state.note)
 
             is DayScreenEvent.DateChange -> state.copy(
-                prevNote = event.prevNote,
                 note = event.note,
-                nextNote = event.nextNote
+                prevNote = event.prevNote,
+                nextNote = event.nextNote,
+                noteBackup = null,
             )
 
             is DayScreenEvent.NoteModeChange -> state.copy(noteMode = event.noteMode)
@@ -57,4 +58,5 @@ data class DayScreenState(
     val prevNote: DayScreenNote?,
     val nextNote: DayScreenNote?,
     val noteMode: DayNoteMode,
+    val noteBackup: DayScreenNote?,
 )
