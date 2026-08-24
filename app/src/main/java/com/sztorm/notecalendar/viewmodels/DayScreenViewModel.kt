@@ -8,6 +8,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.sztorm.notecalendar.screens.DayNoteMode
 import java.time.LocalDate
+import java.time.OffsetDateTime
 
 class DayScreenViewModel(initialState: DayScreenState) : ViewModel() {
     var state by mutableStateOf(initialState)
@@ -25,6 +26,9 @@ class DayScreenViewModel(initialState: DayScreenState) : ViewModel() {
             )
 
             is DayScreenEvent.NoteModeChange -> state.copy(noteMode = event.noteMode)
+
+            is DayScreenEvent.ReminderDialogStateChange ->
+                state.copy(isReminderDialogOpen = event.isOpen)
         }
     }
 }
@@ -46,6 +50,7 @@ sealed class DayScreenEvent {
     ) : DayScreenEvent()
 
     data class NoteModeChange(val noteMode: DayNoteMode) : DayScreenEvent()
+    data class ReminderDialogStateChange(val isOpen: Boolean) : DayScreenEvent()
 }
 
 data class DayScreenNote(
@@ -60,4 +65,5 @@ data class DayScreenState(
     val nextNote: DayScreenNote?,
     val noteMode: DayNoteMode,
     val noteBackup: DayScreenNote?,
+    val isReminderDialogOpen: Boolean
 )

@@ -21,9 +21,13 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.Text
+import androidx.compose.material3.TimePickerDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -40,6 +44,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -52,6 +57,8 @@ import com.sztorm.notecalendar.R
 import com.sztorm.notecalendar.ThemeColors
 import com.sztorm.notecalendar.components.DayNote
 import com.sztorm.notecalendar.components.InfiniteHorizontalPager
+import com.sztorm.notecalendar.components.TimePickerDialog
+import com.sztorm.notecalendar.components.TimedContent
 import com.sztorm.notecalendar.getLocalizedGenitiveCaseName
 import com.sztorm.notecalendar.getLocalizedName
 import com.sztorm.notecalendar.repositories.NoteRepository
@@ -63,6 +70,9 @@ import com.sztorm.notecalendar.viewmodels.DayScreenViewModelFactory
 import com.sztorm.notecalendar.viewmodels.MainEvent
 import com.sztorm.notecalendar.viewmodels.MainViewModel
 import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.OffsetDateTime
+import kotlin.time.Duration as KotlinDuration
 
 enum class DayNoteMode {
     Reading,
@@ -118,7 +128,8 @@ fun DayScreen(
                         )
                     },
                 noteMode = DayNoteMode.Reading,
-                noteBackup = null
+                noteBackup = null,
+                isReminderDialogOpen = false
             )
         )
     )
@@ -290,7 +301,7 @@ private fun ActionButton(
     visible: Boolean = true,
     onClick: () -> Unit,
     themeColors: ThemeColors,
-    icon: Painter
+    content: @Composable () -> Unit
 ) {
     AnimatedVisibility(
         visible = visible,
@@ -303,11 +314,29 @@ private fun ActionButton(
             contentColor = themeColors.buttonTextColor,
             modifier = modifier.padding(8.dp)
         ) {
-            Icon(painter = icon, contentDescription = "")
+            content()
         }
     }
 }
 
+@Composable
+private fun ActionButton(
+    modifier: Modifier = Modifier,
+    visible: Boolean = true,
+    onClick: () -> Unit,
+    themeColors: ThemeColors,
+    icon: Painter
+) = ActionButton(
+    modifier = modifier,
+    visible = visible,
+    onClick = onClick,
+    themeColors = themeColors,
+    content = {
+        Icon(painter = icon, contentDescription = "")
+    }
+)
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun BoxScope.ActionButtons(
     @Suppress("unused") logger: ILogger,
@@ -319,9 +348,64 @@ private fun BoxScope.ActionButtons(
     focusRequester: FocusRequester
 ) {
     val themeColors = mainViewModel.state.themeColors
+    val dialogColors = CardDefaults.cardColors().copy(
+        containerColor = themeColors.backgroundColor,
+        contentColor = themeColors.backgroundColor,
+    )
+    val timePickerColors = TimePickerDefaults.colors().copy(
+        clockDialColor = themeColors.backgroundColorVariant,
+        selectorColor = themeColors.primaryColor,
+        containerColor = themeColors.textColor,
+        periodSelectorBorderColor = themeColors.textColor,
+        clockDialSelectedContentColor = themeColors.buttonTextColor,
+        clockDialUnselectedContentColor = themeColors.textColor,
+        periodSelectorSelectedContainerColor = themeColors.primaryColor,
+        periodSelectorUnselectedContainerColor = themeColors.backgroundColorVariant,
+        periodSelectorSelectedContentColor = themeColors.buttonTextColor,
+        periodSelectorUnselectedContentColor = themeColors.textColor,
+        timeSelectorSelectedContainerColor = themeColors.primaryColor,
+        timeSelectorUnselectedContainerColor = themeColors.backgroundColorVariant,
+        timeSelectorSelectedContentColor = themeColors.buttonTextColor,
+        timeSelectorUnselectedContentColor = themeColors.textColor,
+    )
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
 
+    TimePickerDialog(
+        title = "Set reminder", // TODO: add to strings.xml,
+        initialTime = OffsetDateTime.now().toLocalTime(),
+        isOpen = viewModel.state.isReminderDialogOpen,
+        titleColor = themeColors.textColor,
+        buttonColor = themeColors.primaryColor,
+        dialogColors = dialogColors,
+        timePickerColors = timePickerColors,
+        onConfirm = { localTime ->
+            val offsetNow = OffsetDateTime.now()
+            val localNow = LocalDateTime.now()
+            val dateTime = OffsetDateTime.of(
+                if (localTime > localNow.toLocalTime()) localNow.toLocalDate()
+                else localNow.toLocalDate().plusDays(1),
+                localTime,
+                offsetNow.offset
+            )
+            val note = viewModel.state.note
+
+            if (note != null) {
+                val noteData = note.let { noteRepository.getBy(it.date) }
+
+                if (noteData != null) {
+                    noteRepository.update(noteData.copy(reminderDateTime = dateTime.toString()))
+                }
+                viewModel.onEvent(
+                    DayScreenEvent.NoteChange(note.copy(reminderDateTime = dateTime))
+                )
+            }
+            viewModel.onEvent(DayScreenEvent.ReminderDialogStateChange(false))
+        },
+        onDismiss = {
+            viewModel.onEvent(DayScreenEvent.ReminderDialogStateChange(false))
+        }
+    )
     Row(
         modifier = Modifier
             .align(Alignment.BottomEnd)
@@ -329,13 +413,54 @@ private fun BoxScope.ActionButtons(
     ) {
         ActionButton(
             onClick = {
-                // TODO
+                viewModel.onEvent(DayScreenEvent.ReminderDialogStateChange(true))
             },
             visible = viewModel.state.noteMode == DayNoteMode.Reading &&
                 viewModel.state.note != null,
             themeColors = themeColors,
-            icon = painterResource(R.drawable.icon_outline_rounded_notifications)
-        )
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.icon_outline_rounded_notifications),
+                    contentDescription = ""
+                )
+                val note = viewModel.state.note
+                val deleteReminder = {
+                    val note = viewModel.state.note
+                    val noteData = note?.let { noteRepository.getBy(it.date) }
+
+                    if (note != null && noteData != null) {
+                        noteRepository.update(noteData.copy(reminderDateTime = ""))
+                        viewModel.onEvent(
+                            DayScreenEvent.NoteChange(
+                                note.copy(reminderDateTime = null)
+                            )
+                        )
+                    }
+                }
+                if (note?.reminderDateTime != null) {
+                    if (note.reminderDateTime > OffsetDateTime.now()) {
+                        TimedContent(note.reminderDateTime) { remaining ->
+                            val locale = Locale.current.platformLocale
+                            val text = remaining.toComponents { hours, minutes, s, _ ->
+                                String.format(
+                                    locale, "%02d:%02d:%02d", hours, minutes, s
+                                )
+                            }
+                            Text(text = text)
+
+                            if (remaining == KotlinDuration.ZERO) {
+                                deleteReminder()
+                            }
+                        }
+                    } else {
+                        deleteReminder()
+                    }
+                }
+            }
+        }
         ActionButton(
             onClick = {
                 val note = viewModel.state.noteBackup

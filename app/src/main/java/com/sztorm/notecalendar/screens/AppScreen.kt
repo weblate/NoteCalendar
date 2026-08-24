@@ -16,7 +16,6 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -34,12 +33,11 @@ import com.sztorm.notecalendar.AppNotificationManager
 import com.sztorm.notecalendar.AppPermissionManager
 import com.sztorm.notecalendar.ILogger
 import com.sztorm.notecalendar.R
-import com.sztorm.notecalendar.ScheduleNoteNotificationArguments
 import com.sztorm.notecalendar.StartingScreenType
 import com.sztorm.notecalendar.repositories.FileRepository
 import com.sztorm.notecalendar.repositories.NoteRepository
 import com.sztorm.notecalendar.repositories.UserPreferencesRepository
-import timber.log.Timber
+import com.sztorm.notecalendar.viewmodels.MainViewModel
 
 private data class MainTab(
     val screen: Screen,
@@ -68,20 +66,6 @@ fun AppScreen(
                 StartingScreenType.MonthScreen -> 0
             }
         )
-    }
-    LaunchedEffect(Unit) {
-        notificationManager.tryScheduleNotification(
-            args = ScheduleNoteNotificationArguments(),
-            permissionManager = permissionManager,
-            noteRepository = noteRepository,
-            coroutineScope = this
-        ) { isSuccess ->
-            if (isSuccess) {
-                Timber.i(
-                    "${LogTags.NOTIFICATIONS} Scheduled notification upon MainActivity creation"
-                )
-            }
-        }
     }
     DisposableEffect(Unit) {
         val listener = NavController.OnDestinationChangedListener { _, destination, _ ->
