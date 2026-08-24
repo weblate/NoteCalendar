@@ -5,11 +5,17 @@ import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
 import timber.log.Timber
+import java.time.LocalDate
+import java.time.OffsetDateTime
 import javax.crypto.SecretKey
 import javax.crypto.spec.IvParameterSpec
 
-data class Note(val date: String, val text: String) {
-    fun toNoteData() = NoteData(date, text)
+data class Note(
+    val date: LocalDate,
+    val text: String,
+    val reminderDateTime: OffsetDateTime? = null
+) {
+    fun toNoteData() = NoteData(date.toString(), text, reminderDateTime?.toString() ?: "")
 }
 
 sealed class NotesBackupFile(val version: String) {
@@ -84,7 +90,7 @@ sealed class NotesBackupFile(val version: String) {
                                             .decode(textBase64, Base64.NO_WRAP)
                                             .toString(Charsets.UTF_8)
                                     }
-                                    Note(date = date, text = text)
+                                    Note(date = LocalDate.parse(date), text = text)
                                 }
                             }
                     }.onSuccess {
@@ -127,7 +133,7 @@ sealed class NotesBackupFile(val version: String) {
                                         ).decoded()
                                             .toString(Charsets.UTF_8)
 
-                                        Note(date = date, text = text)
+                                        Note(date = LocalDate.parse(date), text = text)
                                     }
                                 }
                             V1.Plain(notes = notes)

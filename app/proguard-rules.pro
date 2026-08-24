@@ -20,5 +20,7 @@
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
 
+-keep class com.sztorm.notecalendar.NoteData
+
 -dontobfuscate
 -dontoptimize

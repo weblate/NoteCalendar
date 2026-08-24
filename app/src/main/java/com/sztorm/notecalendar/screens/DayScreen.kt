@@ -78,27 +78,41 @@ fun DayScreen(
     isCreateOrEditRequested: Boolean = false
 ) {
     val currentDate = remember { mainViewModel.state.dayScreenDate }
+    val initialDayNote = noteRepository
+        .getBy(currentDate)
+        ?.let { noteData ->
+            DayScreenNote(
+                date = currentDate,
+                textValue = TextFieldValue(text = noteData.text),
+                reminderDateTime = noteData.reminderDateTime
+                    .ifEmpty { null }
+                    ?.let { OffsetDateTime.parse(it) }
+            )
+        }
     val viewModel = viewModel<DayScreenViewModel>(
         factory = DayScreenViewModelFactory(
             initialState = DayScreenState(
-                note = noteRepository.getBy(currentDate)?.let {
-                    DayScreenNote(
-                        date = currentDate,
-                        textValue = TextFieldValue(text = it.text)
-                    )
-                },
+                note = initialDayNote,
                 prevNote = noteRepository
-                    .getBy(currentDate.minusDays(1))?.let {
+                    .getBy(currentDate.minusDays(1))
+                    ?.let { noteData ->
                         DayScreenNote(
                             date = currentDate.minusDays(1),
-                            textValue = TextFieldValue(text = it.text)
+                            textValue = TextFieldValue(text = noteData.text),
+                            reminderDateTime = noteData.reminderDateTime
+                                .ifEmpty { null }
+                                ?.let { OffsetDateTime.parse(it) }
                         )
                     },
                 nextNote = noteRepository
-                    .getBy(currentDate.plusDays(1))?.let {
+                    .getBy(currentDate.plusDays(1))
+                    ?.let { noteData ->
                         DayScreenNote(
                             date = currentDate.plusDays(1),
-                            textValue = TextFieldValue(text = it.text)
+                            textValue = TextFieldValue(text = noteData.text),
+                            reminderDateTime = noteData.reminderDateTime
+                                .ifEmpty { null }
+                                ?.let { OffsetDateTime.parse(it) }
                         )
                     },
                 noteMode = DayNoteMode.Reading,
@@ -117,24 +131,33 @@ fun DayScreen(
                 mainViewModel.onEvent(MainEvent.DayScreenDateChange(date))
                 viewModel.onEvent(
                     DayScreenEvent.DateChange(
-                        note = noteRepository.getBy(date)?.let {
+                        note = noteRepository.getBy(date)?.let { noteData ->
                             DayScreenNote(
                                 date = currentDate,
-                                textValue = TextFieldValue(text = it.text)
+                                textValue = TextFieldValue(text = noteData.text),
+                                reminderDateTime = noteData.reminderDateTime
+                                    .ifEmpty { null }
+                                    ?.let { OffsetDateTime.parse(it) }
                             )
                         },
                         prevNote = noteRepository
-                            .getBy(date.minusDays(1))?.let {
+                            .getBy(date.minusDays(1))?.let { noteData ->
                                 DayScreenNote(
                                     date = date.minusDays(1),
-                                    textValue = TextFieldValue(text = it.text)
+                                    textValue = TextFieldValue(text = noteData.text),
+                                    reminderDateTime = noteData.reminderDateTime
+                                        .ifEmpty { null }
+                                        ?.let { OffsetDateTime.parse(it) }
                                 )
                             },
                         nextNote = noteRepository
-                            .getBy(date.plusDays(1))?.let {
+                            .getBy(date.plusDays(1))?.let { noteData ->
                                 DayScreenNote(
                                     date = date.plusDays(1),
-                                    textValue = TextFieldValue(text = it.text)
+                                    textValue = TextFieldValue(text = noteData.text),
+                                    reminderDateTime = noteData.reminderDateTime
+                                        .ifEmpty { null }
+                                        ?.let { OffsetDateTime.parse(it) }
                                 )
                             },
                     )
@@ -188,7 +211,8 @@ fun DayScreen(
                                 date = note.date,
                                 textValue = note.textValue.copy(
                                     selection = TextRange(note.textValue.text.length)
-                                )
+                                ),
+                                reminderDateTime = note.reminderDateTime
                             )
                         )
                     )
@@ -360,7 +384,8 @@ private fun BoxScope.ActionButtons(
                                 date = note.date,
                                 textValue = note.textValue.copy(
                                     selection = TextRange(note.textValue.text.length)
-                                )
+                                ),
+                                reminderDateTime = note.reminderDateTime
                             )
                         )
                     )
@@ -406,7 +431,8 @@ private fun BoxScope.ActionButtons(
                             DayScreenEvent.NoteChange(
                                 DayScreenNote(
                                     date = note.date,
-                                    textValue = TextFieldValue(noteData.text)
+                                    textValue = TextFieldValue(noteData.text),
+                                    reminderDateTime = note.reminderDateTime
                                 )
                             )
                         )
@@ -445,7 +471,7 @@ private fun BoxScope.ActionButtons(
                     }
                     viewModel.onEvent(
                         DayScreenEvent.NoteChange(
-                            DayScreenNote(note.date, note.textValue)
+                            DayScreenNote(note.date, note.textValue, note.reminderDateTime)
                         )
                     )
                     viewModel.onEvent(
@@ -525,7 +551,8 @@ fun DayPageLayout(
                                             DayScreenEvent.NoteChange(
                                                 DayScreenNote(
                                                     date = date,
-                                                    textValue = it
+                                                    textValue = it,
+                                                    reminderDateTime = note.reminderDateTime
                                                 )
                                             )
                                         )

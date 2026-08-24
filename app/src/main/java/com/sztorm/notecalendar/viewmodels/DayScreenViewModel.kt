@@ -50,7 +50,8 @@ sealed class DayScreenEvent {
 
 data class DayScreenNote(
     val date: LocalDate,
-    val textValue: TextFieldValue
+    val textValue: TextFieldValue,
+    val reminderDateTime: OffsetDateTime? = null
 )
 
 data class DayScreenState(
