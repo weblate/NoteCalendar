@@ -60,6 +60,7 @@ class MainActivity : ComponentActivity() {
             AppTheme(viewModel.state.themeColors) {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     AppScreen(
+                        logger = logger,
                         viewModel = viewModel,
                         startingView = startingView,
                         permissionManager = permissionManager,

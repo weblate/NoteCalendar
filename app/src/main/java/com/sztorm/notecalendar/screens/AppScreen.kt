@@ -32,8 +32,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.sztorm.notecalendar.AppNotificationManager
 import com.sztorm.notecalendar.AppPermissionManager
-import com.sztorm.notecalendar.LogTags
-import com.sztorm.notecalendar.viewmodels.MainViewModel
+import com.sztorm.notecalendar.ILogger
 import com.sztorm.notecalendar.R
 import com.sztorm.notecalendar.ScheduleNoteNotificationArguments
 import com.sztorm.notecalendar.StartingScreenType
@@ -51,6 +50,7 @@ private data class MainTab(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppScreen(
+    logger: ILogger,
     viewModel: MainViewModel,
     startingView: StartingScreenType,
     permissionManager: AppPermissionManager,
@@ -183,6 +183,7 @@ fun AppScreen(
                 val day = it.toRoute<Screen.Day>()
 
                 DayScreen(
+                    logger = logger,
                     mainViewModel = viewModel,
                     permissionManager = permissionManager,
                     notificationManager = notificationManager,

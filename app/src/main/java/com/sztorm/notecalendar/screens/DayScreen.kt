@@ -46,6 +46,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.sztorm.notecalendar.AppNotificationManager
 import com.sztorm.notecalendar.AppPermissionManager
+import com.sztorm.notecalendar.ILogger
 import com.sztorm.notecalendar.NoteData
 import com.sztorm.notecalendar.R
 import com.sztorm.notecalendar.ThemeColors
@@ -71,6 +72,7 @@ enum class DayNoteMode {
 
 @Composable
 fun DayScreen(
+    logger: ILogger,
     mainViewModel: MainViewModel,
     permissionManager: AppPermissionManager,
     notificationManager: AppNotificationManager,
@@ -170,6 +172,7 @@ fun DayScreen(
             val date = currentDate.plusDays(it.toLong())
 
             DayPageLayout(
+                logger = logger,
                 modifier = Modifier.fillMaxSize(),
                 mainViewModel = mainViewModel,
                 viewModel = viewModel,
@@ -178,6 +181,7 @@ fun DayScreen(
             )
         }
         ActionButtons(
+            logger = logger,
             mainViewModel = mainViewModel,
             viewModel = viewModel,
             noteRepository = noteRepository,
@@ -306,6 +310,7 @@ private fun ActionButton(
 
 @Composable
 private fun BoxScope.ActionButtons(
+    @Suppress("unused") logger: ILogger,
     mainViewModel: MainViewModel,
     viewModel: DayScreenViewModel,
     noteRepository: NoteRepository,
@@ -492,6 +497,7 @@ private fun BoxScope.ActionButtons(
 
 @Composable
 fun DayPageLayout(
+    @Suppress("unused") logger: ILogger,
     modifier: Modifier = Modifier,
     mainViewModel: MainViewModel,
     viewModel: DayScreenViewModel,
