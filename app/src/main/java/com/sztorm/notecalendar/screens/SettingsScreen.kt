@@ -15,7 +15,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.sztorm.notecalendar.AppNotificationManager
-import com.sztorm.notecalendar.AppPermissionManager
 import com.sztorm.notecalendar.viewmodels.MainViewModel
 import com.sztorm.notecalendar.R
 import com.sztorm.notecalendar.components.preferences.Preference
@@ -27,7 +26,6 @@ import com.sztorm.notecalendar.repositories.UserPreferencesRepository
 @Composable
 fun SettingsScreen(
     viewModel: MainViewModel,
-    permissionManager: AppPermissionManager,
     notificationManager: AppNotificationManager,
     fileRepository: FileRepository,
     noteRepository: NoteRepository,
@@ -120,30 +118,6 @@ fun SettingsScreen(
             )
         }
         composable(
-            route = Screen.Settings.Notifications.route,
-            enterTransition = {
-                slideIntoContainer(
-                    towards = SlideDirection.Left,
-                    animationSpec = tween(300)
-                )
-            },
-            exitTransition = {
-                slideOutOfContainer(
-                    towards = SlideDirection.Right,
-                    animationSpec = tween(300)
-                )
-            }
-        ) {
-            NotificationsSettingsScreen(
-                viewModel = viewModel,
-                permissionManager = permissionManager,
-                notificationManager = notificationManager,
-                noteRepository = noteRepository,
-                preferencesRepository = preferencesRepository,
-                navController = navController
-            )
-        }
-        composable(
             route = Screen.Settings.About.route,
             enterTransition = {
                 slideIntoContainer(
@@ -195,13 +169,6 @@ private fun RootSettingsScreen(viewModel: MainViewModel, navController: NavContr
             icon = painterResource(R.drawable.icon_palette),
             iconColorFilter = ColorFilter.tint(themeColors.secondaryColor),
             onClick = { navController.navigate(Screen.Settings.Theme.route) }
-        )
-        Preference(
-            title = stringResource(R.string.Settings_Header_Notifications),
-            titleColor = themeColors.textColor,
-            icon = painterResource(R.drawable.icon_outline_rounded_notifications),
-            iconColorFilter = ColorFilter.tint(themeColors.secondaryColor),
-            onClick = { navController.navigate(Screen.Settings.Notifications.route) }
         )
         Preference(
             title = "About", // TODO: add to strings.xml

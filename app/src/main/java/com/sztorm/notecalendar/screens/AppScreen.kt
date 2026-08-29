@@ -178,7 +178,6 @@ fun AppScreen(
             composable<Screen.Settings> {
                 SettingsScreen(
                     viewModel = viewModel,
-                    permissionManager = permissionManager,
                     notificationManager = notificationManager,
                     fileRepository = fileRepository,
                     noteRepository = noteRepository,
