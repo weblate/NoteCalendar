@@ -146,7 +146,7 @@ fun DayScreen(
                     DayScreenEvent.DateChange(
                         note = noteRepository.getBy(date)?.let { noteData ->
                             DayScreenNote(
-                                date = currentDate,
+                                date = date,
                                 textValue = TextFieldValue(text = noteData.text),
                                 reminderDateTime = noteData.reminderDateTime
                                     .ifEmpty { null }
