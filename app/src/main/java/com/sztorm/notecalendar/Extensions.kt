@@ -29,6 +29,8 @@ import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.Month
 import java.time.YearMonth
+import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeParseException
 import java.time.format.TextStyle
 import java.time.temporal.WeekFields
 import java.util.Locale
@@ -71,6 +73,22 @@ fun LazyListState.reachedTop(): Boolean {
 
 val LocalDate.yearMonth: YearMonth
     get() = YearMonth.of(year, month)
+
+fun LocalDate.stableHash(): Int {
+    val yearValue = year
+    val monthValue = month.value - 1
+    val dayValue = dayOfMonth
+
+    return (yearValue and -0x800) xor ((yearValue shl 11) + (monthValue shl 6) + (dayValue))
+}
+
+fun CharSequence.toLocalDateOrNull(
+    formatter: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE
+) = try {
+    LocalDate.parse(this, formatter)
+} catch (_: DateTimeParseException) {
+    null
+}
 
 @Composable
 @ReadOnlyComposable

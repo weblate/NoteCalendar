@@ -1,6 +1,7 @@
 package com.sztorm.notecalendar
 
 object LogTags {
+    const val APPLICATION = "Application:"
     const val CRYPTO = "Crypto:"
     const val FILE_IO = "FileIO:"
     const val NOTIFICATIONS = "Notifications:"

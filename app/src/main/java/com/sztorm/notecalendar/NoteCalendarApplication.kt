@@ -30,8 +30,4 @@ class NoteCalendarApplication : Application() {
         SugarContext.terminate()
         super.onTerminate()
     }
-
-    companion object {
-        const val BUNDLE_KEY_NOTIFICATION_LAUNCH_DAY_SCREEN = "LaunchDayScreen"
-    }
 }

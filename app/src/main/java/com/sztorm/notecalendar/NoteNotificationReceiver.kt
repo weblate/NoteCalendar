@@ -8,13 +8,16 @@ import android.content.Intent
 
 class NoteNotificationReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        val notification: Notification = intent.getParcelableExtraCompat(
-            NOTIFICATION_EXTRA, Notification::class.java)!!
-        manager.notify(AppNotificationManager.NOTIFICATION_ID, notification)
-    }
+        val manager = context
+            .getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val notification = intent.getParcelableExtraCompat(
+            IntentKeys.NOTIFICATION_EXTRA, Notification::class.java
+        )
+        val noteDateId = intent
+            .getIntExtra(IntentKeys.NOTE_DATE_ID, 0)
 
-    companion object {
-        const val NOTIFICATION_EXTRA: String = "note-notification-extra"
+        if (notification != null) {
+            manager.notify(noteDateId, notification)
+        }
     }
 }

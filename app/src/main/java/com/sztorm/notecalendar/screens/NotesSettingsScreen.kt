@@ -23,6 +23,7 @@ import com.sztorm.notecalendar.components.preferences.ConfirmationPreference
 import com.sztorm.notecalendar.components.preferences.SubpreferenceScreen
 import com.sztorm.notecalendar.repositories.FileRepository
 import com.sztorm.notecalendar.repositories.NoteRepository
+import com.sztorm.notecalendar.toLocalDateOrNull
 import timber.log.Timber
 
 @Composable
@@ -50,9 +51,13 @@ fun NotesSettingsScreen(
             icon = painterResource(R.drawable.icon_outline_rounded_delete_forever),
             iconColorFilter = ColorFilter.tint(themeColors.secondaryColor),
             onConfirm = {
+                Timber.i("${LogTags.APPLICATION} Delete all notes confirmed.")
+                noteRepository.getAll().forEach { noteData ->
+                    noteData.date.toLocalDateOrNull()?.let {
+                        notificationManager.cancelScheduledNotification(it)
+                    }
+                }
                 noteRepository.deleteAll()
-                notificationManager.cancelScheduledNotification()
-                Timber.i("${LogTags.NOTIFICATIONS} Canceled notification when \"delete all notes\" was confirmed.")
             },
             titleColor = themeColors.textColor,
             dialogTitleColor = themeColors.textColor,

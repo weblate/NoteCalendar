@@ -16,6 +16,18 @@ data class Note(
     val reminderDateTime: OffsetDateTime? = null
 ) {
     fun toNoteData() = NoteData(date.toString(), text, reminderDateTime?.toString() ?: "")
+
+    @Suppress("unused")
+    fun toReminderNote() = reminderDateTime?.let { ReminderNote(date, text, reminderDateTime) }
+}
+
+data class ReminderNote(
+    val date: LocalDate,
+    val text: String,
+    val reminderDateTime: OffsetDateTime
+) {
+    @Suppress("unused")
+    fun toNote() = Note(date, text, reminderDateTime)
 }
 
 sealed class NotesBackupFile(val version: String) {

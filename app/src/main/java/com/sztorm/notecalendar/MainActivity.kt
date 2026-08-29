@@ -7,6 +7,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.core.view.WindowCompat
 import com.sztorm.notecalendar.repositories.FileRepositoryImpl
 import com.sztorm.notecalendar.repositories.NoteRepositoryImpl
@@ -19,7 +20,10 @@ import com.sztorm.notecalendar.viewmodels.MainViewModel
 import kotlinx.coroutines.runBlocking
 import java.time.LocalDate
 
-data class BundleResult(val isLaunchedFromNotification: Boolean)
+data class BundleResult(
+    val isLaunchedFromNotification: Boolean,
+    val noteDate: String?
+)
 
 class MainActivity : ComponentActivity() {
     private fun readBundle(): BundleResult? {
@@ -27,20 +31,26 @@ class MainActivity : ComponentActivity() {
         val isLaunchedFromNotification = bundle.getBoolean(
             IntentKeys.NOTIFICATION_LAUNCH_DAY_SCREEN, false
         )
-        return BundleResult(isLaunchedFromNotification = isLaunchedFromNotification)
+        val noteDate = bundle.getString(IntentKeys.NOTE_DATE, null)
+
+        return BundleResult(
+            isLaunchedFromNotification = isLaunchedFromNotification,
+            noteDate = noteDate
+        )
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val logger = TimberLogger
-        val bundleResult = readBundle()
-        val viewModel: MainViewModel
-        val startingView: StartingScreenType
         val noteRepository = NoteRepositoryImpl(logger)
         val fileRepository = FileRepositoryImpl(this)
         val preferencesRepository = UserPreferencesRepository(this)
         val permissionManager = AppPermissionManager(this)
-        val notificationManager = AppNotificationManager(this, preferencesRepository)
+        val notificationManager = AppNotificationManager(this, logger)
+        val bundleResult = readBundle()
+        val dayScreenDate = bundleResult?.noteDate?.toLocalDateOrNull() ?: LocalDate.now()
+        val startingView: StartingScreenType
+        val themeColors: ThemeColors
 
         runBlocking {
             startingView =
