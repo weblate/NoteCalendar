@@ -8,13 +8,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.core.view.WindowCompat
-import com.sztorm.notecalendar.NoteCalendarApplication.Companion.BUNDLE_KEY_NOTIFICATION_LAUNCH_DAY_SCREEN
 import com.sztorm.notecalendar.repositories.FileRepositoryImpl
 import com.sztorm.notecalendar.repositories.NoteRepositoryImpl
 import com.sztorm.notecalendar.repositories.UserPreferencesRepository
 import com.sztorm.notecalendar.screens.AppScreen
 import com.sztorm.notecalendar.ui.AppTheme
 import com.sztorm.notecalendar.viewmodels.MainState
+import com.sztorm.notecalendar.viewmodels.MainViewFactory
 import com.sztorm.notecalendar.viewmodels.MainViewModel
 import kotlinx.coroutines.runBlocking
 import java.time.LocalDate
@@ -24,9 +24,8 @@ data class BundleResult(val isLaunchedFromNotification: Boolean)
 class MainActivity : ComponentActivity() {
     private fun readBundle(): BundleResult? {
         val bundle: Bundle = intent.extras ?: return null
-
         val isLaunchedFromNotification = bundle.getBoolean(
-            BUNDLE_KEY_NOTIFICATION_LAUNCH_DAY_SCREEN, false
+            IntentKeys.NOTIFICATION_LAUNCH_DAY_SCREEN, false
         )
         return BundleResult(isLaunchedFromNotification = isLaunchedFromNotification)
     }
@@ -44,19 +43,23 @@ class MainActivity : ComponentActivity() {
         val notificationManager = AppNotificationManager(this, preferencesRepository)
 
         runBlocking {
-            viewModel = MainViewModel(
-                initialState = MainState(
-                    themeColors = preferencesRepository.getThemeColors(),
-                    dayScreenDate = LocalDate.now()
-                )
-            )
-            startingView = if (bundleResult != null && bundleResult.isLaunchedFromNotification) {
-                StartingScreenType.DayScreen
-            } else preferencesRepository.getStartingScreen(StartingScreenType.DayScreen)
+            startingView =
+                if (bundleResult != null && bundleResult.isLaunchedFromNotification)
+                    StartingScreenType.DayScreen
+                else preferencesRepository.getStartingScreen(StartingScreenType.DayScreen)
+            themeColors = preferencesRepository.getThemeColors()
         }
         WindowCompat.setDecorFitsSystemWindows(window, false)
         enableEdgeToEdge()
         setContent {
+            val viewModel = viewModel<MainViewModel>(
+                factory = MainViewFactory(
+                    initialState = MainState(
+                        themeColors = themeColors,
+                        dayScreenDate = dayScreenDate
+                    )
+                )
+            )
             AppTheme(viewModel.state.themeColors) {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     AppScreen(

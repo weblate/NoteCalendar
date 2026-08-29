@@ -4,6 +4,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import com.sztorm.notecalendar.ThemeColors
 import java.time.LocalDate
 
@@ -16,6 +17,16 @@ class MainViewModel(initialState: MainState) : ViewModel() {
             is MainEvent.ThemeChange -> state.copy(themeColors = event.themeColors)
             is MainEvent.DayScreenDateChange -> state.copy(dayScreenDate = event.dayScreenDate)
         }
+    }
+}
+
+class MainViewFactory(val initialState: MainState) : ViewModelProvider.Factory {
+    @Suppress("UNCHECKED_CAST")
+    override fun <T : ViewModel> create(modelClass: Class<T>): T = when {
+        modelClass.isAssignableFrom(MainViewModel::class.java) ->
+            MainViewModel(initialState) as T
+
+        else -> throw IllegalArgumentException("Invalid modelClass")
     }
 }
 
