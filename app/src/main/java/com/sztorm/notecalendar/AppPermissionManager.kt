@@ -6,12 +6,13 @@ import android.app.Activity
 import android.app.AlarmManager
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
+import android.content.pm.PackageManager
 import android.os.Build
 import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
+import androidx.core.content.ContextCompat
 
 private class RequestExactAlarmSettingsCallback(
     val onResult: (isGranted: Boolean) -> Unit
@@ -25,9 +26,29 @@ private class RequestExactAlarmSettingsCallback(
     }
 }
 
+private class RequestNotificationsSettingsCallback(
+    val onResult: (isGranted: Boolean) -> Unit
+) : DefaultActivityLifecycleCallbacks {
+    @RequiresApi(Build.VERSION_CODES.S)
+    override fun onActivityResumed(activity: Activity) {
+        activity.unregisterActivityLifecycleCallbacks(this)
+
+        onResult(
+            ContextCompat.checkSelfPermission(
+                activity,
+                AppPermission.PostNotifications.permissionString
+            ) == PackageManager.PERMISSION_GRANTED
+        )
+    }
+}
+
 class AppPermissionManager(val activity: ComponentActivity) {
     private val grantsByPermission = BooleanArray(2) { i ->
-        AppPermission.entries[i].isAlwaysGranted
+        AppPermission.entries[i].isAlwaysGranted ||
+            ContextCompat.checkSelfPermission(
+                activity,
+                AppPermission.entries[i].permissionString
+            ) == PackageManager.PERMISSION_GRANTED
     }
     private val requestsByPermission = mutableMapOf<AppPermission, (Boolean) -> Unit>()
 
@@ -67,7 +88,7 @@ class AppPermissionManager(val activity: ComponentActivity) {
                                         ?.invoke(isGranted)
                                 }
                             activity.registerActivityLifecycleCallbacks(requestSettingCallback)
-                            requestSettingsActivity(
+                            requestSettingsPermission(
                                 Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM
                             )
                         } else {
@@ -83,12 +104,24 @@ class AppPermissionManager(val activity: ComponentActivity) {
         }
     }
 
-    private fun requestSettingsActivity(actionRequest: String) {
+    private fun requestSettingsPermission(actionRequest: String) {
         activity.startActivity(
-            Intent().apply {
-                action = actionRequest
-                data = Uri
-                    .fromParts("package", activity.packageName, null)
+            Intent(actionRequest).apply {
+                putExtra(Settings.EXTRA_APP_PACKAGE, activity.packageName)
+            }
+        )
+    }
+
+    fun requestSettingsPermission(actionRequest: String, onRequestDecision: (Boolean) -> Unit) {
+        activity.startActivity(
+            Intent(actionRequest).apply {
+                putExtra(Settings.EXTRA_APP_PACKAGE, activity.packageName)
+            }
+        )
+        activity.registerActivityLifecycleCallbacks(
+            RequestNotificationsSettingsCallback { isGranted ->
+                grantsByPermission[AppPermission.PostNotifications.ordinal] = isGranted
+                onRequestDecision(isGranted)
             }
         )
     }

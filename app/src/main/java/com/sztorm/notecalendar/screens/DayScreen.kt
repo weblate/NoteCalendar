@@ -1,5 +1,8 @@
 package com.sztorm.notecalendar.screens
 
+import android.content.Context
+import android.provider.Settings
+import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandIn
 import androidx.compose.animation.scaleIn
@@ -38,6 +41,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -51,6 +55,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.sztorm.notecalendar.AppNotificationManager
+import com.sztorm.notecalendar.AppPermission
 import com.sztorm.notecalendar.AppPermissionManager
 import com.sztorm.notecalendar.ILogger
 import com.sztorm.notecalendar.NoteData
@@ -135,7 +140,8 @@ fun DayScreen(
                 actionType = DayActionType.None,
                 noteBackup = null,
                 isReminderDialogOpen = false,
-                remainingReminderTime = initialDayNote?.reminderDateTime?.remainingDurationFromNow()
+                remainingReminderTime = initialDayNote?.reminderDateTime?.remainingDurationFromNow(),
+                haveReminderPermissionsBeenDenied = false
             )
         )
     )
@@ -344,6 +350,13 @@ private fun ActionButton(
     }
 )
 
+private fun showNotificationPermissionDeniedToast(context: Context) = Toast
+    .makeText(
+        context,
+        "Notification permission is denied", // TODO: add to strings.xml
+        Toast.LENGTH_SHORT
+    ).show()
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun BoxScope.ActionButtons(
@@ -378,6 +391,7 @@ private fun BoxScope.ActionButtons(
     )
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
+    val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val deleteReminder = {
         val note = viewModel.state.note
@@ -407,17 +421,15 @@ private fun BoxScope.ActionButtons(
             val noteData = noteRepository.getBy(note.date)
 
             if (noteData != null) {
-                noteRepository
-                    .update(noteData.copy(reminderDateTime = reminderDateTime.toString()))
-                viewModel.onEvent(
-                    DayScreenEvent.NoteChange(note.copy(reminderDateTime = reminderDateTime))
-                )
                 notificationManager.tryScheduleNotification(
                     note = ReminderNote(note.date, note.textValue.text, reminderDateTime),
                     permissionManager = permissionManager,
                     coroutineScope = coroutineScope
                 ) { isSuccess ->
                     if (isSuccess) {
+                        viewModel.onEvent(
+                            DayScreenEvent.ReminderPermissionsChange(false)
+                        )
                         noteRepository
                             .update(noteData.copy(reminderDateTime = reminderDateTime.toString()))
                         viewModel.onEvent(
@@ -425,6 +437,46 @@ private fun BoxScope.ActionButtons(
                                 note.copy(reminderDateTime = reminderDateTime)
                             )
                         )
+                    } else {
+                        if (viewModel.state.haveReminderPermissionsBeenDenied) {
+                            permissionManager.requestSettingsPermission(
+                                Settings.ACTION_APP_NOTIFICATION_SETTINGS
+                            ) { isGranted ->
+                                if (isGranted) {
+                                    notificationManager.tryScheduleNotification(
+                                        note = ReminderNote(
+                                            note.date,
+                                            note.textValue.text,
+                                            reminderDateTime
+                                        ),
+                                        permissionManager = permissionManager,
+                                        coroutineScope = coroutineScope,
+                                        onCompletion = {}
+                                    )
+                                    viewModel.onEvent(
+                                        DayScreenEvent
+                                            .ReminderPermissionsChange(false)
+                                    )
+                                    noteRepository.update(
+                                        noteData.copy(
+                                            reminderDateTime = reminderDateTime.toString()
+                                        )
+                                    )
+                                    viewModel.onEvent(
+                                        DayScreenEvent.NoteChange(
+                                            note.copy(reminderDateTime = reminderDateTime)
+                                        )
+                                    )
+                                } else {
+                                    showNotificationPermissionDeniedToast(context)
+                                }
+                            }
+                        } else {
+                            showNotificationPermissionDeniedToast(context)
+                            viewModel.onEvent(
+                                DayScreenEvent.ReminderPermissionsChange(true)
+                            )
+                        }
                     }
                 }
             }
@@ -631,7 +683,9 @@ private fun BoxScope.ActionButtons(
                     viewModel.onEvent(
                         DayScreenEvent.ReminderRemainingTimeChange(remainingTime)
                     )
-                    if (remainingTime == KotlinDuration.ZERO) {
+                    if (remainingTime == KotlinDuration.ZERO ||
+                        !permissionManager.isGranted(AppPermission.PostNotifications)
+                    ) {
                         deleteReminder()
 
                         if (viewModel.state.actionType == DayActionType.EditingReminder) {

@@ -40,6 +40,9 @@ class DayScreenViewModel(initialState: DayScreenState) : ViewModel() {
 
             is DayScreenEvent.ReminderRemainingTimeChange ->
                 state.copy(remainingReminderTime = event.remainingTime)
+
+            is DayScreenEvent.ReminderPermissionsChange ->
+                state.copy(haveReminderPermissionsBeenDenied = event.areDenied)
         }
     }
 }
@@ -63,6 +66,7 @@ sealed class DayScreenEvent {
     data class ActionTypeChange(val actionType: DayActionType) : DayScreenEvent()
     data class ReminderDialogStateChange(val isOpen: Boolean) : DayScreenEvent()
     data class ReminderRemainingTimeChange(val remainingTime: Duration?) : DayScreenEvent()
+    data class ReminderPermissionsChange(val areDenied: Boolean) : DayScreenEvent()
 }
 
 data class DayScreenNote(
@@ -81,5 +85,6 @@ data class DayScreenState(
     val actionType: DayActionType,
     val noteBackup: DayScreenNote?,
     val isReminderDialogOpen: Boolean,
-    val remainingReminderTime: Duration?
+    val remainingReminderTime: Duration?,
+    val haveReminderPermissionsBeenDenied: Boolean,
 )
