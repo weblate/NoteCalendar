@@ -4,6 +4,7 @@ import android.content.ClipData
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
@@ -75,10 +76,10 @@ private fun Link(
 
 @Composable
 private fun CopyButton(
+    onClick: () -> Unit,
     iconColor: Color,
     borderColor: Color,
     pressedBackgroundColor: Color,
-    onClick: () -> Unit
 ) = OutlinedIconButton(
     onClick = onClick,
     border = BorderStroke(width = 1.dp, color = borderColor),
@@ -86,7 +87,7 @@ private fun CopyButton(
         contentColor = pressedBackgroundColor,
     ),
     modifier = Modifier
-        .padding(end = 8.dp)
+        .padding(horizontal = 4.dp)
         .size(24.dp)
 ) {
     Icon(
@@ -130,24 +131,26 @@ fun AboutSettingsScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.padding(top = 8.dp)
                 ) {
-                    CopyButton(
-                        iconColor = themeColors.textColor,
-                        borderColor = themeColors.textColor,
-                        pressedBackgroundColor = themeColors.primaryColor,
-                    ) {
-                        coroutineScope.launch {
-                            clipboardManager.setClipEntry(
-                                ClipEntry(
-                                    ClipData.newPlainText(
-                                        "version", AppInfo.VERSION
-                                    )
-                                )
-                            )
-                        }
-                    }
                     Text(
                         text = AppInfo.VERSION,
                         fontSize = 16.sp
+                    )
+                    Spacer(Modifier.weight(1f))
+                    CopyButton(
+                        onClick = {
+                            coroutineScope.launch {
+                                clipboardManager.setClipEntry(
+                                    ClipEntry(
+                                        ClipData.newPlainText(
+                                            "version", AppInfo.VERSION
+                                        )
+                                    )
+                                )
+                            }
+                        },
+                        iconColor = themeColors.textColor,
+                        borderColor = themeColors.textColor,
+                        pressedBackgroundColor = themeColors.primaryColor,
                     )
                 }
             }
@@ -164,24 +167,26 @@ fun AboutSettingsScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.padding(top = 8.dp)
                 ) {
-                    CopyButton(
-                        iconColor = themeColors.textColor,
-                        borderColor = themeColors.textColor,
-                        pressedBackgroundColor = themeColors.primaryColor,
-                    ) {
-                        coroutineScope.launch {
-                            clipboardManager.setClipEntry(
-                                ClipEntry(
-                                    ClipData.newPlainText(
-                                        "contact email", AppInfo.CONTACT_EMAIL
-                                    )
-                                )
-                            )
-                        }
-                    }
                     Text(
                         text = AppInfo.CONTACT_EMAIL,
                         fontSize = 16.sp
+                    )
+                    Spacer(Modifier.weight(1f))
+                    CopyButton(
+                        onClick = {
+                            coroutineScope.launch {
+                                clipboardManager.setClipEntry(
+                                    ClipEntry(
+                                        ClipData.newPlainText(
+                                            "contact email", AppInfo.CONTACT_EMAIL
+                                        )
+                                    )
+                                )
+                            }
+                        },
+                        iconColor = themeColors.textColor,
+                        borderColor = themeColors.textColor,
+                        pressedBackgroundColor = themeColors.primaryColor,
                     )
                 }
             }
@@ -198,24 +203,27 @@ fun AboutSettingsScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.padding(top = 8.dp)
                 ) {
-                    CopyButton(
-                        iconColor = themeColors.textColor,
-                        borderColor = themeColors.textColor,
-                        pressedBackgroundColor = themeColors.primaryColor,
-                    ) {
-                        coroutineScope.launch {
-                            clipboardManager.setClipEntry(
-                                ClipEntry(
-                                    ClipData.newPlainText(
-                                        "source code url", AppInfo.SOURCE_CODE_GITHUB_URL
-                                    )
-                                )
-                            )
-                        }
-                    }
                     Link(
                         text = AppInfo.SOURCE_CODE_GITHUB,
                         url = AppInfo.SOURCE_CODE_GITHUB_URL
+                    )
+                    Spacer(Modifier.weight(1f))
+                    CopyButton(
+                        onClick = {
+                            coroutineScope.launch {
+                                clipboardManager.setClipEntry(
+                                    ClipEntry(
+                                        ClipData.newPlainText(
+                                            "source code url",
+                                            AppInfo.SOURCE_CODE_GITHUB_URL
+                                        )
+                                    )
+                                )
+                            }
+                        },
+                        iconColor = themeColors.textColor,
+                        borderColor = themeColors.textColor,
+                        pressedBackgroundColor = themeColors.primaryColor,
                     )
                 }
             }
@@ -232,24 +240,26 @@ fun AboutSettingsScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.padding(top = 8.dp)
                 ) {
-                    CopyButton(
-                        iconColor = themeColors.textColor,
-                        borderColor = themeColors.textColor,
-                        pressedBackgroundColor = themeColors.primaryColor,
-                    ) {
-                        coroutineScope.launch {
-                            clipboardManager.setClipEntry(
-                                ClipEntry(
-                                    ClipData.newPlainText(
-                                        "license url", AppInfo.LICENSE_URL
-                                    )
-                                )
-                            )
-                        }
-                    }
                     Link(
                         text = AppInfo.LICENSE,
                         url = AppInfo.LICENSE_URL
+                    )
+                    Spacer(Modifier.weight(1f))
+                    CopyButton(
+                        onClick = {
+                            coroutineScope.launch {
+                                clipboardManager.setClipEntry(
+                                    ClipEntry(
+                                        ClipData.newPlainText(
+                                            "license url", AppInfo.LICENSE_URL
+                                        )
+                                    )
+                                )
+                            }
+                        },
+                        iconColor = themeColors.textColor,
+                        borderColor = themeColors.textColor,
+                        pressedBackgroundColor = themeColors.primaryColor,
                     )
                 }
             }
@@ -266,24 +276,27 @@ fun AboutSettingsScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.padding(top = 8.dp)
                 ) {
-                    CopyButton(
-                        iconColor = themeColors.textColor,
-                        borderColor = themeColors.textColor,
-                        pressedBackgroundColor = themeColors.primaryColor,
-                    ) {
-                        coroutineScope.launch {
-                            clipboardManager.setClipEntry(
-                                ClipEntry(
-                                    ClipData.newPlainText(
-                                        "privacy policy url", AppInfo.PRIVACY_POLICY_URL
-                                    )
-                                )
-                            )
-                        }
-                    }
                     Link(
                         text = AppInfo.SOURCE_CODE_GITHUB,
                         url = AppInfo.PRIVACY_POLICY_URL
+                    )
+                    Spacer(Modifier.weight(1f))
+                    CopyButton(
+                        onClick = {
+                            coroutineScope.launch {
+                                clipboardManager.setClipEntry(
+                                    ClipEntry(
+                                        ClipData.newPlainText(
+                                            "privacy policy url",
+                                            AppInfo.PRIVACY_POLICY_URL
+                                        )
+                                    )
+                                )
+                            }
+                        },
+                        iconColor = themeColors.textColor,
+                        borderColor = themeColors.textColor,
+                        pressedBackgroundColor = themeColors.primaryColor,
                     )
                 }
             }
