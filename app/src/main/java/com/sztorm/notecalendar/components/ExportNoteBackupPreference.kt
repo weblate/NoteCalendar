@@ -30,6 +30,7 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.unit.dp
 import com.sztorm.notecalendar.EncryptionParameters
 import com.sztorm.notecalendar.EncryptionType
+import com.sztorm.notecalendar.ILogger
 import com.sztorm.notecalendar.LogTags
 import com.sztorm.notecalendar.NotesBackupFile
 import com.sztorm.notecalendar.components.preferences.ConfirmationPreference
@@ -38,7 +39,6 @@ import com.sztorm.notecalendar.randomByteArray
 import com.sztorm.notecalendar.repositories.FileRepository
 import com.sztorm.notecalendar.repositories.NoteRepository
 import com.sztorm.notecalendar.repositories.SaveResult
-import timber.log.Timber
 import java.time.LocalDate
 import javax.crypto.spec.IvParameterSpec
 
@@ -75,6 +75,7 @@ object ExportNoteBackupPreferenceDefaults {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ExportNoteBackupPreference(
+    logger: ILogger,
     fileRepository: FileRepository,
     noteRepository: NoteRepository,
     modifier: Modifier = Modifier,
@@ -120,10 +121,10 @@ fun ExportNoteBackupPreference(
             ) { result ->
                 when (result) {
                     is SaveResult.Success ->
-                        Timber.i("${LogTags.FILE_IO} Notes backup exported.")
+                        logger.info("${LogTags.FILE_IO} Notes backup exported.")
 
                     is SaveResult.Failure ->
-                        Timber.e("${LogTags.FILE_IO} ${result.message}")
+                        logger.error(message = "${LogTags.FILE_IO} ${result.message}")
                 }
             }
             passwordTextState.clearText()

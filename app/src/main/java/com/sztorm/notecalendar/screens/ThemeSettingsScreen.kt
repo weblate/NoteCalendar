@@ -8,6 +8,7 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavController
+import com.sztorm.notecalendar.ILogger
 import com.sztorm.notecalendar.LogTags
 import com.sztorm.notecalendar.viewmodels.MainEvent
 import com.sztorm.notecalendar.viewmodels.MainViewModel
@@ -30,10 +31,10 @@ import com.sztorm.notecalendar.ui.DarkThemeColors
 import com.sztorm.notecalendar.ui.LightThemeColors
 import com.sztorm.notecalendar.ui.getDefaultThemeColors
 import kotlinx.coroutines.launch
-import timber.log.Timber
 
 @Composable
 fun ThemeSettingsScreen(
+    logger: ILogger,
     viewModel: MainViewModel,
     fileRepository: FileRepository,
     preferencesRepository: UserPreferencesRepository,
@@ -134,7 +135,7 @@ fun ThemeSettingsScreen(
                     ) { result ->
                         when (result) {
                             is LoadResult.Success -> {
-                                Timber.i("${LogTags.FILE_IO} Theme loaded.")
+                                logger.info("${LogTags.FILE_IO} Theme loaded.")
 
                                 val themeColors = result.file.toThemeColors()
                                 coroutineScope.launch {
@@ -147,7 +148,7 @@ fun ThemeSettingsScreen(
                             }
 
                             is LoadResult.Failure ->
-                                Timber.e("${LogTags.FILE_IO} ${result.message}")
+                                logger.error(message = "${LogTags.FILE_IO} ${result.message}")
                         }
                     }
                 },
@@ -166,10 +167,10 @@ fun ThemeSettingsScreen(
                     ) { result ->
                         when (result) {
                             is SaveResult.Success ->
-                                Timber.i("${LogTags.FILE_IO} Theme saved.")
+                                logger.info("${LogTags.FILE_IO} Theme saved.")
 
                             is SaveResult.Failure ->
-                                Timber.e("${LogTags.FILE_IO} ${result.message}")
+                                logger.error(message = "${LogTags.FILE_IO} ${result.message}")
                         }
                     }
                 },

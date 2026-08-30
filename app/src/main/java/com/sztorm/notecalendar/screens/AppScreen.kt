@@ -177,6 +177,7 @@ fun AppScreen(
             }
             composable<Screen.Settings> {
                 SettingsScreen(
+                    logger = logger,
                     viewModel = viewModel,
                     notificationManager = notificationManager,
                     fileRepository = fileRepository,

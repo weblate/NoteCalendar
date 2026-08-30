@@ -4,7 +4,6 @@ import android.util.Base64
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
-import timber.log.Timber
 import java.time.LocalDate
 import java.time.OffsetDateTime
 import javax.crypto.SecretKey
@@ -81,7 +80,7 @@ sealed class NotesBackupFile(val version: String) {
                 appendLine('}')
             }.toString()
 
-            fun decrypted(secretKey: SecretKey): Plain? {
+            fun decrypted(secretKey: SecretKey, logger: ILogger? = null): Plain? {
                 val parameters = EncryptionParameters.Aes(
                     salt = salt,
                     iv = iv,
@@ -107,13 +106,13 @@ sealed class NotesBackupFile(val version: String) {
                                 }
                             }
                     }.onSuccess {
-                        Timber.e("${LogTags.CRYPTO} Notes decryption succeeded.")
+                        logger?.info("${LogTags.CRYPTO} Notes decryption succeeded.")
                         return Plain(it)
                     }
-                    Timber.e("${LogTags.FILE_IO} Decrypted notes wrong JSON format.")
+                    logger?.error(message = "${LogTags.FILE_IO} Decrypted notes wrong JSON format.")
                     return null
                 }
-                Timber.e("${LogTags.CRYPTO} Notes decryption failed.")
+                logger?.error(message = "${LogTags.CRYPTO} Notes decryption failed.")
                 return null
             }
         }

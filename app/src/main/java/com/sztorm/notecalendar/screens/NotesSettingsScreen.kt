@@ -10,6 +10,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavController
 import com.sztorm.notecalendar.AppNotificationManager
+import com.sztorm.notecalendar.ILogger
 import com.sztorm.notecalendar.LogTags
 import com.sztorm.notecalendar.viewmodels.MainViewModel
 import com.sztorm.notecalendar.R
@@ -24,10 +25,10 @@ import com.sztorm.notecalendar.components.preferences.SubpreferenceScreen
 import com.sztorm.notecalendar.repositories.FileRepository
 import com.sztorm.notecalendar.repositories.NoteRepository
 import com.sztorm.notecalendar.toLocalDateOrNull
-import timber.log.Timber
 
 @Composable
 fun NotesSettingsScreen(
+    logger: ILogger,
     viewModel: MainViewModel,
     noteRepository: NoteRepository,
     fileRepository: FileRepository,
@@ -51,7 +52,7 @@ fun NotesSettingsScreen(
             icon = painterResource(R.drawable.icon_outline_rounded_delete_forever),
             iconColorFilter = ColorFilter.tint(themeColors.secondaryColor),
             onConfirm = {
-                Timber.i("${LogTags.APPLICATION} Delete all notes confirmed.")
+                logger.info("${LogTags.APPLICATION} Delete all notes confirmed.")
                 noteRepository.getAll().forEach { noteData ->
                     noteData.date.toLocalDateOrNull()?.let {
                         notificationManager.cancelScheduledNotification(it)
@@ -66,6 +67,7 @@ fun NotesSettingsScreen(
             dialogColors = dialogColors
         )
         ImportNoteBackupPreference(
+            logger = logger,
             fileRepository = fileRepository,
             noteRepository = noteRepository,
             texts = ImportNoteBackupPreferenceTexts.english(), // TODO: add to strings.xml
@@ -85,6 +87,7 @@ fun NotesSettingsScreen(
             dialogModifier = Modifier.verticalScroll(rememberScrollState()),
         )
         ExportNoteBackupPreference(
+            logger = logger,
             fileRepository = fileRepository,
             noteRepository = noteRepository,
             texts = ExportNoteBackupPreferenceTexts.english(), // TODO: add to strings.xml

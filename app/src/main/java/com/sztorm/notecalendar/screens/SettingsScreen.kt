@@ -15,6 +15,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.sztorm.notecalendar.AppNotificationManager
+import com.sztorm.notecalendar.ILogger
 import com.sztorm.notecalendar.viewmodels.MainViewModel
 import com.sztorm.notecalendar.R
 import com.sztorm.notecalendar.components.preferences.Preference
@@ -25,6 +26,7 @@ import com.sztorm.notecalendar.repositories.UserPreferencesRepository
 
 @Composable
 fun SettingsScreen(
+    logger: ILogger,
     viewModel: MainViewModel,
     notificationManager: AppNotificationManager,
     fileRepository: FileRepository,
@@ -67,6 +69,7 @@ fun SettingsScreen(
             }
         ) {
             NotesSettingsScreen(
+                logger = logger,
                 viewModel = viewModel,
                 noteRepository = noteRepository,
                 notificationManager = notificationManager,
@@ -111,6 +114,7 @@ fun SettingsScreen(
             }
         ) {
             ThemeSettingsScreen(
+                logger = logger,
                 viewModel = viewModel,
                 fileRepository = fileRepository,
                 preferencesRepository = preferencesRepository,

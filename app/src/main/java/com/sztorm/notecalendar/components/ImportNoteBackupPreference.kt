@@ -22,6 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogProperties
+import com.sztorm.notecalendar.ILogger
 import com.sztorm.notecalendar.LogTags
 import com.sztorm.notecalendar.NotesBackupFile
 import com.sztorm.notecalendar.components.preferences.Preference
@@ -29,7 +30,6 @@ import com.sztorm.notecalendar.generateAes256Key
 import com.sztorm.notecalendar.repositories.FileRepository
 import com.sztorm.notecalendar.repositories.LoadResult
 import com.sztorm.notecalendar.repositories.NoteRepository
-import timber.log.Timber
 
 object ImportNoteBackupPreferenceDefaults {
     private var defaultColorsCached: ImportNoteBackupPreferenceColors? = null
@@ -64,6 +64,7 @@ object ImportNoteBackupPreferenceDefaults {
 
 @Composable
 fun ImportNoteBackupPreference(
+    logger: ILogger,
     fileRepository: FileRepository,
     noteRepository: NoteRepository,
     modifier: Modifier = Modifier,
@@ -84,7 +85,7 @@ fun ImportNoteBackupPreference(
             fileRepository.loadNotesBackupFile(filetype = "application/json") { result ->
                 when (result) {
                     is LoadResult.Success -> {
-                        Timber.i("${LogTags.FILE_IO} Notes backup imported.")
+                        logger.info("${LogTags.FILE_IO} Notes backup imported.")
 
                         when (val file = result.file) {
                             is NotesBackupFile.V1.Plain -> {
@@ -104,7 +105,7 @@ fun ImportNoteBackupPreference(
                     }
 
                     is LoadResult.Failure ->
-                        Timber.e("${LogTags.FILE_IO} ${result.message}")
+                        logger.error(message = "${LogTags.FILE_IO} ${result.message}")
                 }
             }
         },
@@ -124,7 +125,7 @@ fun ImportNoteBackupPreference(
                         val password = passwordTextState.text
                         val key = generateAes256Key(password.toString(), file.salt)
 
-                        when (val plain = file.decrypted(key)) {
+                        when (val plain = file.decrypted(key, logger)) {
                             null -> {
                                 // Without it Compose will not update the UI.
                                 @Suppress("AssignedValueIsNeverRead")
