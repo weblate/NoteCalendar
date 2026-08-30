@@ -18,7 +18,8 @@ data class Note(
     fun toNoteData() = NoteData(date.toString(), text, reminderDateTime?.toString() ?: "")
 
     @Suppress("unused")
-    fun toReminderNote() = reminderDateTime?.let { ReminderNote(date, text, reminderDateTime) }
+    fun toReminderNoteOrNull() = reminderDateTime
+        ?.let { ReminderNote(date, text, reminderDateTime) }
 }
 
 data class ReminderNote(

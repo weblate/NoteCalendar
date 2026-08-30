@@ -28,12 +28,15 @@ import org.json.JSONArray
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.Month
+import java.time.OffsetDateTime
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
 import java.time.format.TextStyle
 import java.time.temporal.WeekFields
 import java.util.Locale
+import kotlin.math.max
+import kotlin.time.Duration.Companion.milliseconds
 import java.util.Locale as JLocale
 
 fun <T : Parcelable> Intent.getParcelableExtraCompat(name: String, clazz: Class<T>): T? {
@@ -70,6 +73,9 @@ fun LazyListState.reachedTop(): Boolean {
 
     return firstVisibleItem == null || firstVisibleItem.index == 0
 }
+
+fun OffsetDateTime.remainingDurationFromNow() =
+    max(0L, toEpochSecond() * 1000L - System.currentTimeMillis()).milliseconds
 
 val LocalDate.yearMonth: YearMonth
     get() = YearMonth.of(year, month)

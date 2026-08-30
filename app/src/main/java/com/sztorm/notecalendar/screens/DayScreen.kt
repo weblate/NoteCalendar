@@ -31,6 +31,7 @@ import androidx.compose.material3.TimePickerDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -54,6 +55,7 @@ import com.sztorm.notecalendar.AppPermissionManager
 import com.sztorm.notecalendar.ILogger
 import com.sztorm.notecalendar.NoteData
 import com.sztorm.notecalendar.R
+import com.sztorm.notecalendar.ReminderNote
 import com.sztorm.notecalendar.ThemeColors
 import com.sztorm.notecalendar.components.DayNote
 import com.sztorm.notecalendar.components.InfiniteHorizontalPager
@@ -61,6 +63,7 @@ import com.sztorm.notecalendar.components.TimePickerDialog
 import com.sztorm.notecalendar.components.TimedContent
 import com.sztorm.notecalendar.getLocalizedGenitiveCaseName
 import com.sztorm.notecalendar.getLocalizedName
+import com.sztorm.notecalendar.remainingDurationFromNow
 import com.sztorm.notecalendar.repositories.NoteRepository
 import com.sztorm.notecalendar.viewmodels.DayScreenEvent
 import com.sztorm.notecalendar.viewmodels.DayScreenNote
@@ -71,13 +74,15 @@ import com.sztorm.notecalendar.viewmodels.MainEvent
 import com.sztorm.notecalendar.viewmodels.MainViewModel
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.LocalTime
 import java.time.OffsetDateTime
 import kotlin.time.Duration as KotlinDuration
 
-enum class DayNoteMode {
-    Reading,
-    Editing,
-    Adding
+enum class DayActionType {
+    None,
+    EditingNote,
+    AddingNote,
+    EditingReminder,
 }
 
 @Composable
@@ -127,9 +132,10 @@ fun DayScreen(
                                 ?.let { OffsetDateTime.parse(it) }
                         )
                     },
-                noteMode = DayNoteMode.Reading,
+                actionType = DayActionType.None,
                 noteBackup = null,
-                isReminderDialogOpen = false
+                isReminderDialogOpen = false,
+                remainingReminderTime = initialDayNote?.reminderDateTime?.remainingDurationFromNow()
             )
         )
     )
@@ -141,10 +147,11 @@ fun DayScreen(
             key = { currentDate.plusDays(it.toLong()) },
             onPageChange = { page ->
                 val date = currentDate.plusDays(page.toLong())
+                val currentNoteData = noteRepository.getBy(date)
                 mainViewModel.onEvent(MainEvent.DayScreenDateChange(date))
                 viewModel.onEvent(
                     DayScreenEvent.DateChange(
-                        note = noteRepository.getBy(date)?.let { noteData ->
+                        note = currentNoteData?.let { noteData ->
                             DayScreenNote(
                                 date = date,
                                 textValue = TextFieldValue(text = noteData.text),
@@ -176,7 +183,7 @@ fun DayScreen(
                     )
                 )
                 viewModel.onEvent(
-                    DayScreenEvent.NoteModeChange(DayNoteMode.Reading)
+                    DayScreenEvent.ActionTypeChange(DayActionType.None)
                 )
             }
         ) {
@@ -206,7 +213,7 @@ fun DayScreen(
 
                 if (note == null) {
                     viewModel.onEvent(
-                        DayScreenEvent.NoteModeChange(DayNoteMode.Adding)
+                        DayScreenEvent.ActionTypeChange(DayActionType.AddingNote)
                     )
                     viewModel.onEvent(
                         DayScreenEvent.NoteChange(
@@ -218,7 +225,7 @@ fun DayScreen(
                     )
                 } else {
                     viewModel.onEvent(
-                        DayScreenEvent.NoteModeChange(DayNoteMode.Editing)
+                        DayScreenEvent.ActionTypeChange(DayActionType.EditingNote)
                     )
                     viewModel.onEvent(
                         DayScreenEvent.NoteChange(
@@ -325,14 +332,15 @@ private fun ActionButton(
     visible: Boolean = true,
     onClick: () -> Unit,
     themeColors: ThemeColors,
-    icon: Painter
+    icon: Painter,
+    contentDescription: String,
 ) = ActionButton(
     modifier = modifier,
     visible = visible,
     onClick = onClick,
     themeColors = themeColors,
     content = {
-        Icon(painter = icon, contentDescription = "")
+        Icon(painter = icon, contentDescription = contentDescription)
     }
 )
 
@@ -370,252 +378,374 @@ private fun BoxScope.ActionButtons(
     )
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
+    val coroutineScope = rememberCoroutineScope()
+    val deleteReminder = {
+        val note = viewModel.state.note
+        val noteData = note?.let { noteRepository.getBy(it.date) }
 
+        if (note != null && noteData != null) {
+            noteRepository.update(noteData.copy(reminderDateTime = ""))
+            viewModel.onEvent(
+                DayScreenEvent.NoteChange(
+                    note.copy(reminderDateTime = null)
+                )
+            )
+        }
+    }
+    val onReminderDialogConfirm = { localTime: LocalTime ->
+        val offsetNow = OffsetDateTime.now()
+        val localNow = LocalDateTime.now()
+        val reminderDateTime = OffsetDateTime.of(
+            if (localTime > localNow.toLocalTime()) localNow.toLocalDate()
+            else localNow.toLocalDate().plusDays(1),
+            localTime,
+            offsetNow.offset
+        )
+        val note = viewModel.state.note
+
+        if (note != null) {
+            val noteData = noteRepository.getBy(note.date)
+
+            if (noteData != null) {
+                noteRepository
+                    .update(noteData.copy(reminderDateTime = reminderDateTime.toString()))
+                viewModel.onEvent(
+                    DayScreenEvent.NoteChange(note.copy(reminderDateTime = reminderDateTime))
+                )
+                notificationManager.tryScheduleNotification(
+                    note = ReminderNote(note.date, note.textValue.text, reminderDateTime),
+                    permissionManager = permissionManager,
+                    coroutineScope = coroutineScope
+                ) { isSuccess ->
+                    if (isSuccess) {
+                        noteRepository
+                            .update(noteData.copy(reminderDateTime = reminderDateTime.toString()))
+                        viewModel.onEvent(
+                            DayScreenEvent.NoteChange(
+                                note.copy(reminderDateTime = reminderDateTime)
+                            )
+                        )
+                    }
+                }
+            }
+        }
+        viewModel.onEvent(DayScreenEvent.ReminderDialogStateChange(false))
+        viewModel.onEvent(
+            DayScreenEvent.ActionTypeChange(DayActionType.None)
+        )
+    }
+    val onReminderDialogDismiss = { _: LocalTime ->
+        viewModel.onEvent(DayScreenEvent.ReminderDialogStateChange(false))
+    }
+    val onAddOrEditReminderClick = {
+        val note = viewModel.state.note
+
+        if (note != null) {
+            if (note.reminderDateTime == null) {
+                viewModel.onEvent(DayScreenEvent.ReminderDialogStateChange(true))
+            } else {
+                viewModel.onEvent(
+                    DayScreenEvent.ActionTypeChange(
+                        DayActionType.EditingReminder
+                    )
+                )
+            }
+        }
+    }
+    val onDeleteReminderClick = {
+        deleteReminder()
+        val note = viewModel.state.note
+
+        if (note != null) {
+            notificationManager.cancelScheduledNotification(note.date)
+        }
+        viewModel.onEvent(
+            DayScreenEvent.ActionTypeChange(DayActionType.None)
+        )
+    }
+    val onCancelReminderEditClick = {
+        viewModel.onEvent(
+            DayScreenEvent.ActionTypeChange(DayActionType.None)
+        )
+    }
+    val onEditReminderDialogClick = {
+        viewModel.onEvent(
+            DayScreenEvent.ReminderDialogStateChange(true)
+        )
+    }
+    val onUndoNoteDeletionClick = {
+        val note = viewModel.state.noteBackup
+        val noteData = note?.let { noteRepository.getBy(it.date) }
+
+        if (note != null) {
+            if (noteData == null) {
+                noteRepository.add(
+                    NoteData(
+                        date = mainViewModel.state.dayScreenDate.toString(),
+                        text = note.textValue.text
+                    )
+                )
+            } else {
+                noteRepository.update(noteData.copy(text = note.textValue.text))
+            }
+        }
+        viewModel.onEvent(
+            DayScreenEvent.NoteChange(note)
+        )
+    }
+    val onAddOrEditNoteClick = {
+        val note = viewModel.state.note
+
+        if (note == null) {
+            viewModel.onEvent(
+                DayScreenEvent.ActionTypeChange(DayActionType.AddingNote)
+            )
+            viewModel.onEvent(
+                DayScreenEvent.NoteChange(
+                    DayScreenNote(
+                        date = mainViewModel.state.dayScreenDate,
+                        textValue = TextFieldValue()
+                    )
+                )
+            )
+        } else {
+            viewModel.onEvent(
+                DayScreenEvent.ActionTypeChange(DayActionType.EditingNote)
+            )
+            viewModel.onEvent(
+                DayScreenEvent.NoteChange(
+                    DayScreenNote(
+                        date = note.date,
+                        textValue = note.textValue.copy(
+                            selection = TextRange(note.textValue.text.length)
+                        ),
+                        reminderDateTime = note.reminderDateTime
+                    )
+                )
+            )
+        }
+    }
+    val onDeleteNoteClick = {
+        val note = viewModel.state.note
+        val noteData = note?.let { noteRepository.getBy(it.date) }
+
+        if (noteData != null) {
+            noteRepository.delete(noteData)
+            notificationManager.cancelScheduledNotification(note.date)
+        }
+        viewModel.onEvent(DayScreenEvent.NoteChange(null))
+        viewModel.onEvent(
+            DayScreenEvent.ActionTypeChange(DayActionType.None)
+        )
+        focusRequester.freeFocus()
+        keyboardController?.hide()
+        focusManager.clearFocus()
+    }
+    val onCancelNoteEditClick = {
+        val note = viewModel.state.note
+        val noteMode = viewModel.state.actionType
+
+        if (noteMode == DayActionType.EditingNote && note != null) {
+            val noteData = noteRepository.getBy(note.date)
+
+            if (noteData != null) {
+                viewModel.onEvent(
+                    DayScreenEvent.NoteChange(
+                        DayScreenNote(
+                            date = note.date,
+                            textValue = TextFieldValue(noteData.text),
+                            reminderDateTime = note.reminderDateTime
+                        )
+                    )
+                )
+            }
+        } else if (noteMode == DayActionType.AddingNote) {
+            viewModel.onEvent(DayScreenEvent.NoteChange(null))
+        }
+        viewModel.onEvent(
+            DayScreenEvent.ActionTypeChange(DayActionType.None)
+        )
+        focusRequester.freeFocus()
+        keyboardController?.hide()
+        focusManager.clearFocus()
+    }
+    val onAcceptNoteEditClick = {
+        val note = viewModel.state.note
+
+        if (note != null) {
+            val noteData = note.let { noteRepository.getBy(it.date) }
+
+            if (noteData == null) {
+                noteRepository.add(
+                    NoteData(
+                        date = mainViewModel.state.dayScreenDate.toString(),
+                        text = note.textValue.text
+                    )
+                )
+            } else {
+                noteRepository.update(noteData.copy(text = note.textValue.text))
+                note.toReminderNoteOrNull()?.let {
+                    notificationManager.tryScheduleNotification(
+                        note = it,
+                        permissionManager = permissionManager,
+                        coroutineScope = coroutineScope,
+                        onCompletion = {}
+                    )
+                }
+            }
+            viewModel.onEvent(
+                DayScreenEvent.NoteChange(
+                    DayScreenNote(note.date, note.textValue, note.reminderDateTime)
+                )
+            )
+            viewModel.onEvent(
+                DayScreenEvent.ActionTypeChange(DayActionType.None)
+            )
+        }
+        focusRequester.freeFocus()
+        keyboardController?.hide()
+        focusManager.clearFocus()
+    }
     TimePickerDialog(
         title = "Set reminder", // TODO: add to strings.xml,
-        initialTime = OffsetDateTime.now().toLocalTime(),
+        initialTime = viewModel.state.note?.reminderDateTime?.toLocalTime()
+            ?: OffsetDateTime.now().toLocalTime(),
         isOpen = viewModel.state.isReminderDialogOpen,
         titleColor = themeColors.textColor,
         buttonColor = themeColors.primaryColor,
         dialogColors = dialogColors,
         timePickerColors = timePickerColors,
-        onConfirm = { localTime ->
-            val offsetNow = OffsetDateTime.now()
-            val localNow = LocalDateTime.now()
-            val dateTime = OffsetDateTime.of(
-                if (localTime > localNow.toLocalTime()) localNow.toLocalDate()
-                else localNow.toLocalDate().plusDays(1),
-                localTime,
-                offsetNow.offset
-            )
-            val note = viewModel.state.note
-
-            if (note != null) {
-                val noteData = note.let { noteRepository.getBy(it.date) }
-
-                if (noteData != null) {
-                    noteRepository.update(noteData.copy(reminderDateTime = dateTime.toString()))
-                }
-                viewModel.onEvent(
-                    DayScreenEvent.NoteChange(note.copy(reminderDateTime = dateTime))
-                )
-            }
-            viewModel.onEvent(DayScreenEvent.ReminderDialogStateChange(false))
-        },
-        onDismiss = {
-            viewModel.onEvent(DayScreenEvent.ReminderDialogStateChange(false))
-        }
+        onConfirm = onReminderDialogConfirm,
+        onDismiss = onReminderDialogDismiss
     )
     Row(
         modifier = Modifier
             .align(Alignment.BottomEnd)
             .padding(8.dp)
     ) {
-        ActionButton(
-            onClick = {
-                viewModel.onEvent(DayScreenEvent.ReminderDialogStateChange(true))
-            },
-            visible = viewModel.state.noteMode == DayNoteMode.Reading &&
-                viewModel.state.note != null,
-            themeColors = themeColors,
-        ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.icon_outline_rounded_notifications),
-                    contentDescription = ""
-                )
-                val note = viewModel.state.note
-                val deleteReminder = {
-                    val note = viewModel.state.note
-                    val noteData = note?.let { noteRepository.getBy(it.date) }
+        val reminderDateTime = viewModel.state.note?.reminderDateTime
 
-                    if (note != null && noteData != null) {
-                        noteRepository.update(noteData.copy(reminderDateTime = ""))
-                        viewModel.onEvent(
-                            DayScreenEvent.NoteChange(
-                                note.copy(reminderDateTime = null)
+        if (reminderDateTime != null) {
+            if (reminderDateTime > OffsetDateTime.now()) {
+                TimedContent(reminderDateTime) { remainingTime ->
+                    viewModel.onEvent(
+                        DayScreenEvent.ReminderRemainingTimeChange(remainingTime)
+                    )
+                    if (remainingTime == KotlinDuration.ZERO) {
+                        deleteReminder()
+
+                        if (viewModel.state.actionType == DayActionType.EditingReminder) {
+                            viewModel.onEvent(
+                                DayScreenEvent.ActionTypeChange(
+                                    DayActionType.None
+                                )
                             )
+                        }
+                        viewModel.onEvent(
+                            DayScreenEvent.ReminderRemainingTimeChange(null)
                         )
                     }
                 }
-                if (note?.reminderDateTime != null) {
-                    if (note.reminderDateTime > OffsetDateTime.now()) {
-                        TimedContent(note.reminderDateTime) { remaining ->
-                            val locale = Locale.current.platformLocale
-                            val text = remaining.toComponents { hours, minutes, s, _ ->
-                                String.format(
-                                    locale, "%02d:%02d:%02d", hours, minutes, s
-                                )
-                            }
-                            Text(text = text)
+            } else {
+                deleteReminder()
+            }
+        }
+        ActionButton(
+            onClick = onDeleteReminderClick,
+            visible = viewModel.state.actionType == DayActionType.EditingReminder &&
+                viewModel.state.note?.reminderDateTime != null,
+            themeColors = themeColors,
+            icon = painterResource(R.drawable.icon_outline_rounded_delete_forever),
+            contentDescription = "Delete reminder" // TODO: add to strings.xml
+        )
+        ActionButton(
+            onClick = onCancelReminderEditClick,
+            visible = viewModel.state.actionType == DayActionType.EditingReminder &&
+                viewModel.state.note?.reminderDateTime != null,
+            themeColors = themeColors,
+            icon = painterResource(R.drawable.icon_rounded_notifications_edit_off),
+            contentDescription = "Cancel reminder editing" // TODO: add to strings.xml
+        )
+        ActionButton(
+            onClick = onEditReminderDialogClick,
+            visible = viewModel.state.actionType == DayActionType.EditingReminder &&
+                viewModel.state.note?.reminderDateTime != null,
+            themeColors = themeColors,
+            icon = painterResource(R.drawable.icon_rounded_edit_notifications),
+            contentDescription = "Open reminder dialog" // TODO: add to strings.xml
+        )
+        ActionButton(
+            onClick = onAddOrEditReminderClick,
+            visible = viewModel.state.actionType == DayActionType.None &&
+                viewModel.state.note != null,
+            themeColors = themeColors,
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Icon(
+                    painter = painterResource(
+                        if (reminderDateTime == null) R.drawable.icon_rounded_notification_add
+                        else R.drawable.icon_outline_rounded_notifications
+                    ),
+                    contentDescription =
+                        if (reminderDateTime == null) "Add reminder" // TODO: add to strings.xml
+                        else "Edit reminder" // TODO: add to strings.xml
+                )
+                val remainingTime = viewModel.state.remainingReminderTime
 
-                            if (remaining == KotlinDuration.ZERO) {
-                                deleteReminder()
-                            }
-                        }
-                    } else {
-                        deleteReminder()
-                    }
+                if (viewModel.state.note?.reminderDateTime != null && remainingTime != null) {
+                    Text(text = remainingTime.toComponents { hours, minutes, seconds, _ ->
+                        String.format(
+                            locale = Locale.current.platformLocale,
+                            format = "%02d:%02d:%02d",
+                            hours, minutes, seconds
+                        )
+                    })
                 }
             }
         }
         ActionButton(
-            onClick = {
-                val note = viewModel.state.noteBackup
-                val noteData = note?.let { noteRepository.getBy(it.date) }
-
-                if (note != null) {
-                    if (noteData == null) {
-                        noteRepository.add(
-                            NoteData(
-                                date = mainViewModel.state.dayScreenDate.toString(),
-                                text = note.textValue.text
-                            )
-                        )
-                    } else {
-                        noteRepository.update(noteData.copy(text = note.textValue.text))
-                    }
-                }
-                viewModel.onEvent(
-                    DayScreenEvent.NoteChange(note)
-                )
-            },
-            visible = viewModel.state.noteMode == DayNoteMode.Reading &&
+            onClick = onUndoNoteDeletionClick,
+            visible = viewModel.state.actionType == DayActionType.None &&
                 viewModel.state.note == null &&
                 viewModel.state.noteBackup != null,
             themeColors = themeColors,
-            icon = painterResource(R.drawable.icon_rounded_undo)
+            icon = painterResource(R.drawable.icon_rounded_undo),
+            contentDescription = "Undo note deletion" // TODO: add to strings.xml
         )
         ActionButton(
-            onClick = {
-                val note = viewModel.state.note
-
-                if (note == null) {
-                    viewModel.onEvent(
-                        DayScreenEvent.NoteModeChange(DayNoteMode.Adding)
-                    )
-                    viewModel.onEvent(
-                        DayScreenEvent.NoteChange(
-                            DayScreenNote(
-                                date = mainViewModel.state.dayScreenDate,
-                                textValue = TextFieldValue()
-                            )
-                        )
-                    )
-                } else {
-                    viewModel.onEvent(
-                        DayScreenEvent.NoteModeChange(DayNoteMode.Editing)
-                    )
-                    viewModel.onEvent(
-                        DayScreenEvent.NoteChange(
-                            DayScreenNote(
-                                date = note.date,
-                                textValue = note.textValue.copy(
-                                    selection = TextRange(note.textValue.text.length)
-                                ),
-                                reminderDateTime = note.reminderDateTime
-                            )
-                        )
-                    )
-                }
-            },
-            visible = viewModel.state.noteMode == DayNoteMode.Reading,
+            onClick = onAddOrEditNoteClick,
+            visible = viewModel.state.actionType == DayActionType.None,
             themeColors = themeColors,
             icon = painterResource(
                 if (viewModel.state.note == null) R.drawable.icon_rounded_plus
                 else R.drawable.icon_rounded_edit
-            )
+            ),
+            contentDescription =
+                if (viewModel.state.note == null) "Add note" // TODO: add to strings.xml
+                else "Edit note" // TODO: add to strings.xml
         )
         ActionButton(
-            onClick = {
-                val note = viewModel.state.note
-                val noteData = note?.let { noteRepository.getBy(it.date) }
-
-                if (noteData != null) {
-                    noteRepository.delete(noteData)
-                }
-                viewModel.onEvent(DayScreenEvent.NoteChange(null))
-                viewModel.onEvent(
-                    DayScreenEvent.NoteModeChange(DayNoteMode.Reading)
-                )
-                focusRequester.freeFocus()
-                keyboardController?.hide()
-                focusManager.clearFocus()
-            },
-            visible = viewModel.state.noteMode == DayNoteMode.Editing,
+            onClick = onDeleteNoteClick,
+            visible = viewModel.state.actionType == DayActionType.EditingNote,
             themeColors = themeColors,
-            icon = painterResource(R.drawable.icon_rounded_delete)
+            icon = painterResource(R.drawable.icon_rounded_delete),
+            contentDescription = "Delete note" // TODO: add to strings.xml
         )
         ActionButton(
-            onClick = {
-                val note = viewModel.state.note
-                val noteMode = viewModel.state.noteMode
-
-                if (noteMode == DayNoteMode.Editing) {
-                    val noteData = note?.let { noteRepository.getBy(it.date) }
-
-                    if (noteData != null) {
-                        viewModel.onEvent(
-                            DayScreenEvent.NoteChange(
-                                DayScreenNote(
-                                    date = note.date,
-                                    textValue = TextFieldValue(noteData.text),
-                                    reminderDateTime = note.reminderDateTime
-                                )
-                            )
-                        )
-                    }
-                } else if (noteMode == DayNoteMode.Adding) {
-                    viewModel.onEvent(DayScreenEvent.NoteChange(null))
-                }
-                viewModel.onEvent(
-                    DayScreenEvent.NoteModeChange(DayNoteMode.Reading)
-                )
-                focusRequester.freeFocus()
-                keyboardController?.hide()
-                focusManager.clearFocus()
-            },
-            visible = viewModel.state.noteMode == DayNoteMode.Editing ||
-                viewModel.state.noteMode == DayNoteMode.Adding,
+            onClick = onCancelNoteEditClick,
+            visible = viewModel.state.actionType == DayActionType.EditingNote ||
+                viewModel.state.actionType == DayActionType.AddingNote,
             themeColors = themeColors,
-            icon = painterResource(R.drawable.icon_rounded_edit_off)
+            icon = painterResource(R.drawable.icon_rounded_edit_off),
+            contentDescription = "Cancel note editing" // TODO: add to strings.xml
         )
         ActionButton(
-            onClick = {
-                val note = viewModel.state.note
-
-                if (note != null) {
-                    val noteData = note.let { noteRepository.getBy(it.date) }
-
-                    if (noteData == null) {
-                        noteRepository.add(
-                            NoteData(
-                                date = mainViewModel.state.dayScreenDate.toString(),
-                                text = note.textValue.text
-                            )
-                        )
-                    } else {
-                        noteRepository.update(noteData.copy(text = note.textValue.text))
-                    }
-                    viewModel.onEvent(
-                        DayScreenEvent.NoteChange(
-                            DayScreenNote(note.date, note.textValue, note.reminderDateTime)
-                        )
-                    )
-                    viewModel.onEvent(
-                        DayScreenEvent.NoteModeChange(DayNoteMode.Reading)
-                    )
-                }
-                focusRequester.freeFocus()
-                keyboardController?.hide()
-                focusManager.clearFocus()
-            },
-            visible = viewModel.state.noteMode == DayNoteMode.Editing ||
-                viewModel.state.noteMode == DayNoteMode.Adding,
+            onClick = onAcceptNoteEditClick,
+            visible = viewModel.state.actionType == DayActionType.EditingNote ||
+                viewModel.state.actionType == DayActionType.AddingNote,
             themeColors = themeColors,
-            icon = painterResource(R.drawable.icon_rounded_check)
+            icon = painterResource(R.drawable.icon_rounded_check),
+            contentDescription = "Accept note edit" // TODO: add to strings.xml
         )
     }
 }
@@ -636,9 +766,9 @@ fun DayPageLayout(
         date < dayScreenDate -> viewModel.state.prevNote
         else -> viewModel.state.note
     }
-    val noteMode =
-        if (date == dayScreenDate) viewModel.state.noteMode
-        else DayNoteMode.Reading
+    val actionType =
+        if (date == dayScreenDate) viewModel.state.actionType
+        else DayActionType.None
     val keyboardController = LocalSoftwareKeyboardController.current
 
     Column(modifier = modifier) {
@@ -655,8 +785,8 @@ fun DayPageLayout(
         ) {
             AnimatedVisibility(
                 visible = note != null ||
-                    noteMode == DayNoteMode.Editing ||
-                    noteMode == DayNoteMode.Adding,
+                    actionType == DayActionType.EditingNote ||
+                    actionType == DayActionType.AddingNote,
                 enter = scaleIn() + expandIn(),
                 exit = shrinkOut() + scaleOut()
             ) {
@@ -677,7 +807,11 @@ fun DayPageLayout(
                             BasicTextField(
                                 value = note.textValue,
                                 onValueChange = {
-                                    if (viewModel.state.noteMode != DayNoteMode.Reading) {
+                                    val actionType = viewModel.state.actionType
+
+                                    if (actionType == DayActionType.AddingNote ||
+                                        actionType == DayActionType.EditingNote
+                                    ) {
                                         viewModel.onEvent(
                                             DayScreenEvent.NoteChange(
                                                 DayScreenNote(
@@ -689,7 +823,7 @@ fun DayPageLayout(
                                         )
                                     }
                                 },
-                                readOnly = noteMode == DayNoteMode.Reading,
+                                readOnly = actionType == DayActionType.None,
                                 minLines = 1,
                                 maxLines = Int.MAX_VALUE,
                                 textStyle = TextStyle(
@@ -711,16 +845,16 @@ fun DayPageLayout(
                             )
                         }
                         Spacer(modifier = Modifier.height(72.dp))
-                        LaunchedEffect(noteMode) {
-                            when (noteMode) {
-                                DayNoteMode.Reading -> {
-                                    focusRequester.freeFocus()
-                                    keyboardController?.hide()
-                                }
-
-                                DayNoteMode.Editing, DayNoteMode.Adding -> {
+                        LaunchedEffect(actionType) {
+                            when (actionType) {
+                                DayActionType.EditingNote, DayActionType.AddingNote -> {
                                     focusRequester.requestFocus()
                                     keyboardController?.show()
+                                }
+
+                                else -> {
+                                    focusRequester.freeFocus()
+                                    keyboardController?.hide()
                                 }
                             }
                         }
