@@ -27,19 +27,21 @@ fun ConfirmationDialog(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
+    confirmText: String = stringResource(android.R.string.ok),
+    dismissText: String = stringResource(android.R.string.cancel),
     properties: DialogProperties = DialogProperties(),
     dialogColors: CardColors = CardDefaults.cardColors(),
     textButtonColor: Color = Color.Unspecified,
     buttonsContent: @Composable RowScope.() -> Unit = {
         Text(
-            text = stringResource(android.R.string.cancel),
+            text = dismissText,
             color = textButtonColor,
             modifier = Modifier
                 .clickable(onClick = onDismiss)
                 .padding(vertical = 8.dp, horizontal = 16.dp)
         )
         Text(
-            text = stringResource(android.R.string.ok),
+            text = confirmText,
             color = textButtonColor,
             modifier = Modifier
                 .clickable(onClick = onConfirm)
