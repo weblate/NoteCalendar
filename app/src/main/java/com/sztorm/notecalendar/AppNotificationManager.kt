@@ -45,7 +45,11 @@ class AppNotificationManager(val mainActivity: MainActivity, val logger: ILogger
         val builder = NotificationCompat.Builder(
             mainActivity, NOTIFICATION_CHANNEL_ID_NAME
         )
-            .setContentTitle(String.format("Note from %s", note.date.toString())) // TODO: add to strings.xml,
+            .setContentTitle(
+                mainActivity
+                    .getString(R.string.Notification_NoteFrom_Day)
+                    .format(note.date.toString())
+            )
             .setContentText(note.text)
             .setAutoCancel(true)
             .setSmallIcon(R.drawable.icon_outline_rounded_note)

@@ -24,7 +24,7 @@ data class ExportNoteBackupPreferenceDialogTexts(
 ) {
     companion object {
         fun english() = ExportNoteBackupPreferenceDialogTexts(
-            title = "Export notes backup?",
+            title = "Notes backup export",
             encryptData = "Encrypt data",
             encryptionAlgorithm = "Encryption algorithm",
             password = "Password",

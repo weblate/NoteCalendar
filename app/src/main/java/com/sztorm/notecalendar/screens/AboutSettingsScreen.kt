@@ -24,6 +24,7 @@ import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
@@ -110,12 +111,12 @@ fun AboutSettingsScreen(
     val coroutineScope = rememberCoroutineScope()
 
     SubpreferenceScreen(
-        title = "About", // TODO: add to strings.xml
+        title = stringResource(R.string.Settings_About),
         iconTint = themeColors.textColor,
         onBackButtonClick = { navController.navigateUp() }
     ) {
         CategoryPreference(
-            title = "Basic", // TODO: add to strings.xml
+            title = stringResource(R.string.Settings_About_Basic),
             titleColor = themeColors.secondaryColor
         ) {
             Column(
@@ -123,7 +124,7 @@ fun AboutSettingsScreen(
             ) {
                 Row {
                     Text(
-                        text = "Version", // TODO: add to strings.xml
+                        text = stringResource(R.string.Settings_About_Version),
                         fontSize = 20.sp
                     )
                 }
@@ -159,7 +160,7 @@ fun AboutSettingsScreen(
             ) {
                 Row {
                     Text(
-                        text = "Contact", // TODO: add to strings.xml
+                        text = stringResource(R.string.Settings_About_Contact),
                         fontSize = 20.sp
                     )
                 }
@@ -195,7 +196,7 @@ fun AboutSettingsScreen(
             ) {
                 Row {
                     Text(
-                        text = "Source code", // TODO: add to strings.xml
+                        text = stringResource(R.string.Settings_About_SourceCode),
                         fontSize = 20.sp
                     )
                 }
@@ -232,7 +233,7 @@ fun AboutSettingsScreen(
             ) {
                 Row {
                     Text(
-                        text = "License", // TODO: add to strings.xml
+                        text = stringResource(R.string.Settings_About_License),
                         fontSize = 20.sp
                     )
                 }
@@ -268,7 +269,7 @@ fun AboutSettingsScreen(
             ) {
                 Row {
                     Text(
-                        text = "Privacy policy", // TODO: add to strings.xml
+                        text = stringResource(R.string.Settings_About_PrivacyPolicy),
                         fontSize = 20.sp
                     )
                 }
@@ -302,18 +303,20 @@ fun AboutSettingsScreen(
             }
         }
         CategoryPreference(
-            title = "Advanced", // TODO: add to strings.xml
+            title = stringResource(R.string.Settings_About_Advanced),
             titleColor = themeColors.secondaryColor
         ) {
+            val title = stringResource(R.string.Settings_About_LibraryLicenses)
+
             Preference(
-                title = "Library licenses", // TODO: add to strings.xml
+                title = title,
                 titleColor = themeColors.textColor,
                 icon = painterResource(R.drawable.icon_outline_rounded_license),
                 iconColorFilter = ColorFilter.tint(themeColors.secondaryColor),
                 onClick = {
                     context.startActivity(
                         LibsBuilder()
-                            .withActivityTitle("Library licenses") // TODO: add to strings.xml
+                            .withActivityTitle(title)
                             .withEdgeToEdge(true)
                             .withSearchEnabled(true)
                             .intent(context)

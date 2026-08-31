@@ -150,32 +150,32 @@ private fun RootSettingsScreen(viewModel: MainViewModel, navController: NavContr
     val themeColors = viewModel.state.themeColors
 
     PreferenceScreen(
-        title = "Settings", // TODO: add to strings.xml
+        title = stringResource(R.string.Settings),
         modifier = Modifier.verticalScroll(rememberScrollState()),
     ) {
         Preference(
-            title = stringResource(R.string.Settings_Header_Notes),
+            title = stringResource(R.string.Settings_Notes),
             titleColor = themeColors.textColor,
             icon = painterResource(R.drawable.icon_outline_rounded_note_stack),
             iconColorFilter = ColorFilter.tint(themeColors.secondaryColor),
             onClick = { navController.navigate(Screen.Settings.Notes.route) }
         )
         Preference(
-            title = "Calendar", // TODO: add to strings.xml,
+            title = stringResource(R.string.Settings_Calendar),
             titleColor = themeColors.textColor,
             icon = painterResource(R.drawable.icon_outline_rounded_calendar_settings),
             iconColorFilter = ColorFilter.tint(themeColors.secondaryColor),
             onClick = { navController.navigate(Screen.Settings.Calendar.route) }
         )
         Preference(
-            title = stringResource(R.string.Settings_Header_Theme),
+            title = stringResource(R.string.Settings_Theme),
             titleColor = themeColors.textColor,
             icon = painterResource(R.drawable.icon_outline_rounded_palette),
             iconColorFilter = ColorFilter.tint(themeColors.secondaryColor),
             onClick = { navController.navigate(Screen.Settings.Theme.route) }
         )
         Preference(
-            title = "About", // TODO: add to strings.xml
+            title = stringResource(R.string.Settings_About),
             titleColor = themeColors.textColor,
             icon = painterResource(R.drawable.icon_outline_rounded_info),
             iconColorFilter = ColorFilter.tint(themeColors.secondaryColor),

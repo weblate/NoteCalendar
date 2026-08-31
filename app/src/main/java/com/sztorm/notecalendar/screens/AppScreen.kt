@@ -23,6 +23,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -93,22 +94,22 @@ fun AppScreen(
             MainTab(
                 screen = Screen.Month,
                 icon = ImageVector.vectorResource(R.drawable.icon_outline_rounded_month),
-                description = "Month" // TODO: Add to strings.xml
+                description = stringResource(R.string.Month)
             ),
             MainTab(
                 screen = Screen.Week,
                 icon = ImageVector.vectorResource(R.drawable.icon_outline_rounded_week),
-                description = "Week" // TODO: Add to strings.xml
+                description = stringResource(R.string.Week)
             ),
             MainTab(
                 screen = Screen.Day(),
                 icon = ImageVector.vectorResource(R.drawable.icon_outline_rounded_day),
-                description = "Day" // TODO: Add to strings.xml
+                description = stringResource(R.string.Day)
             ),
             MainTab(
                 screen = Screen.Settings,
                 icon = ImageVector.vectorResource(R.drawable.icon_outline_rounded_settings),
-                description = "Settings" // TODO: Add to strings.xml
+                description = stringResource(R.string.Settings)
             )
         )
         PrimaryTabRow(selectedTabIndex = selectedTabIndex) {

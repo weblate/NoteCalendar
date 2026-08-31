@@ -1,27 +1,51 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="Accept">Accept</string>
     <string name="AddNote">Add note</string>
+    <string name="AddReminder">Add reminder</string>
     <string name="App_Name">Note Calendar</string>
     <string name="April">\?</string>
     <string name="April_GenitiveCase">\?</string>
     <string name="August">\?</string>
     <string name="August_GenitiveCase">\?</string>
-    <string name="BackgroundColor">Background color</string>
-    <string name="ButtonTextColor">Button text color</string>
     <string name="Cancel">Cancel</string>
     <string name="ColorPicker">Color picker</string>
+    <string name="ColorPicker_Alpha">Opacity</string>
+    <string name="ColorPicker_Blue">Blue</string>
+    <string name="ColorPicker_Green">Green</string>
+    <string name="ColorPicker_Red">Red</string>
+    <string name="ColorPicker_hslHue">Hue</string>
+    <string name="ColorPicker_hslLightness">Lightness</string>
+    <string name="ColorPicker_hslSaturation">Saturation</string>
+    <string name="ColorPicker_hsvHue">Hue</string>
+    <string name="ColorPicker_hsvSaturation">Saturation</string>
+    <string name="ColorPicker_hsvValue">Value</string>
+    <string name="Color_Background">Background color</string>
+    <string name="Color_BackgroundVariant">Background color variant</string>
+    <string name="Color_ButtonText">Button text color</string>
+    <string name="Color_InactiveElement">Inactive item color</string>
+    <string name="Color_InactiveElementVariant">Inactive item color variant</string>
+    <string name="Color_Note">Note color</string>
+    <string name="Color_NoteText">Note text color</string>
+    <string name="Color_NoteVariant">Note color variant</string>
+    <string name="Color_Primary">Primary color</string>
+    <string name="Color_Secondary">Secondary color</string>
+    <string name="Color_Text">Text color</string>
     <string name="Confirm">OK</string>
+    <string name="Day">Day</string>
     <string name="DayView">Day view</string>
     <string name="December">\?</string>
     <string name="December_GenitiveCase">\?</string>
     <string name="DeleteNote">Delete note</string>
+    <string name="DeleteReminder">Delete reminder</string>
     <string name="EditNote">Edit note</string>
+    <string name="EditReminder">Edit reminder</string>
+    <string name="EncryptData">Encrypt data</string>
+    <string name="EncryptionAlgorithm">Encryption algorithm</string>
     <string name="February">\?</string>
     <string name="February_GenitiveCase">\?</string>
     <string name="Friday">\?</string>
     <string name="Friday_Short">\?</string>
-    <string name="InactiveItemColor">Inactive item color</string>
-    <string name="InactiveItemColorVariant">Inactive item color variant</string>
     <string name="January">\?</string>
     <string name="January_GenitiveCase">\?</string>
     <string name="July">\?</string>
@@ -32,12 +56,16 @@
     <string name="March_GenitiveCase">\?</string>
     <string name="May">\?</string>
     <string name="May_GenitiveCase">\?</string>
+    <string name="Message_ExportFailed">Export failed</string>
+    <string name="Message_ExportSuccessful">Export successful</string>
+    <string name="Message_ImportFailed">Import failed</string>
+    <string name="Message_ImportSuccessful">Import successful</string>
+    <string name="Message_NotificationPermissionDenied">Notification permission is denied</string>
     <string name="Monday">\?</string>
     <string name="Monday_Short">\?</string>
+    <string name="Month">Month</string>
     <string name="MonthView">Month view</string>
-    <string name="NoteColor">Note color</string>
-    <string name="NoteColorVariant">Note color variant</string>
-    <string name="NoteTextColor">Note text color</string>
+    <string name="Notification_NoteFrom_Day">Note from %s</string>
     <string name="Notification_Note_ChannelDescription">Inform about saved note daily.</string>
     <string name="Notification_Note_ChannelName">Notes</string>
     <string name="Notification_Note_Title">Today\'s note</string>
@@ -45,61 +73,58 @@
     <string name="November_GenitiveCase">\?</string>
     <string name="October">\?</string>
     <string name="October_GenitiveCase">\?</string>
-    <string name="PrefKey_BackgroundColor" translatable="false">PrefKey_BackgroundColor</string>
-    <string name="PrefKey_ButtonTextColor" translatable="false">PrefKey_ButtonTextColor</string>
-    <string name="PrefKey_CategoryNotes" translatable="false">PrefKey_CategoryNotes</string>
-    <string name="PrefKey_CategoryNotifications" translatable="false">PrefKey_CategoryNotifications</string>
-    <string name="PrefKey_CategoryOther" translatable="false">PrefKey_CategoryOther</string>
-    <string name="PrefKey_CategoryTheme" translatable="false">PrefKey_CategoryTheme</string>
-    <string name="PrefKey_DeleteAllNotes" translatable="false">PrefKey_DeleteAllNotes</string>
-    <string name="PrefKey_EnableNotifications" translatable="false">PrefKey_EnableNotifications</string>
-    <string name="PrefKey_FirstDayOfWeek" translatable="false">PrefKey_FirstDayOfWeek</string>
-    <string name="PrefKey_HeaderCustomTheme" translatable="false">PrefKey_HeaderCustomTheme</string>
-    <string name="PrefKey_InactiveItemColor" translatable="false">PrefKey_InactiveItemColor</string>
-    <string name="PrefKey_InactiveItemColorVariant" translatable="false">PrefKey_InactiveItemColorVariant</string>
-    <string name="PrefKey_Licenses" translatable="false">PrefKey_Licenses</string>
-    <string name="PrefKey_NoteColor" translatable="false">PrefKey_NoteColor</string>
-    <string name="PrefKey_NoteColorVariant" translatable="false">PrefKey_NoteColorVariant</string>
-    <string name="PrefKey_NoteTextColor" translatable="false">PrefKey_NoteTextColor</string>
-    <string name="PrefKey_NotificationTime" translatable="false">PrefKey_NotificationTime</string>
-    <string name="PrefKey_PrimaryColor" translatable="false">PrefKey_PrimaryColor</string>
-    <string name="PrefKey_SecondaryColor" translatable="false">PrefKey_SecondaryColor</string>
-    <string name="PrefKey_SetCustomTheme" translatable="false">PrefKey_SetCustomTheme</string>
-    <string name="PrefKey_SetDarkTheme" translatable="false">PrefKey_SetDarkTheme</string>
-    <string name="PrefKey_SetDefaultTheme" translatable="false">PrefKey_SetDefaultTheme</string>
-    <string name="PrefKey_SetLightTheme" translatable="false">PrefKey_SetLightTheme</string>
-    <string name="PrefKey_StartingView" translatable="false">PrefKey_StartingView</string>
-    <string name="PrefKey_TextColor" translatable="false">PrefKey_TextColor</string>
-    <string name="PrimaryColor">Primary color</string>
+    <string name="OpenReminderDialog">Open reminder dialog</string>
+    <string name="Password">Password</string>
+    <string name="PasswordStrength_Moderate">Moderate</string>
+    <string name="PasswordStrength_Strong">Strong</string>
+    <string name="PasswordStrength_Weak">Weak</string>
+    <string name="Password_Error">Password is incorrect</string>
     <string name="Saturday">\?</string>
     <string name="Saturday_Short">\?</string>
     <string name="Save">Save</string>
-    <string name="SecondaryColor">Secondary color</string>
     <string name="September">\?</string>
     <string name="September_GenitiveCase">\?</string>
     <string name="SetDefault">Set default</string>
-    <string name="Settings_DeleteAllNotes">Delete all notes</string>
-    <string name="Settings_DeleteAllNotes_Alert_Message">This action will delete all notes data. Do you want to continue?</string>
-    <string name="Settings_DeleteAllNotes_Alert_Title">Delete all notes?</string>
-    <string name="Settings_DeleteNotesDateRange">Delete notes from date range</string>
-    <string name="Settings_EnableNotifications">Turn on notifications</string>
-    <string name="Settings_FirstDayOfWeek">First day of week</string>
-    <string name="Settings_Header_CustomTheme">Custom theme</string>
-    <string name="Settings_Header_Notes">Notes</string>
-    <string name="Settings_Header_Notifications">Notifications</string>
-    <string name="Settings_Header_Other">Other</string>
-    <string name="Settings_Header_Theme">Theme</string>
+    <string name="SetReminder">Set reminder</string>
+    <string name="Settings">Settings</string>
+    <string name="Settings_About">About</string>
+    <string name="Settings_About_Advanced">Advanced</string>
+    <string name="Settings_About_Basic">Basic</string>
+    <string name="Settings_About_Contact">Contact</string>
+    <string name="Settings_About_LibraryLicenses">Library licenses</string>
+    <string name="Settings_About_License">License</string>
+    <string name="Settings_About_PrivacyPolicy">Privacy policy</string>
+    <string name="Settings_About_SourceCode">Source code</string>
+    <string name="Settings_About_Version">Version</string>
+    <string name="Settings_Calendar">Calendar</string>
+    <string name="Settings_Calendar_FirstDayOfWeek">First day of week</string>
+    <string name="Settings_Calendar_StartingView">Starting view</string>
     <string name="Settings_Licenses">Licenses</string>
-    <string name="Settings_NotificationTime">Notification time</string>
-    <string name="Settings_SetCustomTheme">Set custom theme</string>
-    <string name="Settings_SetDarkTheme">Set dark theme</string>
-    <string name="Settings_SetDefaultTheme">Set default theme</string>
-    <string name="Settings_SetLightTheme">Set light theme</string>
-    <string name="Settings_StartingView">Starting view</string>
-    <string name="Settings_Summary_SetDefaultTheme">Sets theme based on system settings. If system does not support theming then light theme is set.</string>
+    <string name="Settings_Notes">Notes</string>
+    <string name="Settings_Notes_DeleteAllNotes">Delete all notes</string>
+    <string name="Settings_Notes_DeleteAllNotes_DialogMessage">This action will permanently delete all notes.</string>
+    <string name="Settings_Notes_DeleteAllNotes_DialogTitle">Delete all notes?</string>
+    <string name="Settings_Notes_DeleteNotesDateRange">Delete notes from date range</string>
+    <string name="Settings_Notes_ExportNotesBackup">Export notes backup</string>
+    <string name="Settings_Notes_ExportNotesBackup_DialogTitle">Notes backup export</string>
+    <string name="Settings_Notes_ImportNotesBackup">Import notes backup</string>
+    <string name="Settings_Notes_ImportNotesBackup_DialogTitle">Notes backup import</string>
+    <string name="Settings_Notifications">Notifications</string>
+    <string name="Settings_Notifications_NotificationTime">Notification time</string>
+    <string name="Settings_Notifications_TurnOnNotifications">Turn on notifications</string>
+    <string name="Settings_Other">Other</string>
+    <string name="Settings_Theme">Theme</string>
+    <string name="Settings_Theme_CustomTheme">Custom theme</string>
+    <string name="Settings_Theme_ExportTheme">Export theme</string>
+    <string name="Settings_Theme_ImportTheme">Import theme</string>
+    <string name="Settings_Theme_PresetTheme">Preset theme</string>
+    <string name="Settings_Theme_SetCustomTheme">Set custom theme</string>
+    <string name="Settings_Theme_SetDarkTheme">Set dark theme</string>
+    <string name="Settings_Theme_SetDefaultTheme">Set default theme</string>
+    <string name="Settings_Theme_SetDefaultTheme_Summary">Sets theme based on system settings. If system does not support theming then light theme is set.</string>
+    <string name="Settings_Theme_SetLightTheme">Set light theme</string>
     <string name="Sunday">\?</string>
     <string name="Sunday_Short">\?</string>
-    <string name="TextColor">Text color</string>
     <string name="Thursday">\?</string>
     <string name="Thursday_Short">\?</string>
     <string name="Tuesday">\?</string>
@@ -107,5 +132,6 @@
     <string name="UndoDeletion">Undo deletion</string>
     <string name="Wednesday">\?</string>
     <string name="Wednesday_Short">\?</string>
+    <string name="Week">Week</string>
     <string name="WeekView">Week view</string>
 </resources>

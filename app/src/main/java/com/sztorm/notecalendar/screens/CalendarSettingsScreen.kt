@@ -44,12 +44,12 @@ fun CalendarSettingsScreen(
             .let { it to it.ordinal }
     }
     SubpreferenceScreen(
-        title = "Calendar", // TODO: add to strings.xml
+        title = stringResource(R.string.Settings_Calendar),
         iconTint = themeColors.textColor,
         onBackButtonClick = { navController.navigateUp() }
     ) {
         ListPreference(
-            title = stringResource(R.string.Settings_FirstDayOfWeek),
+            title = stringResource(R.string.Settings_Calendar_FirstDayOfWeek),
             options = DayOfWeek.entries.map { it.getLocalizedName() to it },
             initialSelectedOptionIndex = firstDayOfWeekIndexPair.second,
             onConfirm = { index, value ->
@@ -70,7 +70,7 @@ fun CalendarSettingsScreen(
             )
         )
         ListPreference(
-            title = stringResource(R.string.Settings_StartingView),
+            title = stringResource(R.string.Settings_Calendar_StartingView),
             options = StartingScreenType.entries.map { it.getLocalizedName() to it },
             initialSelectedOptionIndex = startingViewIndexPair.second,
             onConfirm = { index, value ->

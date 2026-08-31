@@ -16,10 +16,13 @@ import com.sztorm.notecalendar.viewmodels.MainViewModel
 import com.sztorm.notecalendar.R
 import com.sztorm.notecalendar.components.ExportNoteBackupPreference
 import com.sztorm.notecalendar.components.ExportNoteBackupPreferenceDefaults
+import com.sztorm.notecalendar.components.ExportNoteBackupPreferenceDialogTexts
 import com.sztorm.notecalendar.components.ExportNoteBackupPreferenceTexts
 import com.sztorm.notecalendar.components.ImportNoteBackupPreference
 import com.sztorm.notecalendar.components.ImportNoteBackupPreferenceDefaults
+import com.sztorm.notecalendar.components.ImportNoteBackupPreferenceDialogTexts
 import com.sztorm.notecalendar.components.ImportNoteBackupPreferenceTexts
+import com.sztorm.notecalendar.components.PasswordStrengthTexts
 import com.sztorm.notecalendar.components.preferences.ConfirmationPreference
 import com.sztorm.notecalendar.components.preferences.SubpreferenceScreen
 import com.sztorm.notecalendar.repositories.FileRepository
@@ -41,14 +44,14 @@ fun NotesSettingsScreen(
         contentColor = themeColors.backgroundColor,
     )
     SubpreferenceScreen(
-        title = stringResource(R.string.Settings_Header_Notes),
+        title = stringResource(R.string.Settings_Notes),
         iconTint = themeColors.textColor,
         onBackButtonClick = { navController.navigateUp() }
     ) {
         ConfirmationPreference(
-            title = stringResource(R.string.Settings_DeleteAllNotes),
-            dialogTitle = stringResource(R.string.Settings_DeleteAllNotes_Alert_Title),
-            dialogMessage = stringResource(R.string.Settings_DeleteAllNotes_Alert_Message),
+            title = stringResource(R.string.Settings_Notes_DeleteAllNotes),
+            dialogTitle = stringResource(R.string.Settings_Notes_DeleteAllNotes_DialogTitle),
+            dialogMessage = stringResource(R.string.Settings_Notes_DeleteAllNotes_DialogMessage),
             icon = painterResource(R.drawable.icon_outline_rounded_delete_forever),
             iconColorFilter = ColorFilter.tint(themeColors.secondaryColor),
             onConfirm = {
@@ -70,7 +73,15 @@ fun NotesSettingsScreen(
             logger = logger,
             fileRepository = fileRepository,
             noteRepository = noteRepository,
-            texts = ImportNoteBackupPreferenceTexts.english(), // TODO: add to strings.xml
+            texts = ImportNoteBackupPreferenceTexts(
+                title = stringResource(R.string.Settings_Notes_ImportNotesBackup),
+                summary = null,
+                dialogTexts = ImportNoteBackupPreferenceDialogTexts(
+                    title = stringResource(R.string.Settings_Notes_ImportNotesBackup_DialogTitle),
+                    password = stringResource(R.string.Password),
+                    incorrectPassword = stringResource(R.string.Password_Error)
+                )
+            ),
             colors = ImportNoteBackupPreferenceDefaults.colors().let {
                 it.copy(
                     titleColor = themeColors.textColor,
@@ -90,7 +101,21 @@ fun NotesSettingsScreen(
             logger = logger,
             fileRepository = fileRepository,
             noteRepository = noteRepository,
-            texts = ExportNoteBackupPreferenceTexts.english(), // TODO: add to strings.xml
+            texts = ExportNoteBackupPreferenceTexts(
+                title = stringResource(R.string.Settings_Notes_ExportNotesBackup),
+                summary = null,
+                dialogTexts = ExportNoteBackupPreferenceDialogTexts(
+                    title = stringResource(R.string.Settings_Notes_ExportNotesBackup_DialogTitle),
+                    encryptData = stringResource(R.string.EncryptData),
+                    encryptionAlgorithm = stringResource(R.string.EncryptionAlgorithm),
+                    password = stringResource(R.string.Password)
+                ),
+                passwordStrengthTexts = PasswordStrengthTexts(
+                    weak = stringResource(R.string.PasswordStrength_Weak),
+                    moderate = stringResource(R.string.PasswordStrength_Moderate),
+                    strong = stringResource(R.string.PasswordStrength_Strong)
+                )
+            ),
             colors = ExportNoteBackupPreferenceDefaults.colors().let {
                 it.copy(
                     titleColor = themeColors.textColor,

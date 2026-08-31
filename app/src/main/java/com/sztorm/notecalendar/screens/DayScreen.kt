@@ -45,6 +45,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.TextFieldValue
@@ -352,7 +353,7 @@ private fun ActionButton(
 private fun showNotificationPermissionDeniedToast(context: Context) = Toast
     .makeText(
         context,
-        "Notification permission is denied", // TODO: add to strings.xml
+        context.getString(R.string.Message_NotificationPermissionDenied),
         Toast.LENGTH_SHORT
     ).show()
 
@@ -665,7 +666,7 @@ private fun BoxScope.ActionButtons(
         focusManager.clearFocus()
     }
     TimePickerDialog(
-        title = "Set reminder", // TODO: add to strings.xml,
+        title = stringResource(R.string.SetReminder),
         initialTime = viewModel.state.note?.reminderDateTime?.toLocalTime()
             ?: OffsetDateTime.now().toLocalTime(),
         isOpen = viewModel.state.isReminderDialogOpen,
@@ -716,7 +717,7 @@ private fun BoxScope.ActionButtons(
                 viewModel.state.note?.reminderDateTime != null,
             themeColors = themeColors,
             icon = painterResource(R.drawable.icon_outline_rounded_delete_forever),
-            contentDescription = "Delete reminder" // TODO: add to strings.xml
+            contentDescription = stringResource(R.string.DeleteReminder)
         )
         ActionButton(
             onClick = onCancelReminderEditClick,
@@ -724,7 +725,7 @@ private fun BoxScope.ActionButtons(
                 viewModel.state.note?.reminderDateTime != null,
             themeColors = themeColors,
             icon = painterResource(R.drawable.icon_outline_rounded_notifications_edit_off),
-            contentDescription = "Cancel reminder editing" // TODO: add to strings.xml
+            contentDescription = stringResource(R.string.Cancel)
         )
         ActionButton(
             onClick = onEditReminderDialogClick,
@@ -732,7 +733,7 @@ private fun BoxScope.ActionButtons(
                 viewModel.state.note?.reminderDateTime != null,
             themeColors = themeColors,
             icon = painterResource(R.drawable.icon_outline_rounded_edit_notifications),
-            contentDescription = "Open reminder dialog" // TODO: add to strings.xml
+            contentDescription = stringResource(R.string.OpenReminderDialog)
         )
         ActionButton(
             onClick = onAddOrEditReminderClick,
@@ -747,18 +748,15 @@ private fun BoxScope.ActionButtons(
                         else R.drawable.icon_outline_rounded_notifications
                     ),
                     contentDescription =
-                        if (reminderDateTime == null) "Add reminder" // TODO: add to strings.xml
-                        else "Edit reminder" // TODO: add to strings.xml
+                        if (reminderDateTime == null) stringResource(R.string.AddReminder)
+                        else stringResource(R.string.EditReminder)
                 )
                 val remainingTime = viewModel.state.remainingReminderTime
 
                 if (viewModel.state.note?.reminderDateTime != null && remainingTime != null) {
                     Text(text = remainingTime.toComponents { hours, minutes, seconds, _ ->
-                        String.format(
-                            locale = Locale.current.platformLocale,
-                            format = "%02d:%02d:%02d",
-                            hours, minutes, seconds
-                        )
+                        "%02d:%02d:%02d"
+                            .format(Locale.current.platformLocale, hours, minutes, seconds)
                     })
                 }
             }
@@ -770,7 +768,7 @@ private fun BoxScope.ActionButtons(
                 viewModel.state.noteBackup != null,
             themeColors = themeColors,
             icon = painterResource(R.drawable.icon_rounded_undo),
-            contentDescription = "Undo note deletion" // TODO: add to strings.xml
+            contentDescription = stringResource(R.string.UndoDeletion)
         )
         ActionButton(
             onClick = onAddOrEditNoteClick,
@@ -781,15 +779,15 @@ private fun BoxScope.ActionButtons(
                 else R.drawable.icon_outline_rounded_edit
             ),
             contentDescription =
-                if (viewModel.state.note == null) "Add note" // TODO: add to strings.xml
-                else "Edit note" // TODO: add to strings.xml
+                if (viewModel.state.note == null) stringResource(R.string.AddNote)
+                else stringResource(R.string.EditNote)
         )
         ActionButton(
             onClick = onDeleteNoteClick,
             visible = viewModel.state.actionType == DayActionType.EditingNote,
             themeColors = themeColors,
             icon = painterResource(R.drawable.icon_outline_rounded_delete),
-            contentDescription = "Delete note" // TODO: add to strings.xml
+            contentDescription = stringResource(R.string.DeleteNote)
         )
         ActionButton(
             onClick = onCancelNoteEditClick,
@@ -797,7 +795,7 @@ private fun BoxScope.ActionButtons(
                 viewModel.state.actionType == DayActionType.AddingNote,
             themeColors = themeColors,
             icon = painterResource(R.drawable.icon_outline_rounded_edit_off),
-            contentDescription = "Cancel note editing" // TODO: add to strings.xml
+            contentDescription = stringResource(R.string.Cancel)
         )
         ActionButton(
             onClick = onAcceptNoteEditClick,
@@ -805,7 +803,7 @@ private fun BoxScope.ActionButtons(
                 viewModel.state.actionType == DayActionType.AddingNote,
             themeColors = themeColors,
             icon = painterResource(R.drawable.icon_rounded_check),
-            contentDescription = "Accept note edit" // TODO: add to strings.xml
+            contentDescription = stringResource(R.string.Accept)
         )
     }
 }

@@ -21,7 +21,7 @@ data class ImportNoteBackupPreferenceDialogTexts(
 ) {
     companion object {
         fun english() = ImportNoteBackupPreferenceDialogTexts(
-            title = "Import notes backup?",
+            title = "Notes backup import",
             password = "Password",
             incorrectPassword = "Password is incorrect"
         )

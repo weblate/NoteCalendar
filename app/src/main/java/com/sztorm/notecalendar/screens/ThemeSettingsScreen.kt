@@ -58,7 +58,22 @@ fun ThemeSettingsScreen(
             ColorPickerTab.Hsv(),
             ColorPickerTab.Hsl(),
         ),
-        texts = ColorPickerTexts.english(), // TODO add required strings to strings.xml
+        texts = ColorPickerTexts(
+            colorCodesTitle = "#",
+            hslTitle = "HSL",
+            hsvTitle = "HSV",
+            rgbTitle = "RGB",
+            alpha = stringResource(R.string.ColorPicker_Alpha),
+            red = stringResource(R.string.ColorPicker_Red),
+            green = stringResource(R.string.ColorPicker_Green),
+            blue = stringResource(R.string.ColorPicker_Blue),
+            hslHue = stringResource(R.string.ColorPicker_hslHue),
+            hslSaturation = stringResource(R.string.ColorPicker_hslSaturation),
+            hslLightness = stringResource(R.string.ColorPicker_hslLightness),
+            hsvHue = stringResource(R.string.ColorPicker_hsvHue),
+            hsvSaturation = stringResource(R.string.ColorPicker_hsvSaturation),
+            hsvValue = stringResource(R.string.ColorPicker_hsvValue),
+        ),
     )
     val dialogColors = CardDefaults.cardColors().copy(
         containerColor = themeColors.backgroundColor,
@@ -66,16 +81,16 @@ fun ThemeSettingsScreen(
     )
 
     SubpreferenceScreen(
-        title = stringResource(R.string.Settings_Header_Theme),
+        title = stringResource(R.string.Settings_Theme),
         iconTint = themeColors.textColor,
         onBackButtonClick = { navController.navigateUp() },
     ) {
         CategoryPreference(
-            title = "Preset theme", // TODO: add to strings.xml
+            title = stringResource(R.string.Settings_Theme_PresetTheme),
             titleColor = themeColors.secondaryColor
         ) { enabled ->
             Preference(
-                title = stringResource(R.string.Settings_SetLightTheme),
+                title = stringResource(R.string.Settings_Theme_SetLightTheme),
                 titleColor = themeColors.textColor,
                 icon = painterResource(R.drawable.icon_outline_rounded_sun),
                 iconColorFilter = ColorFilter.tint(themeColors.secondaryColor),
@@ -91,7 +106,7 @@ fun ThemeSettingsScreen(
                 enabled = enabled
             )
             Preference(
-                title = stringResource(R.string.Settings_SetDarkTheme),
+                title = stringResource(R.string.Settings_Theme_SetDarkTheme),
                 titleColor = themeColors.textColor,
                 icon = painterResource(R.drawable.icon_outline_rounded_moon),
                 iconColorFilter = ColorFilter.tint(themeColors.secondaryColor),
@@ -107,9 +122,9 @@ fun ThemeSettingsScreen(
                 enabled = enabled
             )
             Preference(
-                title = stringResource(R.string.Settings_SetDefaultTheme),
+                title = stringResource(R.string.Settings_Theme_SetDefaultTheme),
                 titleColor = themeColors.textColor,
-                summary = stringResource(R.string.Settings_Summary_SetDefaultTheme),
+                summary = stringResource(R.string.Settings_Theme_SetDefaultTheme_Summary),
                 summaryColor = themeColors.textColor,
                 icon = painterResource(R.drawable.icon_outline_rounded_sun_and_moon),
                 iconColorFilter = ColorFilter.tint(themeColors.secondaryColor),
@@ -125,7 +140,7 @@ fun ThemeSettingsScreen(
                 enabled = enabled
             )
             Preference(
-                title = "Load theme", // TODO: add to strings.xml
+                title = stringResource(R.string.Settings_Theme_ImportTheme),
                 titleColor = themeColors.textColor,
                 icon = painterResource(R.drawable.icon_outline_rounded_folder_open),
                 iconColorFilter = ColorFilter.tint(themeColors.secondaryColor),
@@ -155,7 +170,7 @@ fun ThemeSettingsScreen(
                 enabled = enabled
             )
             Preference(
-                title = "Save theme", // TODO: add to strings.xml
+                title = stringResource(R.string.Settings_Theme_ExportTheme),
                 titleColor = themeColors.textColor,
                 icon = painterResource(R.drawable.icon_outline_rounded_save_as),
                 iconColorFilter = ColorFilter.tint(themeColors.secondaryColor),
@@ -178,11 +193,11 @@ fun ThemeSettingsScreen(
             )
         }
         CategoryPreference(
-            title = stringResource(R.string.Settings_Header_CustomTheme),
+            title = stringResource(R.string.Settings_Theme_CustomTheme),
             titleColor = themeColors.secondaryColor
         ) { enabled ->
             ColorPickerPreference(
-                title = stringResource(R.string.PrimaryColor),
+                title = stringResource(R.string.Color_Primary),
                 titleColor = themeColors.textColor,
                 initialColor = themeColors.primaryColor,
                 defaultColor = defaultThemeColors.primaryColor,
@@ -204,7 +219,7 @@ fun ThemeSettingsScreen(
                 enabled = enabled
             )
             ColorPickerPreference(
-                title = stringResource(R.string.SecondaryColor),
+                title = stringResource(R.string.Color_Secondary),
                 titleColor = themeColors.textColor,
                 initialColor = themeColors.secondaryColor,
                 defaultColor = defaultThemeColors.secondaryColor,
@@ -226,7 +241,7 @@ fun ThemeSettingsScreen(
                 enabled = enabled
             )
             ColorPickerPreference(
-                title = "Inactive element color", // TODO: add to strings.xml
+                title = stringResource(R.string.Color_InactiveElement),
                 titleColor = themeColors.textColor,
                 initialColor = themeColors.inactiveElementColor,
                 defaultColor = defaultThemeColors.inactiveElementColor,
@@ -248,7 +263,7 @@ fun ThemeSettingsScreen(
                 enabled = enabled
             )
             ColorPickerPreference(
-                title = stringResource(R.string.NoteColor),
+                title = stringResource(R.string.Color_Note),
                 titleColor = themeColors.textColor,
                 initialColor = themeColors.noteColor,
                 defaultColor = defaultThemeColors.noteColor,
@@ -270,7 +285,7 @@ fun ThemeSettingsScreen(
                 enabled = enabled
             )
             ColorPickerPreference(
-                title = stringResource(R.string.NoteColorVariant),
+                title = stringResource(R.string.Color_NoteVariant),
                 titleColor = themeColors.textColor,
                 initialColor = themeColors.noteColorVariant,
                 defaultColor = defaultThemeColors.noteColorVariant,
@@ -292,7 +307,7 @@ fun ThemeSettingsScreen(
                 enabled = enabled
             )
             ColorPickerPreference(
-                title = stringResource(R.string.TextColor),
+                title = stringResource(R.string.Color_Text),
                 titleColor = themeColors.textColor,
                 initialColor = themeColors.textColor,
                 defaultColor = defaultThemeColors.textColor,
@@ -314,7 +329,7 @@ fun ThemeSettingsScreen(
                 enabled = enabled
             )
             ColorPickerPreference(
-                title = stringResource(R.string.ButtonTextColor),
+                title = stringResource(R.string.Color_ButtonText),
                 titleColor = themeColors.textColor,
                 initialColor = themeColors.buttonTextColor,
                 defaultColor = defaultThemeColors.buttonTextColor,
@@ -336,7 +351,7 @@ fun ThemeSettingsScreen(
                 enabled = enabled
             )
             ColorPickerPreference(
-                title = stringResource(R.string.NoteTextColor),
+                title = stringResource(R.string.Color_NoteText),
                 titleColor = themeColors.textColor,
                 initialColor = themeColors.noteTextColor,
                 defaultColor = defaultThemeColors.noteTextColor,
@@ -358,7 +373,7 @@ fun ThemeSettingsScreen(
                 enabled = enabled
             )
             ColorPickerPreference(
-                title = stringResource(R.string.BackgroundColor),
+                title = stringResource(R.string.Color_Background),
                 titleColor = themeColors.textColor,
                 initialColor = themeColors.backgroundColor,
                 defaultColor = defaultThemeColors.backgroundColor,
@@ -380,7 +395,7 @@ fun ThemeSettingsScreen(
                 enabled = enabled
             )
             ColorPickerPreference(
-                title = "Background color variant", // TODO: add to strings.xml
+                title = stringResource(R.string.Color_BackgroundVariant),
                 titleColor = themeColors.textColor,
                 initialColor = themeColors.backgroundColorVariant,
                 defaultColor = defaultThemeColors.backgroundColorVariant,
