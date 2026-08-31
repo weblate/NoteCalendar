@@ -13,7 +13,7 @@ android {
         applicationId "com.sztorm.notecalendar"
         compileSdk = 35
         minSdkVersion 21
-        targetSdkVersion 35
+        targetSdkVersion 36
         versionCode 12
         versionName "1.0.11"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
