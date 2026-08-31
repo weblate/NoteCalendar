@@ -182,7 +182,7 @@ fun WeekScreen(
         mutableStateOf(getSystemFirstDayOfWeek())
     }
     val days = remember {
-        val startDate: LocalDate = dayScreenDate.minusDays(cachedItemsCount / 2L)
+        val startDate: LocalDate = dayScreenDate.minusDays(1)
 
         mutableStateListOf<WeekViewItem>().apply {
             initItems(
