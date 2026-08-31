@@ -48,7 +48,7 @@ class AppNotificationManager(val mainActivity: MainActivity, val logger: ILogger
             .setContentTitle(String.format("Note from %s", note.date.toString())) // TODO: add to strings.xml,
             .setContentText(note.text)
             .setAutoCancel(true)
-            .setSmallIcon(R.drawable.icon_note)
+            .setSmallIcon(R.drawable.icon_outline_rounded_note)
             .setContentIntent(activity)
 
         return builder.build()

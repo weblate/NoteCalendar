@@ -6,6 +6,7 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -24,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -90,22 +92,22 @@ fun AppScreen(
         val tabs = listOf(
             MainTab(
                 screen = Screen.Month,
-                icon = ImageVector.vectorResource(R.drawable.icon_calendar_month),
+                icon = ImageVector.vectorResource(R.drawable.icon_outline_rounded_month),
                 description = "Month" // TODO: Add to strings.xml
             ),
             MainTab(
                 screen = Screen.Week,
-                icon = ImageVector.vectorResource(R.drawable.icon_calendar_week),
+                icon = ImageVector.vectorResource(R.drawable.icon_outline_rounded_week),
                 description = "Week" // TODO: Add to strings.xml
             ),
             MainTab(
                 screen = Screen.Day(),
-                icon = ImageVector.vectorResource(R.drawable.icon_calendar_day),
+                icon = ImageVector.vectorResource(R.drawable.icon_outline_rounded_day),
                 description = "Day" // TODO: Add to strings.xml
             ),
             MainTab(
                 screen = Screen.Settings,
-                icon = ImageVector.vectorResource(R.drawable.icon_settings),
+                icon = ImageVector.vectorResource(R.drawable.icon_outline_rounded_settings),
                 description = "Settings" // TODO: Add to strings.xml
             )
         )
@@ -127,6 +129,7 @@ fun AppScreen(
                         Icon(
                             imageVector = tab.icon,
                             contentDescription = tab.description,
+                            modifier = Modifier.defaultMinSize(36.dp, 36.dp)
                         )
                     }
                 )

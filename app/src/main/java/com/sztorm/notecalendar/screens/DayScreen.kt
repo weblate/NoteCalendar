@@ -723,7 +723,7 @@ private fun BoxScope.ActionButtons(
             visible = viewModel.state.actionType == DayActionType.EditingReminder &&
                 viewModel.state.note?.reminderDateTime != null,
             themeColors = themeColors,
-            icon = painterResource(R.drawable.icon_rounded_notifications_edit_off),
+            icon = painterResource(R.drawable.icon_outline_rounded_notifications_edit_off),
             contentDescription = "Cancel reminder editing" // TODO: add to strings.xml
         )
         ActionButton(
@@ -731,7 +731,7 @@ private fun BoxScope.ActionButtons(
             visible = viewModel.state.actionType == DayActionType.EditingReminder &&
                 viewModel.state.note?.reminderDateTime != null,
             themeColors = themeColors,
-            icon = painterResource(R.drawable.icon_rounded_edit_notifications),
+            icon = painterResource(R.drawable.icon_outline_rounded_edit_notifications),
             contentDescription = "Open reminder dialog" // TODO: add to strings.xml
         )
         ActionButton(
@@ -743,7 +743,7 @@ private fun BoxScope.ActionButtons(
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Icon(
                     painter = painterResource(
-                        if (reminderDateTime == null) R.drawable.icon_rounded_notification_add
+                        if (reminderDateTime == null) R.drawable.icon_outline_rounded_notification_add
                         else R.drawable.icon_outline_rounded_notifications
                     ),
                     contentDescription =
@@ -778,7 +778,7 @@ private fun BoxScope.ActionButtons(
             themeColors = themeColors,
             icon = painterResource(
                 if (viewModel.state.note == null) R.drawable.icon_rounded_plus
-                else R.drawable.icon_rounded_edit
+                else R.drawable.icon_outline_rounded_edit
             ),
             contentDescription =
                 if (viewModel.state.note == null) "Add note" // TODO: add to strings.xml
@@ -788,7 +788,7 @@ private fun BoxScope.ActionButtons(
             onClick = onDeleteNoteClick,
             visible = viewModel.state.actionType == DayActionType.EditingNote,
             themeColors = themeColors,
-            icon = painterResource(R.drawable.icon_rounded_delete),
+            icon = painterResource(R.drawable.icon_outline_rounded_delete),
             contentDescription = "Delete note" // TODO: add to strings.xml
         )
         ActionButton(
@@ -796,7 +796,7 @@ private fun BoxScope.ActionButtons(
             visible = viewModel.state.actionType == DayActionType.EditingNote ||
                 viewModel.state.actionType == DayActionType.AddingNote,
             themeColors = themeColors,
-            icon = painterResource(R.drawable.icon_rounded_edit_off),
+            icon = painterResource(R.drawable.icon_outline_rounded_edit_off),
             contentDescription = "Cancel note editing" // TODO: add to strings.xml
         )
         ActionButton(

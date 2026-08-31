@@ -170,7 +170,7 @@ private fun RootSettingsScreen(viewModel: MainViewModel, navController: NavContr
         Preference(
             title = stringResource(R.string.Settings_Header_Theme),
             titleColor = themeColors.textColor,
-            icon = painterResource(R.drawable.icon_palette),
+            icon = painterResource(R.drawable.icon_outline_rounded_palette),
             iconColorFilter = ColorFilter.tint(themeColors.secondaryColor),
             onClick = { navController.navigate(Screen.Settings.Theme.route) }
         )
