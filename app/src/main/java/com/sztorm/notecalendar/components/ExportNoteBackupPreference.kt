@@ -1,5 +1,6 @@
 package com.sztorm.notecalendar.components
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -28,12 +29,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.sztorm.notecalendar.EncryptionParameters
 import com.sztorm.notecalendar.EncryptionType
 import com.sztorm.notecalendar.ILogger
 import com.sztorm.notecalendar.LogTags
 import com.sztorm.notecalendar.NotesBackupFile
+import com.sztorm.notecalendar.R
 import com.sztorm.notecalendar.components.preferences.ConfirmationPreference
 import com.sztorm.notecalendar.generateAes256Key
 import com.sztorm.notecalendar.randomByteArray
@@ -88,6 +91,7 @@ fun ExportNoteBackupPreference(
 ) {
     var exportEncryptionType by remember { mutableStateOf(EncryptionType.None) }
     val passwordTextState = TextFieldState()
+    val context = LocalContext.current
 
     ConfirmationPreference(
         title = texts.title,
@@ -121,11 +125,23 @@ fun ExportNoteBackupPreference(
                 file = file
             ) { result ->
                 when (result) {
-                    is SaveResult.Success ->
+                    is SaveResult.Success -> {
                         logger.info("${LogTags.FILE_IO} Notes backup exported.")
+                        Toast.makeText(
+                            context,
+                            context.getString(R.string.Message_ExportSuccessful),
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
 
-                    is SaveResult.Failure ->
+                    is SaveResult.Failure -> {
                         logger.error(message = "${LogTags.FILE_IO} ${result.message}")
+                        Toast.makeText(
+                            context,
+                            context.getString(R.string.Message_ExportFailed),
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
                 }
             }
             passwordTextState.clearText()

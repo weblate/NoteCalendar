@@ -1,5 +1,6 @@
 package com.sztorm.notecalendar.components
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
@@ -18,6 +19,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -25,6 +27,7 @@ import androidx.compose.ui.window.DialogProperties
 import com.sztorm.notecalendar.ILogger
 import com.sztorm.notecalendar.LogTags
 import com.sztorm.notecalendar.NotesBackupFile
+import com.sztorm.notecalendar.R
 import com.sztorm.notecalendar.components.preferences.Preference
 import com.sztorm.notecalendar.generateAes256Key
 import com.sztorm.notecalendar.repositories.FileRepository
@@ -74,6 +77,7 @@ fun ImportNoteBackupPreference(
     icon: Painter? = null,
     enabled: Boolean = true,
 ) {
+    val context = LocalContext.current
     var openDialog by remember { mutableStateOf(false) }
     var importedNotesBackupFile by remember { mutableStateOf(null as NotesBackupFile?) }
     val passwordTextState = TextFieldState()
@@ -95,6 +99,11 @@ fun ImportNoteBackupPreference(
                                     deleteAll()
                                     addAll(notes)
                                 }
+                                Toast.makeText(
+                                    context,
+                                    context.getString(R.string.Message_ImportSuccessful),
+                                    Toast.LENGTH_SHORT
+                                ).show()
                             }
 
                             else -> {
@@ -104,8 +113,14 @@ fun ImportNoteBackupPreference(
                         }
                     }
 
-                    is LoadResult.Failure ->
+                    is LoadResult.Failure -> {
                         logger.error(message = "${LogTags.FILE_IO} ${result.message}")
+                        Toast.makeText(
+                            context,
+                            context.getString(R.string.Message_ImportFailed),
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
                 }
             }
         },
@@ -146,6 +161,12 @@ fun ImportNoteBackupPreference(
                                 importedNotesBackupFile = null
                                 @Suppress("AssignedValueIsNeverRead")
                                 isPasswordCorrect = true
+
+                                Toast.makeText(
+                                    context,
+                                    context.getString(R.string.Message_ImportSuccessful),
+                                    Toast.LENGTH_SHORT
+                                ).show()
                             }
                         }
                     }

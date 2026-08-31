@@ -1,10 +1,12 @@
 package com.sztorm.notecalendar.screens
 
+import android.widget.Toast
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.CardDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavController
@@ -40,6 +42,7 @@ fun ThemeSettingsScreen(
     preferencesRepository: UserPreferencesRepository,
     navController: NavController
 ) {
+    val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val themeColors = viewModel.state.themeColors
     val defaultThemeColors = getDefaultThemeColors(isSystemInDarkTheme())
@@ -160,10 +163,21 @@ fun ThemeSettingsScreen(
                                         MainEvent.ThemeChange(themeColors)
                                     )
                                 }
+                                Toast.makeText(
+                                    context,
+                                    context.getString(R.string.Message_ImportSuccessful),
+                                    Toast.LENGTH_SHORT
+                                ).show()
                             }
 
-                            is LoadResult.Failure ->
+                            is LoadResult.Failure -> {
                                 logger.error(message = "${LogTags.FILE_IO} ${result.message}")
+                                Toast.makeText(
+                                    context,
+                                    context.getString(R.string.Message_ImportFailed),
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
                         }
                     }
                 },
@@ -181,11 +195,23 @@ fun ThemeSettingsScreen(
                         file = ThemeFile.fromThemeColors(themeColors)
                     ) { result ->
                         when (result) {
-                            is SaveResult.Success ->
+                            is SaveResult.Success -> {
                                 logger.info("${LogTags.FILE_IO} Theme saved.")
+                                Toast.makeText(
+                                    context,
+                                    context.getString(R.string.Message_ExportSuccessful),
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
 
-                            is SaveResult.Failure ->
+                            is SaveResult.Failure -> {
                                 logger.error(message = "${LogTags.FILE_IO} ${result.message}")
+                                Toast.makeText(
+                                    context,
+                                    context.getString(R.string.Message_ExportFailed),
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
                         }
                     }
                 },
