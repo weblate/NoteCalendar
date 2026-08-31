@@ -59,6 +59,7 @@ private fun LocalTime.format(is24HourFormat: Boolean) =
         }
     }
 
+@Suppress("unused")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TimePickerPreference(
@@ -126,11 +127,15 @@ fun TimePickerPreference(
     if (openDialog) {
         ConfirmationDialog(
             onConfirm = {
+                // Without it Compose will not update the UI.
+                @Suppress("AssignedValueIsNeverRead")
                 openDialog = false
                 onConfirm(LocalTime.of(timePickerState.hour, timePickerState.minute))
             },
             onDismiss = {
                 val selectedTime = LocalTime.of(timePickerState.hour, timePickerState.minute)
+                // Without it Compose will not update the UI.
+                @Suppress("AssignedValueIsNeverRead")
                 openDialog = false
                 timePickerState.hour = initialTime.hour
                 timePickerState.minute = initialTime.minute

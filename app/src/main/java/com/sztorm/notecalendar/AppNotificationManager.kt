@@ -134,8 +134,7 @@ class AppNotificationManager(val mainActivity: MainActivity, val logger: ILogger
     }
 
     companion object {
-        @Suppress("MemberVisibilityCanBePrivate")
-        const val NOTIFICATION_CHANNEL_ID_NAME = "note-notification-channel"
+        private const val NOTIFICATION_CHANNEL_ID_NAME = "note-notification-channel"
 
         private fun getIntentUpdateCurrentFlags(): Int {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {

@@ -21,8 +21,8 @@ import java.util.Locale
 fun DayOfWeekBar(
     modifier: Modifier = Modifier,
     firstDayOfWeek: DayOfWeek = DayOfWeek.MONDAY,
-    dayOfWeekText: @Composable (DayOfWeek) -> String = {
-        it
+    dayOfWeekText: @Composable (DayOfWeek) -> String = { dayOfWeek ->
+        dayOfWeek
             .getDisplayName(TextStyle.SHORT_STANDALONE, Locale.getDefault())
             .replaceFirstChar { it.uppercaseChar() }
     },

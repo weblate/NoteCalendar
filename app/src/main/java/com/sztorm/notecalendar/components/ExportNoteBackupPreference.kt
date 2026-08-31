@@ -18,6 +18,7 @@ import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedSecureTextField
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -197,11 +198,13 @@ fun ExportNoteBackupPreference(
                                     expanded = isEncryptionTypeDropDownExpanded
                                 )
                             },
-                            colors = ExposedDropdownMenuDefaults.textFieldColors(),
+                            //colors = ExposedDropdownMenuDefaults.textFieldColors(),
+                            colors = OutlinedTextFieldDefaults.colors(),
                         )
                         ExposedDropdownMenu(
                             expanded = isEncryptionTypeDropDownExpanded,
                             onDismissRequest = { isEncryptionTypeDropDownExpanded = false },
+                            containerColor = colors.dialogColors.cardColors.containerColor
                         ) {
                             encryptionAlgorithms.forEach { option ->
                                 DropdownMenuItem(

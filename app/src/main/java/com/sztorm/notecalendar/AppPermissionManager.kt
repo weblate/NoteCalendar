@@ -105,6 +105,9 @@ class AppPermissionManager(val activity: ComponentActivity) {
     }
 
     private fun requestSettingsPermission(actionRequest: String) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+            return
+        }
         activity.startActivity(
             Intent(actionRequest).apply {
                 putExtra(Settings.EXTRA_APP_PACKAGE, activity.packageName)
@@ -112,12 +115,11 @@ class AppPermissionManager(val activity: ComponentActivity) {
         )
     }
 
-    fun requestSettingsPermission(actionRequest: String, onRequestDecision: (Boolean) -> Unit) {
-        activity.startActivity(
-            Intent(actionRequest).apply {
-                putExtra(Settings.EXTRA_APP_PACKAGE, activity.packageName)
-            }
-        )
+    fun requestNotifiactionsSettingsPermission(onRequestDecision: (Boolean) -> Unit) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            return
+        }
+        requestSettingsPermission(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
         activity.registerActivityLifecycleCallbacks(
             RequestNotificationsSettingsCallback { isGranted ->
                 grantsByPermission[AppPermission.PostNotifications.ordinal] = isGranted

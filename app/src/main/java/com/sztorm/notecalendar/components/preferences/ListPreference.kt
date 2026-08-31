@@ -72,10 +72,14 @@ fun <V> ListPreference(
     if (openDialog) {
         ConfirmationDialog(
             onConfirm = {
+                // Without it Compose will not update the UI.
+                @Suppress("AssignedValueIsNeverRead")
                 openDialog = false
                 onConfirm(selectedIndex, selectedValue)
             },
             onDismiss = {
+                // Without it Compose will not update the UI.
+                @Suppress("AssignedValueIsNeverRead")
                 openDialog = false
                 selectedIndex = initialSelectedOptionIndex
                 selectedValue = options[initialSelectedOptionIndex].second
@@ -106,6 +110,8 @@ fun <V> ListPreference(
                         .clickable(
                             onClick = {
                                 selectedIndex = i
+                                // Without it Compose will not update the UI.
+                                @Suppress("AssignedValueIsNeverRead")
                                 selectedValue = value
                             },
                             indication = null,
@@ -116,6 +122,8 @@ fun <V> ListPreference(
                         selected = i == selectedIndex,
                         onClick = {
                             selectedIndex = i
+                            // Without it Compose will not update the UI.
+                            @Suppress("AssignedValueIsNeverRead")
                             selectedValue = value
                         },
                         interactionSource = optionInteractionSources[i]

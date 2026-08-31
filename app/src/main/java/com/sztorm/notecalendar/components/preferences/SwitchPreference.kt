@@ -21,6 +21,7 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.unit.dp
 
+@Suppress("unused")
 @Composable
 fun SwitchPreference(
     title: String,

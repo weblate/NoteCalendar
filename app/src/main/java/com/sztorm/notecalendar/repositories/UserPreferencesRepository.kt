@@ -118,6 +118,7 @@ class UserPreferencesRepository(context: Context) {
         getBackgroundColorVariant(),
     )
 
+    @Suppress("unused") // Legacy setting
     suspend fun getTurnOnNotifications(default: Boolean = false): Boolean =
         getPreference(PreferenceKeys.TurnOnNotifications, default)
 
@@ -126,6 +127,7 @@ class UserPreferencesRepository(context: Context) {
     ): DayOfWeek = getPreference(PreferenceKeys.FirstDayOfWeek, default.value.toString())
         .let { DayOfWeek.of(it.toInt()) }
 
+    @Suppress("unused") // Legacy setting
     suspend fun getNotificationTime(
         default: LocalTime = LocalTime.of(8, 0)
     ): LocalTime = getPreference(PreferenceKeys.NotificationTime, default.asInt()).asLocalTime()
@@ -209,6 +211,7 @@ class UserPreferencesRepository(context: Context) {
             setBackgroundColorVariant(backgroundColorVariant)
         }
 
+    @Suppress("unused") // Legacy setting
     suspend fun setTurnOnNotifications(value: Boolean) {
         context.preferences.edit {
             it[PreferenceKeys.TurnOnNotifications] = value
@@ -221,6 +224,7 @@ class UserPreferencesRepository(context: Context) {
         }
     }
 
+    @Suppress("unused") // Legacy setting
     suspend fun setNotificationTime(value: LocalTime) {
         context.preferences.edit {
             it[PreferenceKeys.NotificationTime] = value.asInt()

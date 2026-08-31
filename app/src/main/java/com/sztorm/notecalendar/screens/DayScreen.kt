@@ -1,7 +1,6 @@
 package com.sztorm.notecalendar.screens
 
 import android.content.Context
-import android.provider.Settings
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandIn
@@ -439,9 +438,7 @@ private fun BoxScope.ActionButtons(
                         )
                     } else {
                         if (viewModel.state.haveReminderPermissionsBeenDenied) {
-                            permissionManager.requestSettingsPermission(
-                                Settings.ACTION_APP_NOTIFICATION_SETTINGS
-                            ) { isGranted ->
+                            permissionManager.requestNotifiactionsSettingsPermission { isGranted ->
                                 if (isGranted) {
                                     notificationManager.tryScheduleNotification(
                                         note = ReminderNote(
@@ -527,9 +524,10 @@ private fun BoxScope.ActionButtons(
     }
     val onUndoNoteDeletionClick = {
         val note = viewModel.state.noteBackup
-        val noteData = note?.let { noteRepository.getBy(it.date) }
 
         if (note != null) {
+            val noteData = noteRepository.getBy(note.date)
+
             if (noteData == null) {
                 noteRepository.add(
                     NoteData(
@@ -539,6 +537,14 @@ private fun BoxScope.ActionButtons(
                 )
             } else {
                 noteRepository.update(noteData.copy(text = note.textValue.text))
+            }
+            note.toReminderNoteOrNull()?.let {
+                notificationManager.tryScheduleNotification(
+                    note = it,
+                    permissionManager = permissionManager,
+                    coroutineScope = coroutineScope,
+                    onCompletion = {}
+                )
             }
         }
         viewModel.onEvent(
