@@ -43,6 +43,7 @@ import com.sztorm.notecalendar.randomByteArray
 import com.sztorm.notecalendar.repositories.FileRepository
 import com.sztorm.notecalendar.repositories.NoteRepository
 import com.sztorm.notecalendar.repositories.SaveResult
+import com.sztorm.notecalendar.toNote
 import java.time.LocalDate
 import javax.crypto.spec.IvParameterSpec
 

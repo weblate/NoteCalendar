@@ -5,30 +5,8 @@ import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
 import java.time.LocalDate
-import java.time.OffsetDateTime
 import javax.crypto.SecretKey
 import javax.crypto.spec.IvParameterSpec
-
-data class Note(
-    val date: LocalDate,
-    val text: String,
-    val reminderDateTime: OffsetDateTime? = null
-) {
-    fun toNoteData() = NoteData(date.toString(), text, reminderDateTime?.toString() ?: "")
-
-    @Suppress("unused")
-    fun toReminderNoteOrNull() = reminderDateTime
-        ?.let { ReminderNote(date, text, reminderDateTime) }
-}
-
-data class ReminderNote(
-    val date: LocalDate,
-    val text: String,
-    val reminderDateTime: OffsetDateTime
-) {
-    @Suppress("unused")
-    fun toNote() = Note(date, text, reminderDateTime)
-}
 
 sealed class NotesBackupFile(val version: String) {
     abstract fun toJson(): String
