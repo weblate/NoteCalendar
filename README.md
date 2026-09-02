@@ -13,11 +13,11 @@ Minimum Android version: 5.0 (Lollipop, API level 21)
 
 ## Screenshots
 
-<img src="assets/01.png" alt="app screenshot 01" width=300 height=667> <img src="assets/02.png" alt="app screenshot 02" width=300 height=667> <img src="assets/03.png" alt="app screenshot 03" width=300 height=667>
+<img src="assets/01.png" alt="app screenshot 01" width=270 height=600> <img src="assets/02.png" alt="app screenshot 02" width=270 height=600> <img src="assets/03.png" alt="app screenshot 03" width=270 height=600>
 
-<img src="assets/04.png" alt="app screenshot 04" width=300 height=667> <img src="assets/05.png" alt="app screenshot 05" width=300 height=667> <img src="assets/06.png" alt="app screenshot 06" width=300 height=667>
+<img src="assets/04.png" alt="app screenshot 04" width=270 height=600> <img src="assets/05.png" alt="app screenshot 05" width=270 height=600> <img src="assets/06.png" alt="app screenshot 06" width=270 height=600>
 
-<img src="assets/07.png" alt="app screenshot 07" width=300 height=667> <img src="assets/08.png" alt="app screenshot 08" width=300 height=667> <img src="assets/09.png" alt="app screenshot 09" width=300 height=667>
+<img src="assets/07.png" alt="app screenshot 07" width=270 height=600> <img src="assets/08.png" alt="app screenshot 08" width=270 height=600> <img src="assets/09.png" alt="app screenshot 09" width=270 height=600>
 
 ## Features
 
