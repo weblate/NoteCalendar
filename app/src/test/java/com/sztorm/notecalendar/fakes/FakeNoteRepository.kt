@@ -8,16 +8,19 @@ import java.time.YearMonth
 
 class FakeNoteRepository(notes: List<NoteData>) : NoteRepository {
     private val notes =
-        notes
-            .associate { it.date to it }
+        notes.associateBy { it.date }
             .toMutableMap()
 
     override fun add(note: NoteData) {
-        notes.put(note.date, note)
+        notes[note.date] = note
+    }
+
+    override fun addAll(notes: List<NoteData>) {
+        this.notes.putAll(notes.map { it.date to it })
     }
 
     override fun update(note: NoteData) {
-        notes.put(note.date, note)
+        notes[note.date] = note
     }
 
     override fun delete(note: NoteData) {

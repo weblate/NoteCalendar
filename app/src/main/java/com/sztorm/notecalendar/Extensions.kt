@@ -4,18 +4,52 @@ package com.sztorm.notecalendar
 
 import android.app.AlarmManager
 import android.app.PendingIntent
+import android.content.ClipData
+import android.content.Context
+import android.content.Intent
+import android.content.res.Configuration
 import android.os.Build
+import android.os.Parcelable
 import androidx.annotation.StringRes
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.res.stringResource
+import androidx.core.graphics.ColorUtils
+import androidx.core.text.util.LocalePreferences
+import com.sztorm.mathkit.ColorRGBA32
+import com.sztorm.mathkit.Vector2F
+import org.json.JSONArray
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.Month
+import java.time.OffsetDateTime
 import java.time.YearMonth
+import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeParseException
 import java.time.format.TextStyle
+import java.time.temporal.WeekFields
+import java.util.Locale
+import kotlin.math.max
+import kotlin.time.Duration.Companion.milliseconds
 import java.util.Locale as JLocale
+
+fun <T : Parcelable> Intent.getParcelableExtraCompat(name: String, clazz: Class<T>): T? {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        return getParcelableExtra(name, clazz)
+    }
+    @Suppress("DEPRECATION")
+    return getParcelableExtra(name)
+}
+
+val Context.isDarkThemeEnabled: Boolean
+    get() = (this.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
+        Configuration.UI_MODE_NIGHT_YES
 
 val Int.isEven
     get() = (this and 1) == 0
@@ -40,8 +74,27 @@ fun LazyListState.reachedTop(): Boolean {
     return firstVisibleItem == null || firstVisibleItem.index == 0
 }
 
+fun OffsetDateTime.remainingDurationFromNow() =
+    max(0L, toEpochSecond() * 1000L - System.currentTimeMillis()).milliseconds
+
 val LocalDate.yearMonth: YearMonth
     get() = YearMonth.of(year, month)
+
+fun LocalDate.stableHash(): Int {
+    val yearValue = year
+    val monthValue = month.value - 1
+    val dayValue = dayOfMonth
+
+    return (yearValue and -0x800) xor ((yearValue shl 11) + (monthValue shl 6) + (dayValue))
+}
+
+fun CharSequence.toLocalDateOrNull(
+    formatter: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE
+) = try {
+    LocalDate.parse(this, formatter)
+} catch (_: DateTimeParseException) {
+    null
+}
 
 @Composable
 @ReadOnlyComposable
@@ -52,6 +105,17 @@ fun stringResourceOrElse(
         valueToReplace -> defaultValue()
         else -> it
     }
+}
+
+fun getSystemFirstDayOfWeek(): DayOfWeek = when (LocalePreferences.getFirstDayOfWeek()) {
+    LocalePreferences.FirstDayOfWeek.MONDAY -> DayOfWeek.MONDAY
+    LocalePreferences.FirstDayOfWeek.TUESDAY -> DayOfWeek.TUESDAY
+    LocalePreferences.FirstDayOfWeek.WEDNESDAY -> DayOfWeek.WEDNESDAY
+    LocalePreferences.FirstDayOfWeek.THURSDAY -> DayOfWeek.THURSDAY
+    LocalePreferences.FirstDayOfWeek.FRIDAY -> DayOfWeek.FRIDAY
+    LocalePreferences.FirstDayOfWeek.SATURDAY -> DayOfWeek.SATURDAY
+    LocalePreferences.FirstDayOfWeek.SUNDAY -> DayOfWeek.SUNDAY
+    else -> WeekFields.of(Locale.getDefault()).firstDayOfWeek
 }
 
 fun DayOfWeek.getDefaultLocalizedName() =
@@ -297,3 +361,58 @@ fun AlarmManager.setExactAndAllowWhileIdleCompat(
         else -> setExact(type, triggerAtMillis, operation)
     }
 }
+
+fun ColorRGBA32.toColor() =
+    Color(r.toInt(), g.toInt(), b.toInt(), a.toInt())
+
+fun Color.toColorRGBA32(): ColorRGBA32 {
+    val argb = toArgb()
+    val a = (argb shr 24).toUByte()
+    val r = (argb shr 16).toUByte()
+    val g = (argb shr 8).toUByte()
+    val b = argb.toUByte()
+
+    return ColorRGBA32(r, g, b, a)
+}
+
+fun Color.toHsv() = FloatArray(3).apply {
+    android.graphics.Color.colorToHSV(toArgb(), this)
+}
+
+fun Color.toHsl() = FloatArray(3).apply {
+    val argb = toArgb()
+    val r = (argb shr 16) and 255
+    val g = (argb shr 8) and 255
+    val b = argb and 255
+
+    ColorUtils.RGBToHSL(r, g, b, this)
+}
+
+fun Color.toHexCodeFormat(includeAlpha: Boolean = false): String {
+    val (r, g, b, a) = toColorRGBA32()
+
+    return when {
+        includeAlpha ->
+            "#%02x%02x%02x%02x".format(r.toInt(), g.toInt(), b.toInt(), a.toInt())
+
+        else -> "#%02x%02x%02x".format(r.toInt(), g.toInt(), b.toInt())
+    }
+}
+
+fun Offset.toVector2F() = Vector2F(x, y)
+
+fun Vector2F.toOffset() = Offset(x, y)
+
+fun Vector2F.toCanvasSpace(canvasSize: Size) = Vector2F(x, canvasSize.height - y)
+
+fun ClipData.itemsSequence() = sequence {
+    for (i in 0..<itemCount) {
+        yield(getItemAt(i))
+    }
+}
+
+fun Path.moveTo(position: Vector2F) = moveTo(position.x, position.y)
+
+fun Path.lineTo(position: Vector2F) = lineTo(position.x, position.y)
+
+fun JSONArray.toList() = List(length()) { get(it) }

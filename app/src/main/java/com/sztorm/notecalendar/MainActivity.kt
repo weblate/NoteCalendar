@@ -1,166 +1,89 @@
 package com.sztorm.notecalendar
 
-import android.app.ActivityOptions
-import android.content.Intent
 import android.os.Bundle
-import android.widget.Button
-import androidx.activity.OnBackPressedCallback
-import androidx.appcompat.app.AppCompatActivity
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.Surface
+import androidx.compose.ui.Modifier
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.core.view.WindowCompat
-import com.google.android.material.button.MaterialButtonToggleGroup
-import com.sztorm.notecalendar.NoteCalendarApplication.Companion.BUNDLE_KEY_MAIN_FRAGMENT_TYPE
-import com.sztorm.notecalendar.databinding.ActivityMainBinding
+import com.sztorm.notecalendar.repositories.FileRepositoryImpl
 import com.sztorm.notecalendar.repositories.NoteRepositoryImpl
-import timber.log.Timber
+import com.sztorm.notecalendar.repositories.UserPreferencesRepository
+import com.sztorm.notecalendar.screens.AppScreen
+import com.sztorm.notecalendar.ui.AppTheme
+import com.sztorm.notecalendar.viewmodels.MainState
+import com.sztorm.notecalendar.viewmodels.MainViewFactory
+import com.sztorm.notecalendar.viewmodels.MainViewModel
+import kotlinx.coroutines.runBlocking
 import java.time.LocalDate
 
-class MainActivity : AppCompatActivity() {
-    lateinit var binding: ActivityMainBinding
-        private set
-    private lateinit var fragmentSetter: FragmentSetter
-    private lateinit var currentFragmentType: MainFragmentType
-    private var _settings: AppSettings? = null
-    private var _permissionManager: AppPermissionManager? = null
-    private var _notificationManager: AppNotificationManager? = null
-    private var _themePainter: ThemePainter? = null
-    val sharedData = AppSharedData(viewedDate = LocalDate.now())
-    val settings: AppSettings
-        get() = _settings!!
-    val permissionManager: AppPermissionManager
-        get() = _permissionManager!!
-    val notificationManager: AppNotificationManager
-        get() = _notificationManager!!
-    val themePainter: ThemePainter
-        get() = _themePainter!!
+data class BundleResult(
+    val isLaunchedFromNotification: Boolean,
+    val noteDate: String?
+)
 
-    private fun setTheme() {
-        themePainter.apply {
-            paintStatusBarAndSetSystemInsets(
-                window,
-                binding.navigation,
-                binding.mainFragmentContainer
-            )
-            paintNavigationButton(binding.btnViewMonth)
-            paintNavigationButton(binding.btnViewWeek)
-            paintNavigationButton(binding.btnViewDay)
-            paintNavigationButton(binding.btnViewSettings)
-            paintBackground(binding.root)
-        }
-    }
-
-    private fun setNavigationButtonClickListener(button: Button, fragmentType: MainFragmentType) =
-        button.setOnClickListener {
-            if (currentFragmentType != fragmentType) {
-                currentFragmentType = fragmentType
-                fragmentSetter.setFragment(fragmentType.createFragment())
-            }
-        }
-
-    private fun setBackButtonPressListener() {
-        val callback = object : OnBackPressedCallback(true) {
-            override fun handleOnBackPressed() {
-                if (currentFragmentType == MainFragmentType.CUSTOM_THEME_SETTINGS) {
-                    setMainFragment(MainFragmentType.ROOT_SETTINGS)
-                } else {
-                    finish()
-                }
-            }
-        }
-        onBackPressedDispatcher.addCallback(this, callback)
-    }
-
-    private fun setMainFragmentOnCreate() {
-        val bundle: Bundle? = intent.extras
-
-        if (bundle === null) {
-            setMainFragment(
-                settings.getStartingView(StartingViewType.DAY_VIEW).toMainFragmentType()
-            )
-            return
-        }
-        val mainFragmentTypeOrdinal: Int = bundle.getInt(
-            BUNDLE_KEY_MAIN_FRAGMENT_TYPE, MainFragmentType.DAY.ordinal
+class MainActivity : ComponentActivity() {
+    private fun readBundle(): BundleResult? {
+        val bundle: Bundle = intent.extras ?: return null
+        val isLaunchedFromNotification = bundle.getBoolean(
+            IntentKeys.NOTIFICATION_LAUNCH_DAY_SCREEN, false
         )
-        setMainFragment(
-            MainFragmentType.entries[mainFragmentTypeOrdinal],
-            resAnimIn = R.anim.anim_immediate,
-            resAnimOut = R.anim.anim_immediate
-        )
-    }
+        val noteDate = bundle.getString(IntentKeys.NOTE_DATE, null)
 
-    fun initManagers() {
-        _settings = _settings ?: AppSettings(this)
-        _permissionManager = _permissionManager ?: AppPermissionManager(this)
-        _notificationManager = _notificationManager ?: AppNotificationManager(this)
-        _themePainter = _themePainter ?: ThemePainter(settings.themeValues)
+        return BundleResult(
+            isLaunchedFromNotification = isLaunchedFromNotification,
+            noteDate = noteDate
+        )
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val logger = TimberLogger
+        val noteRepository = NoteRepositoryImpl(logger)
+        val fileRepository = FileRepositoryImpl(this)
+        val preferencesRepository = UserPreferencesRepository(this)
+        val permissionManager = AppPermissionManager(this)
+        val notificationManager = AppNotificationManager(this, logger)
+        val bundleResult = readBundle()
+        val dayScreenDate = bundleResult?.noteDate?.toLocalDateOrNull() ?: LocalDate.now()
+        val startingView: StartingScreenType
+        val themeColors: ThemeColors
+
+        runBlocking {
+            startingView =
+                if (bundleResult != null && bundleResult.isLaunchedFromNotification)
+                    StartingScreenType.DayScreen
+                else preferencesRepository.getStartingScreen(StartingScreenType.DayScreen)
+            themeColors = preferencesRepository.getThemeColors()
+        }
         WindowCompat.setDecorFitsSystemWindows(window, false)
-        binding = ActivityMainBinding.inflate(layoutInflater)
-        fragmentSetter = FragmentSetter(supportFragmentManager, R.id.mainFragmentContainer)
-        setContentView(binding.root)
-        initManagers()
-        setTheme()
-        setNavigationButtonClickListener(binding.btnViewDay, MainFragmentType.DAY)
-        setNavigationButtonClickListener(binding.btnViewWeek, MainFragmentType.WEEK)
-        setNavigationButtonClickListener(binding.btnViewMonth, MainFragmentType.MONTH)
-        setNavigationButtonClickListener(binding.btnViewSettings, MainFragmentType.ROOT_SETTINGS)
-        setBackButtonPressListener()
-        setMainFragmentOnCreate()
-        if (notificationManager.tryScheduleNotification(
-                args = ScheduleNoteNotificationArguments(),
-                noteRepository = NoteRepositoryImpl
-        )) {
-            Timber.i(
-                "${LogTags.NOTIFICATIONS} Scheduled notification upon MainActivity creation"
+        enableEdgeToEdge()
+        setContent {
+            val viewModel = viewModel<MainViewModel>(
+                factory = MainViewFactory(
+                    initialState = MainState(
+                        themeColors = themeColors,
+                        dayScreenDate = dayScreenDate
+                    )
+                )
             )
+            AppTheme(viewModel.state.themeColors) {
+                Surface(modifier = Modifier.fillMaxSize()) {
+                    AppScreen(
+                        logger = logger,
+                        viewModel = viewModel,
+                        startingView = startingView,
+                        permissionManager = permissionManager,
+                        notificationManager = notificationManager,
+                        noteRepository = noteRepository,
+                        fileRepository = fileRepository,
+                        preferencesRepository = preferencesRepository
+                    )
+                }
+            }
         }
-    }
-
-    override fun onRequestPermissionsResult(
-        requestCode: Int, permissions: Array<out String>, grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        permissionManager.onRequestPermissionsResult(requestCode, permissions, grantResults)
-    }
-
-    fun setMainFragment(
-        mainFragmentType: MainFragmentType,
-        resAnimIn: Int = R.anim.anim_in,
-        resAnimOut: Int = R.anim.anim_out,
-        args: Arguments? = null
-    ) {
-        val navigation: MaterialButtonToggleGroup = binding.navigation
-
-        if (navigation.checkedButtonId != MAIN_BUTTON_RESOURCE_IDS[mainFragmentType.ordinal]) {
-            navigation.check(MAIN_BUTTON_RESOURCE_IDS[mainFragmentType.ordinal])
-        }
-        currentFragmentType = mainFragmentType
-        fragmentSetter.setFragment(mainFragmentType.createFragment(args), resAnimIn, resAnimOut)
-    }
-
-    fun restart(startingMainFragment: MainFragmentType) {
-        val bundle = Bundle()
-        bundle.putInt(BUNDLE_KEY_MAIN_FRAGMENT_TYPE, startingMainFragment.ordinal)
-
-        val intent = Intent(applicationContext, MainActivity::class.java)
-            .addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION)
-            .putExtras(bundle)
-        val options = ActivityOptions.makeCustomAnimation(baseContext, 0, 0)
-
-        startActivity(intent, options.toBundle())
-        finish()
-    }
-
-    companion object {
-        private val MAIN_BUTTON_RESOURCE_IDS: IntArray = intArrayOf(
-            R.id.btnViewDay,
-            R.id.btnViewWeek,
-            R.id.btnViewMonth,
-            R.id.btnViewSettings,
-            R.id.btnViewSettings
-        )
     }
 }

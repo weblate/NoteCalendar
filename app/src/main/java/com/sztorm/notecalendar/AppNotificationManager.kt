@@ -6,16 +6,13 @@ import android.content.Intent
 import android.graphics.Color
 import android.os.Build
 import androidx.core.app.NotificationCompat
-import com.sztorm.notecalendar.NoteCalendarApplication.Companion.BUNDLE_KEY_MAIN_FRAGMENT_TYPE
-import com.sztorm.notecalendar.repositories.NoteRepository
-import com.sztorm.notecalendar.timepickerpreference.TimePickerPreference
-import timber.log.Timber
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import java.time.LocalDate
-import java.time.LocalDateTime
 import java.util.*
 
-class AppNotificationManager(val mainActivity: MainActivity) {
-    private fun getOrCreateNotificationChannel(name: String, description: String) {
+class AppNotificationManager(val mainActivity: MainActivity, val logger: ILogger) {
+    private fun createNotificationChannel(name: String, description: String) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val importance = NotificationManager.IMPORTANCE_LOW
             val channel = NotificationChannel(NOTIFICATION_CHANNEL_ID_NAME, name, importance)
@@ -30,35 +27,50 @@ class AppNotificationManager(val mainActivity: MainActivity) {
         }
     }
 
-    private fun createNotification(note: NoteData): Notification {
-        getOrCreateNotificationChannel(
+    private fun createNotification(note: ReminderNote): Notification {
+        createNotificationChannel(
             mainActivity.getString(R.string.Notification_Note_ChannelName),
             mainActivity.getString(R.string.Notification_Note_ChannelDescription)
         )
         val intent = Intent(mainActivity, MainActivity::class.java)
             .addFlags(Intent.FLAG_RECEIVER_FOREGROUND)
-            .putExtra(BUNDLE_KEY_MAIN_FRAGMENT_TYPE, MainFragmentType.DAY.ordinal)
-        val activity: PendingIntent = PendingIntent.getActivity(
-            mainActivity, NOTIFICATION_ID, intent, getIntentCancelCurrentFlags()
+            .putExtra(IntentKeys.NOTIFICATION_LAUNCH_DAY_SCREEN, true)
+            .putExtra(IntentKeys.NOTE_DATE, note.date.toString())
+        val activity = PendingIntent.getActivity(
+            mainActivity,
+            note.date.stableHash(),
+            intent,
+            getIntentUpdateCurrentFlags()
         )
-        val builder = NotificationCompat.Builder(mainActivity, NOTIFICATION_CHANNEL_ID_NAME)
-            .setContentTitle(mainActivity.getString(R.string.Notification_Note_Title))
+        val builder = NotificationCompat.Builder(
+            mainActivity, NOTIFICATION_CHANNEL_ID_NAME
+        )
+            .setContentTitle(
+                mainActivity
+                    .getString(R.string.Notification_NoteFrom_Day)
+                    .format(note.date.toString())
+            )
             .setContentText(note.text)
             .setAutoCancel(true)
-            .setSmallIcon(R.drawable.icon_note)
+            .setSmallIcon(R.drawable.icon_outline_rounded_note)
             .setContentIntent(activity)
 
         return builder.build()
     }
 
-    private fun scheduleNotification(notificationData: NoteNotificationData) {
-        val note: NoteData = notificationData.note
-        val dateTime: LocalDateTime = notificationData.dateTime
-        val notification: Notification = createNotification(note)
-        val notificationIntent = Intent(mainActivity, NoteNotificationReceiver::class.java)
-            .putExtra(NoteNotificationReceiver.NOTIFICATION_EXTRA, notification)
+    private fun scheduleNotification(note: ReminderNote) {
+        val dateTime = note.reminderDateTime
+        val id = note.date.stableHash()
+        val notification = createNotification(note)
+        val notificationIntent =
+            Intent(mainActivity, NoteNotificationReceiver::class.java)
+                .putExtra(IntentKeys.NOTIFICATION_EXTRA, notification)
+                .putExtra(IntentKeys.NOTE_DATE_ID, id)
         val pendingIntent = PendingIntent.getBroadcast(
-            mainActivity, NOTIFICATION_ID, notificationIntent, getIntentCancelCurrentFlags()
+            mainActivity,
+            id,
+            notificationIntent,
+            getIntentUpdateCurrentFlags()
         )
         val calendar = Calendar.getInstance()
         calendar[Calendar.YEAR] = dateTime.year
@@ -74,98 +86,59 @@ class AppNotificationManager(val mainActivity: MainActivity) {
     }
 
     fun tryScheduleNotification(
-        args: ScheduleNoteNotificationArguments,
-        noteRepository: NoteRepository
-    ): Boolean {
-        val settings = mainActivity.settings
-        val enabledNotifications: Boolean =
-            args.enabledNotifications ?: settings.enabledNotifications
-
-        if (!enabledNotifications) {
-            Timber.i("${LogTags.NOTIFICATIONS} Scheduling failed beacuse notifications are disabled.")
-            return false
-        }
-        val permissionManager = mainActivity.permissionManager
-
-        if (!permissionManager.isGranted(AppPermissionCode.NOTIFICATIONS)) {
-            if (args.grantPermissions) {
-                mainActivity.permissionManager.requestUngrantedPermissions(
-                    AppPermissionCode.NOTIFICATIONS
-                ) { isSuccess ->
-                    if (isSuccess) {
-                        tryScheduleNotification(
-                            args.copy(grantPermissions = false), noteRepository
-                        )
-                    } else {
-                        mainActivity.settings.enabledNotifications = false
-                        Timber.i("${LogTags.NOTIFICATIONS} Scheduling failed beacuse notifications permissions are denied (request permission callback).")
-                    }
+        note: ReminderNote,
+        permissionManager: AppPermissionManager,
+        coroutineScope: CoroutineScope,
+        onCompletion: (Boolean) -> Unit
+    ) {
+        val scheduleCallback = { _: Boolean ->
+            coroutineScope.launch {
+                if (!permissionManager.isGranted(AppPermission.ScheduleExactAlarm) ||
+                    !permissionManager.isGranted(AppPermission.PostNotifications)
+                ) {
+                    logger.info("${LogTags.NOTIFICATIONS} Scheduling failed: notifications permissions are denied")
+                    onCompletion(false)
+                } else {
+                    scheduleNotification(note)
+                    logger.info("${LogTags.NOTIFICATIONS} Scheduled notification at ${note.reminderDateTime}")
+                    onCompletion(true)
                 }
-                return true
-            } else {
-                mainActivity.settings.enabledNotifications = false
-                Timber.i("${LogTags.NOTIFICATIONS} Scheduling failed beacuse notifications permissions are denied.")
-                return false
             }
+            Unit
         }
-        val notificationTime: TimePickerPreference.Time =
-            args.notificationTime ?: settings.notificationTime
-        val currentDateTime = LocalDateTime.now()
-        val notificationDateTime =
-            if ((notificationTime.toLocalTime() <= currentDateTime.toLocalTime())) {
-                LocalDateTime.of(
-                    currentDateTime.toLocalDate().plusDays(1), notificationTime.toLocalTime()
-                )
-            } else {
-                LocalDateTime.of(currentDateTime.toLocalDate(), notificationTime.toLocalTime())
-            }
-        val note: NoteData? =
-            args.note ?: noteRepository.getBy(notificationDateTime.toLocalDate())
-
-        if (note === null || note.date != notificationDateTime.toLocalDate().toString()) {
-            Timber.i("${LogTags.NOTIFICATIONS} Scheduling failed beacuse note is invalid.")
-            return false
+        if (permissionManager.isGranted(AppPermission.ScheduleExactAlarm) &&
+            permissionManager.isGranted(AppPermission.PostNotifications)
+        ) {
+            scheduleCallback(true)
+        } else {
+            permissionManager.requestPermission(
+                AppPermission.ScheduleExactAlarm, scheduleCallback
+            )
+            permissionManager.requestPermission(
+                AppPermission.PostNotifications, scheduleCallback
+            )
         }
-        val notificationData = NoteNotificationData(note, notificationDateTime)
-
-        scheduleNotification(notificationData)
-        return true
     }
 
-    fun cancelScheduledNotification() {
-        val notificationIntent = Intent(mainActivity, NoteNotificationReceiver::class.java)
+    fun cancelScheduledNotification(noteDate: LocalDate) {
+        val notificationIntent = Intent(
+            mainActivity, NoteNotificationReceiver::class.java
+        )
         val pendingIntent: PendingIntent = PendingIntent.getBroadcast(
             mainActivity,
-            NOTIFICATION_ID,
+            noteDate.stableHash(),
             notificationIntent,
-            getIntentUpdateCurrentFlags()
+            getIntentCancelCurrentFlags()
         )
-        val alarmManager = mainActivity.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val alarmManager = mainActivity
+            .getSystemService(Context.ALARM_SERVICE) as AlarmManager
         alarmManager.cancel(pendingIntent)
-    }
 
-    fun tryCancelScheduledNotification(noteDate: LocalDate): Boolean {
-        val notificationTime: TimePickerPreference.Time = mainActivity.settings.notificationTime
-        val currentDateTime = LocalDateTime.now()
-        var notificationDateTime = LocalDateTime.of(
-            currentDateTime.toLocalDate(), notificationTime.toLocalTime()
-        )
-        if (notificationTime.toLocalTime() <= currentDateTime.toLocalTime()) {
-            notificationDateTime = notificationDateTime.plusDays(1)
-        }
-        if (notificationDateTime.toLocalDate() != noteDate) {
-            return false
-        }
-        cancelScheduledNotification()
-
-        return true
+        logger.info("${LogTags.NOTIFICATIONS} Cancelled notification at $noteDate")
     }
 
     companion object {
-        const val NOTIFICATION_ID: Int = 1
-
-        @Suppress("MemberVisibilityCanBePrivate")
-        const val NOTIFICATION_CHANNEL_ID_NAME = "note-notification-channel"
+        private const val NOTIFICATION_CHANNEL_ID_NAME = "note-notification-channel"
 
         private fun getIntentUpdateCurrentFlags(): Int {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {

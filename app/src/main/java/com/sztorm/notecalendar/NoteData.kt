@@ -5,5 +5,6 @@ import com.orm.dsl.Unique
 
 data class NoteData(
     @Unique val date: String = "",
-    val text: String = ""
+    val text: String = "",
+    val reminderDateTime: String = ""
 ) : SugarRecord()
