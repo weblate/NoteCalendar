@@ -13,17 +13,16 @@ Minimum Android version: 5.0 (Lollipop, API level 21)
 
 ## Screenshots
 
-<img src="assets/01.png" alt="app screenshot 01" width=334 height=742> <img src="assets/02.png" alt="app screenshot 02" width=334 height=742> <img src="assets/03.png" alt="app screenshot 03" width=334 height=742>
+<img src="assets/01.png" alt="app screenshot 01" width=300 height=667> <img src="assets/02.png" alt="app screenshot 02" width=300 height=667> <img src="assets/03.png" alt="app screenshot 03" width=300 height=667>
 
-<img src="assets/04.png" alt="app screenshot 04" width=334 height=742> <img src="assets/05.png" alt="app screenshot 05" width=334 height=742> <img src="assets/06.png" alt="app screenshot 06" width=334 height=742>
+<img src="assets/04.png" alt="app screenshot 04" width=300 height=667> <img src="assets/05.png" alt="app screenshot 05" width=300 height=667> <img src="assets/06.png" alt="app screenshot 06" width=300 height=667>
 
-<img src="assets/07.png" alt="app screenshot 07" width=334 height=742> <img src="assets/08.png" alt="app screenshot 08" width=334 height=742> <img src="assets/09.png" alt="app screenshot 09" width=334 height=742>
+<img src="assets/07.png" alt="app screenshot 07" width=300 height=667> <img src="assets/08.png" alt="app screenshot 08" width=300 height=667> <img src="assets/09.png" alt="app screenshot 09" width=300 height=667>
 
 ## Features
 
 * Day screen - this screen is used to add, edit or delete note and set reminder for it.
-* Week screen
-* Month screen
+* Month screen and week screen
   * Days that constains a note are marked with a ring
   * Day that is currently selected is marked with a solid circle
   * Today's day is marked with a different color of text
